@@ -264,9 +264,9 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO User (Username, Password, Name, RoleID) SELECT 'Admin','Admin ','Administrative User', RoleID FROM UserRole WHERE Name = 'Administrator'");
 
 		// Give access to tables
-		query("INSERT INTO RESTPrivilege (TableName,RoleID,CanGET,CanPOST,CanPUT,CanPATCH,CanDELETE) SELECT A.name, B.RoleID, true, true, true, true, true FROM sqlite_master A, UserRole B WHERE(A.type = 'table' and A.name <> 'sqlite_sequence') AND(B.Name = 'Administrator')");
 		query("INSERT INTO RESTPrivilege (TableName,RoleID,CanGET) SELECT A.name, B.RoleID, true FROM sqlite_master A, UserRole B WHERE (A.type='table' AND A.name <> 'sqlite_sequence' AND A.name NOT LIKE 'User%' AND A.name NOT LIKE 'REST%') AND (B.Name <> 'Administrator')");
 		query("UPDATE RESTPrivilege SET CanPATCH=true, PATCHFields='Value' WHERE TableName='DeviceValue' AND RoleID IN (SELECT RoleID FROM UserRole WHERE Name <> 'Administrator')");
+		query("INSERT INTO RESTPrivilege (TableName,RoleID,CanGET,CanPOST,CanPUT,CanPATCH,CanDELETE) SELECT A.name, B.RoleID, true, true, true, true, true FROM sqlite_master A, UserRole B WHERE(A.type = 'table' and A.name <> 'sqlite_sequence') AND(B.Name = 'Administrator')");
 
 		// Units that Values can be associated with
 		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Light On/Off', 0, 1, 'Light48_Off.png,Light48_On.png', 'Off,On')");
@@ -281,6 +281,8 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Temperature', 0, 6, 'temp-0-5.png,temp-5-10.png,temp-10-15.png,temp-15-20.png,temp-20-25.png,temp-25-30.png,temp-gt-30.png', 'Cold,Chilly,Cool,Mild,Warm,Hot,Baking')");
 		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Wind Direction', 0, 15, 'WindN.png,WindNNE.png,WindNE.png,WindENE.png,WindE.png,WindESE.png,WindSE.png,WindSSE.png,WindS.png,WindSSW.png,WindSW.png,WindWSW.png,WindW.png,WindWNW.png,WindNW.png,WindNNW.png', 'N,NNE,NE,ENE,E,ESE,SE,SSE,S,SSW,SW,WSW,W,WNW,NW,NNW')");
 		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Volume On/Muted', 0, 100, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,On')");
+
+		sqlite3_wal_checkpoint(m_dbase, NULL);
 	}
 	UpdatePreferencesVar("DB_Version", DB_VERSION);
 
@@ -2254,43 +2256,11 @@ void CSQLHelper::CleanupShortLog()
 
 		char szQuery[250];
 		std::string szQueryFilter = "strftime('%s',datetime('now','localtime')) - strftime('%s',Date) > (SELECT p.nValue * 86400 From Preferences AS p WHERE p.Key='5MinuteHistoryDays')";
-
-		sprintf(szQuery, "DELETE FROM Temperature WHERE %s", szQueryFilter.c_str());
-		query(szQuery);
-
-		sprintf(szQuery, "DELETE FROM Rain WHERE %s", szQueryFilter.c_str());
-		query(szQuery);
-
-		sprintf(szQuery, "DELETE FROM Wind WHERE %s", szQueryFilter.c_str());
-		query(szQuery);
-
-		sprintf(szQuery, "DELETE FROM UV WHERE %s", szQueryFilter.c_str());
-		query(szQuery);
-
-		sprintf(szQuery, "DELETE FROM Meter WHERE %s", szQueryFilter.c_str());
-		query(szQuery);
-
-		sprintf(szQuery, "DELETE FROM MultiMeter WHERE %s", szQueryFilter.c_str());
-		query(szQuery);
-
-		sprintf(szQuery, "DELETE FROM Percentage WHERE %s", szQueryFilter.c_str());
-		query(szQuery);
-
-		sprintf(szQuery, "DELETE FROM Fan WHERE %s", szQueryFilter.c_str());
-		query(szQuery);
 	}
 }
 
 void CSQLHelper::ClearShortLog()
 {
-	query("DELETE FROM Temperature");
-	query("DELETE FROM Rain");
-	query("DELETE FROM Wind");
-	query("DELETE FROM UV");
-	query("DELETE FROM Meter");
-	query("DELETE FROM MultiMeter");
-	query("DELETE FROM Percentage");
-	query("DELETE FROM Fan");
 	VacuumDatabase();
 }
 
