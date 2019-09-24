@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "RFXNames.h"
 #include "RFXtrx.h"
-#include "../hardware/EvohomeBase.h"
 #include "../hardware/hardwaretypes.h"
 #include "Helper.h"
 #include "Logger.h"
@@ -1991,10 +1990,6 @@ void GetLightStatus(
 			lstatus = "On";
 			break;
 		}
-		break;
-	case pTypeEvohome:
-		llevel = 0;
-		lstatus = CEvohomeBase::GetWebAPIModeName(nValue);
 		break;
 	case pTypeEvohomeRelay:
 		bHaveDimmer = true;

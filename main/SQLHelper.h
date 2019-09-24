@@ -304,24 +304,9 @@ public:
 	bool RestoreDatabase(const std::string &dbase);
 
 	//Returns DeviceRowID
-	uint64_t UpdateValue(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType, const unsigned char signallevel, const unsigned char batterylevel, const int nValue, std::string &devname, const bool bUseOnOffAction=true);
-	uint64_t UpdateValue(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType, const unsigned char signallevel, const unsigned char batterylevel, const char* sValue, std::string &devname, const bool bUseOnOffAction=true);
-	uint64_t UpdateValue(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType, const unsigned char signallevel, const unsigned char batterylevel, const int nValue, const char* sValue, std::string &devname, const bool bUseOnOffAction=true);
-	uint64_t UpdateValueLighting2GroupCmd(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType, const unsigned char signallevel, const unsigned char batterylevel, const int nValue, const char* sValue, std::string &devname, const bool bUseOnOffAction = true);
-	uint64_t UpdateValueHomeConfortGroupCmd(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType, const unsigned char signallevel, const unsigned char batterylevel, const int nValue, const char* sValue, std::string &devname, const bool bUseOnOffAction = true);
-
 	bool DoesDeviceExist(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType);
 
-	uint64_t InsertDevice(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType, const int switchType, const int nValue, const char* sValue, const std::string &devname, const unsigned char signallevel = 12, const unsigned char batterylevel = 255, const int used = 0);
-
 	bool GetLastValue(const int HardwareID, const char* DeviceID, const unsigned char unit, const unsigned char devType, const unsigned char subType, int &nvalue, std::string &sValue, struct tm &LastUpdateTime);
-
-	void Lighting2GroupCmd(const std::string &ID, const unsigned char subType, const unsigned char GroupCmd);
-	void HomeConfortGroupCmd(const std::string &ID, const unsigned char subType, const unsigned char GroupCmd);
-	void GeneralSwitchGroupCmd(const std::string &ID, const unsigned char subType, const unsigned char GroupCmd);
-
-	void GetAddjustment(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType, float &AddjValue, float &AddjMulti);
-	void GetAddjustment2(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType, float &AddjValue, float &AddjMulti);
 
 	void GetMeterType(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType, int &meterType);
 
@@ -374,8 +359,6 @@ public:
 
 	void EventsGetTaskItems(std::vector<_tTaskItem> &currentTasks);
 
-	void SetUnitsAndScale();
-
 	void CheckDeviceTimeout();
 	void CheckBatteryLow();
 
@@ -386,17 +369,6 @@ public:
 	void safe_exec_no_return(const char *fmt, ...);
 	bool safe_UpdateBlobInTableWithID(const std::string &Table, const std::string &Column, const std::string &sID, const std::string &BlobData);
 	bool DoesColumnExistsInTable(const std::string &columnname, const std::string &tablename);
-
-	bool AddUserVariable(const std::string &varname, const _eUsrVariableType eVartype, const std::string &varvalue, std::string &errorMessage);
-	bool UpdateUserVariable(const std::string &idx, const std::string &varname, const _eUsrVariableType eVartype, const std::string &varvalue, const bool eventtrigger, std::string &errorMessage);
-	void DeleteUserVariable(const std::string &idx);
-	bool CheckUserVariable(const _eUsrVariableType eVartype, const std::string &varvalue, std::string &errorMessage);
-
-	uint64_t CreateDevice(const int HardwareID, const int SensorType, const int SensorSubType, std::string &devname, const unsigned long nid, const std::string &soptions);
-
-	void UpdateDeviceValue(const char * FieldName , const std::string &Value , const std::string &Idx );
-	void UpdateDeviceValue(const char * FieldName , const int Value , const std::string &Idx )   ;
-	void UpdateDeviceValue(const char * FieldName , const float Value , const std::string &Idx ) ;
 
 	bool GetPreferencesVar(const std::string &Key, double &Value);
 	void UpdatePreferencesVar(const std::string &Key, const double Value);
@@ -413,25 +385,9 @@ public:
 
 	float GetCounterDivider(const int metertype, const int dType, const float DefaultValue);
 public:
-	std::string m_LastSwitchID;	//for learning command
-	uint64_t m_LastSwitchRowID;
-	_eWindUnit	m_windunit;
-	std::string	m_windsign;
-	float		m_windscale;
-	_eTempUnit	m_tempunit;
-	_eWeightUnit m_weightunit;
-	std::string	m_tempsign;
-	std::string	m_weightsign;
-	float		m_tempscale;
-	float		m_weightscale;
 	bool		m_bAcceptNewHardware;
 	bool		m_bAllowWidgetOrdering;
 	int			m_ActiveTimerPlan;
-	bool		m_bEnableEventSystem;
-	bool		m_bEnableEventSystemFullURLLog;
-	int			m_ShortLogInterval;
-	bool		m_bLogEventScriptTrigger;
-	bool		m_bDisableDzVentsSystem;
 private:
 	std::mutex		m_sqlQueryMutex;
 	sqlite3			*m_dbase;
@@ -456,8 +412,6 @@ private:
 	void FixDaylightSavingTableSimple(const std::string &TableName);
 	void FixDaylightSaving();
 
-	//Returns DeviceRowID
-	uint64_t UpdateValueInt(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType, const unsigned char signallevel, const unsigned char batterylevel, const int nValue, const char* sValue, std::string &devname, const bool bUseOnOffAction);
 
 	bool UpdateCalendarMeter(
 		const int HardwareID,
@@ -475,14 +429,8 @@ private:
 
 	void CleanupLightSceneLog();
 
-	void UpdateTemperatureLog();
-	void UpdateRainLog();
-	void UpdateWindLog();
-	void UpdateUVLog();
 	void UpdateMeter();
 	void UpdateMultiMeter();
-	void UpdatePercentageLog();
-	void UpdateFanLog();
 	void AddCalendarTemperature();
 	void AddCalendarUpdateRain();
 	void AddCalendarUpdateWind();

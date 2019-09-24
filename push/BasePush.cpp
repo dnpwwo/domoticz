@@ -493,7 +493,7 @@ std::string CBasePush::DropdownOptionsValue(const uint64_t DeviceRowIdxIn, const
 std::string CBasePush::ProcessSendValue(const std::string &rawsendValue, const int delpos, const int nValue, const int includeUnit, const int devType, const int devSubType, const int metertypein)
 {
 	std::string vType = DropdownOptionsValue(m_DeviceRowIdx, delpos);
-	unsigned char tempsign = m_sql.m_tempsign[0];
+	unsigned char tempsign = 'C';
 	_eMeterType metertype = (_eMeterType)metertypein;
 	char szData[100];
 	szData[0] = 0;
@@ -554,28 +554,14 @@ std::string CBasePush::ProcessSendValue(const std::string &rawsendValue, const i
 	else if (vType == "Speed")
 	{
 		int intSpeed = atoi(rawsendValue.c_str());
-		if (m_sql.m_windunit != WINDUNIT_Beaufort)
-		{
-			sprintf(szData, "%.1f", float(intSpeed) * m_sql.m_windscale);
-		}
-		else
-		{
-			float speedms = float(intSpeed)*0.1f;
-			sprintf(szData, "%d", MStoBeaufort(speedms));
-		}
+		float speedms = float(intSpeed)*0.1f;
+		sprintf(szData, "%d", MStoBeaufort(speedms));
 	}
 	else if (vType == "Gust")
 	{
 		int intGust = atoi(rawsendValue.c_str());
-		if (m_sql.m_windunit != WINDUNIT_Beaufort)
-		{
-			sprintf(szData, "%.1f", float(intGust) *m_sql.m_windscale);
-		}
-		else
-		{
-			float gustms = float(intGust)*0.1f;
-			sprintf(szData, "%d", MStoBeaufort(gustms));
-		}
+		float gustms = float(intGust)*0.1f;
+		sprintf(szData, "%d", MStoBeaufort(gustms));
 	}
 	else if (vType == "Chill")
 	{
@@ -716,7 +702,7 @@ std::string CBasePush::ProcessSendValue(const std::string &rawsendValue, const i
 std::string CBasePush::getUnit(const int delpos, const int metertypein)
 {
 	std::string vType = DropdownOptionsValue(m_DeviceRowIdx, delpos);
-	unsigned char tempsign = m_sql.m_tempsign[0];
+	unsigned char tempsign = 'C';
 	_eMeterType metertype = (_eMeterType)metertypein;
 	char szData[100];
 	szData[0] = 0;
@@ -823,7 +809,7 @@ std::string CBasePush::getUnit(const int delpos, const int metertypein)
 	}
 	else if (vType == "Weight")
 	{
-		strcpy(szData, m_sql.m_weightsign.c_str());
+		strcpy(szData,"kg");
 	}
 	else if (vType == "Voltage")
 	{

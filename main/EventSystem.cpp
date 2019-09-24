@@ -2,15 +2,11 @@
 #include "mainworker.h"
 #include "RFXNames.h"
 #include "EventSystem.h"
-#include "dzVents.h"
 #include "Helper.h"
 #include "HTMLSanitizer.h"
 #include "SQLHelper.h"
 #include "Logger.h"
 #include "../hardware/hardwaretypes.h"
-#include "../hardware/Kodi.h"
-#include "../hardware/LogitechMediaServer.h"
-#include "../hardware/MySensorsBase.h"
 #include <iostream>
 #include "../httpclient/UrlEncode.h"
 #include "localtime_r.h"
@@ -46,17 +42,6 @@ extern http::server::CWebServerHelper m_webservers;
 #include "EventsPythonDevice.h"
 extern PyObject * PDevice_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
 #endif
-
-// Helper table for Blockly and SQL name mapping
-const std::string CEventSystem::m_szReason[] =
-{
-	"device",			// 0
-	"scenegroup",		// 1
-	"uservariable",		// 2
-	"time",				// 3
-	"security",			// 4
-	"url"				// 5
-};
 
 // Security status
 const std::string CEventSystem::m_szSecStatus[] =
@@ -197,19 +182,10 @@ void CEventSystem::SetEnabled(const bool bEnabled)
 void CEventSystem::LoadEvents()
 {
 	std::string dzv_Dir, s;
-	CdzVents* dzvents = CdzVents::GetInstance();
-	dzvents->m_bdzVentsExist = false;
-
 #ifdef WIN32
 	m_lua_Dir = szUserDataFolder + "scripts\\lua\\";
-	dzv_Dir = szUserDataFolder + "scripts\\dzVents\\generated_scripts\\";
-	dzvents->m_scriptsDir = szUserDataFolder + "scripts\\dzVents\\scripts\\";
-	dzvents->m_runtimeDir = szStartupFolder + "dzVents\\runtime\\";
 #else
 	m_lua_Dir = szUserDataFolder + "scripts/lua/";
-	dzv_Dir = szUserDataFolder + "scripts/dzVents/generated_scripts/";
-	dzvents->m_scriptsDir = szUserDataFolder + "scripts/dzVents/scripts/";
-	dzvents->m_runtimeDir = szStartupFolder + "dzVents/runtime/";
 #endif
 
 	boost::unique_lock<boost::shared_mutex> eventsMutexLock(m_eventsMutex);
@@ -245,19 +221,9 @@ void CEventSystem::LoadEvents()
 	std::vector<std::string> FileEntries;
 	std::string filename;
 
-	// Remove dzVents DB files from disk
-	DirectoryListing(FileEntries, dzv_Dir, false, true);
-	std::vector<std::string>::const_iterator itt;
-	for (itt = FileEntries.begin(); itt != FileEntries.end(); ++itt)
-	{
-		filename = dzv_Dir + *itt;
-		if (filename.find("README.md") == std::string::npos)
-			std::remove(filename.c_str());
-	}
-
 	result = m_sql.safe_query(
 		"SELECT ID, Name, Interpreter, Type, Status, XMLStatement FROM EventMaster "
-		"WHERE Interpreter <> 'Blockly' AND Status > 0 ORDER BY ID");
+		"WHERE Status > 0 ORDER BY ID");
 
 	if (!result.empty())
 	{
@@ -275,24 +241,6 @@ void CEventSystem::LoadEvents()
 			eitem.Actions = sd[5];
 			eitem.SequenceNo = 0;
 			m_events.push_back(eitem);
-
-			// Write active dzVents scripts to disk.
-			if ((eitem.Interpreter == "dzVents") && (eitem.EventStatus != 0))
-			{
-				s = dzv_Dir + eitem.Name.c_str() + ".lua";
-				_log.Log(LOG_STATUS, "dzVents: Write file: %s", s.c_str());
-				FILE *fOut = fopen(s.c_str(), "wb+");
-				if (fOut)
-				{
-					fwrite(eitem.Actions.c_str(), 1, eitem.Actions.size(), fOut);
-					fclose(fOut);
-					dzvents->m_bdzVentsExist = true;
-				}
-				else
-				{
-					_log.Log(LOG_ERROR, "EventSystem: problem writing file: %s",  s.c_str());
-				}
-			}
 		}
 	}
 #ifdef _DEBUG
@@ -392,7 +340,7 @@ void CEventSystem::UpdateJsonMap(_tDeviceStatus &item, const uint64_t ulDevID)
 	item.JsonMapBool.clear();
 
 	Json::Value tempjson;
-	m_webservers.GetJSonDevices(tempjson, "", "", "", std::to_string(ulDevID), "", "", true, false, false, 0, "");
+	//m_webservers.GetJSonDevices(tempjson, "", "", "", std::to_string(ulDevID), "", "", true, false, false, 0, "");
 	Json::ArrayIndex rsize = tempjson["result"].size();
 
 	if (rsize > 0)
@@ -508,10 +456,6 @@ void CEventSystem::GetCurrentStates()
 			sitem.protection = atoi(sd[16].c_str());
 			sitem.hardwareID = atoi(sd[0].c_str());
 
-			if (!m_sql.m_bDisableDzVentsSystem)
-			{
-				UpdateJsonMap(sitem, sitem.ID);
-			}
 			m_devicestates_temp[sitem.ID] = sitem;
 		}
 		m_devicestates = m_devicestates_temp;
@@ -1399,10 +1343,7 @@ std::string CEventSystem::UpdateSingleState(const uint64_t ulDevID, const std::s
 		if (lastLevel != 255)
 			replaceitem.lastLevel = lastLevel;
 
-		if (!m_sql.m_bDisableDzVentsSystem)
-		{
-			UpdateJsonMap(replaceitem, ulDevID);
-		}
+		UpdateJsonMap(replaceitem, ulDevID);
 		itt->second = replaceitem;
 	}
 	else
@@ -1420,10 +1361,6 @@ std::string CEventSystem::UpdateSingleState(const uint64_t ulDevID, const std::s
 		newitem.lastUpdate = l_lastUpdate;
 		newitem.lastLevel = lastLevel;
 
-		if (!m_sql.m_bDisableDzVentsSystem)
-		{
-			UpdateJsonMap(newitem, ulDevID);
-		}
 		m_devicestates[newitem.ID] = newitem;
 	}
 	return nValueWording;
@@ -1535,13 +1472,6 @@ void CEventSystem::ProcessDevice(const int HardwareID, const uint64_t ulDevID, c
 			{
 				item.lastLevel = itt->second.lastLevel;
 				item.lastUpdate = itt->second.lastUpdate;
-				if (!m_sql.m_bDisableDzVentsSystem)
-				{
-					item.JsonMapString = itt->second.JsonMapString;
-					item.JsonMapInt = itt->second.JsonMapInt;
-					item.JsonMapFloat = itt->second.JsonMapFloat;
-					item.JsonMapBool = itt->second.JsonMapBool;
-				}
 				_tDeviceStatus replaceitem = itt->second;
 				replaceitem.lastUpdate = sd[2];
 				replaceitem.lastLevel = atoi(sd[3].c_str());
@@ -1578,28 +1508,6 @@ void CEventSystem::EvaluateEvent(const std::vector<_tEventQueue> &items)
 	std::vector<std::string> FileEntriesPython;
 	DirectoryListing(FileEntriesPython, m_python_Dir, false, true);
 #endif
-
-	if (!m_sql.m_bDisableDzVentsSystem)
-	{
-		CdzVents* dzvents = CdzVents::GetInstance();
-		if (dzvents->m_bdzVentsExist)
-			EvaluateLua(items, dzvents->m_runtimeDir + "dzVents.lua", "");
-		else
-		{
-			DirectoryListing(FileEntries, dzvents->m_scriptsDir, false, true);
-			for (itt2 = FileEntries.begin(); itt2 != FileEntries.end(); ++itt2)
-			{
-				filename = *itt2;
-				if (filename.length() > 4 &&
-					filename.compare(filename.length() - 4, 4, ".lua") == 0)
-				{
-					EvaluateLua(items, dzvents->m_runtimeDir + "dzVents.lua", "");
-					break;
-				}
-			}
-			FileEntries.clear();
-		}
-	}
 
 	bool bDeviceFileFound = false;
 	DirectoryListing(FileEntries, m_lua_Dir, false, true);
@@ -1696,271 +1604,6 @@ void CEventSystem::EvaluateEvent(const std::vector<_tEventQueue> &items)
 	}
 }
 
-lua_State *CEventSystem::CreateBlocklyLuaState()
-{
-	lua_State *lua_state = luaL_newstate();
-	if (lua_state == NULL)
-		return NULL;
-
-	// load Lua libraries
-	static const luaL_Reg lualibs[] =
-	{
-		{ "base", luaopen_base },
-		{ "io", luaopen_io },
-		{ "table", luaopen_table },
-		{ "string", luaopen_string },
-		{ "math", luaopen_math },
-		{ NULL, NULL }
-	};
-
-	luaL_requiref(lua_state, "os", luaopen_os, 1);
-
-	const luaL_Reg *lib = lualibs;
-	for (; lib->func != NULL; lib++)
-	{
-		lib->func(lua_state);
-		lua_settop(lua_state, 0);
-	}
-
-	// reroute print library to domoticz logger
-	luaL_openlibs(lua_state);
-	lua_pushcfunction(lua_state, l_domoticz_print);
-	lua_setglobal(lua_state, "print");
-
-	boost::shared_lock<boost::shared_mutex> devicestatesMutexLock(m_devicestatesMutex);
-	lua_createtable(lua_state, (int)m_devicestates.size(), 0);
-
-	std::map<uint64_t, _tDeviceStatus>::iterator iterator;
-	for (iterator = m_devicestates.begin(); iterator != m_devicestates.end(); ++iterator) {
-		_tDeviceStatus sitem = iterator->second;
-		lua_pushnumber(lua_state, (lua_Number)sitem.ID);
-		lua_pushstring(lua_state, sitem.nValueWording.c_str());
-		lua_rawset(lua_state, -3);
-	}
-	lua_setglobal(lua_state, "device");
-	devicestatesMutexLock.unlock();
-
-	boost::shared_lock<boost::shared_mutex> uservariablesMutexLock(m_uservariablesMutex);
-	lua_createtable(lua_state, (int)m_uservariables.size(), 0);
-
-	std::map<uint64_t, _tUserVariable>::const_iterator ittvar;
-	for (ittvar = m_uservariables.begin(); ittvar != m_uservariables.end(); ++ittvar) {
-		_tUserVariable uvitem = ittvar->second;
-		if (uvitem.variableType == 0) {
-			//Integer
-			lua_pushnumber(lua_state, (lua_Number)uvitem.ID);
-			lua_pushnumber(lua_state, atoi(uvitem.variableValue.c_str()));
-			lua_rawset(lua_state, -3);
-		}
-		else if (uvitem.variableType == 1) {
-			//Float
-			lua_pushnumber(lua_state, (lua_Number)uvitem.ID);
-			lua_pushnumber(lua_state, atof(uvitem.variableValue.c_str()));
-			lua_rawset(lua_state, -3);
-		}
-		else {
-			//String,Date,Time
-			lua_pushnumber(lua_state, (lua_Number)uvitem.ID);
-			lua_pushstring(lua_state, uvitem.variableValue.c_str());
-			lua_rawset(lua_state, -3);
-		}
-	}
-	lua_setglobal(lua_state, "variable");
-	uservariablesMutexLock.unlock();
-
-	std::lock_guard<std::mutex> measurementStatesMutexLock(m_measurementStatesMutex);
-	GetCurrentMeasurementStates();
-
-	if (m_tempValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_tempValuesByID.size(), 0);
-		std::map<uint64_t, float>::iterator p;
-		for (p = m_tempValuesByID.begin(); p != m_tempValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "temperaturedevice");
-	}
-	if (m_dewValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_dewValuesByID.size(), 0);
-		std::map<uint64_t, float>::iterator p;
-		for (p = m_dewValuesByID.begin(); p != m_dewValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "dewpointdevice");
-	}
-	if (m_humValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_humValuesByID.size(), 0);
-		std::map<uint64_t, int>::iterator p;
-		for (p = m_humValuesByID.begin(); p != m_humValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "humiditydevice");
-	}
-	if (m_baroValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_baroValuesByID.size(), 0);
-		std::map<uint64_t, float>::iterator p;
-		for (p = m_baroValuesByID.begin(); p != m_baroValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "barometerdevice");
-	}
-	if (m_utilityValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_utilityValuesByID.size(), 0);
-		std::map<uint64_t, float>::iterator p;
-		for (p = m_utilityValuesByID.begin(); p != m_utilityValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "utilitydevice");
-	}
-	if (m_weatherValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_weatherValuesByID.size(), 0);
-		std::map<uint64_t, float>::iterator p;
-		for (p = m_weatherValuesByID.begin(); p != m_weatherValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "weatherdevice");
-	}
-	if (m_rainValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_rainValuesByID.size(), 0);
-		std::map<uint64_t, float>::iterator p;
-		for (p = m_rainValuesByID.begin(); p != m_rainValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "raindevice");
-	}
-	if (m_rainLastHourValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_rainLastHourValuesByID.size(), 0);
-		std::map<uint64_t, float>::iterator p;
-		for (p = m_rainLastHourValuesByID.begin(); p != m_rainLastHourValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "rainlasthourdevice");
-	}
-	if (m_uvValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_uvValuesByID.size(), 0);
-		std::map<uint64_t, float>::iterator p;
-		for (p = m_uvValuesByID.begin(); p != m_uvValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "uvdevice");
-	}
-	if (m_winddirValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_winddirValuesByID.size(), 0);
-		std::map<uint64_t, float>::iterator p;
-		for (p = m_winddirValuesByID.begin(); p != m_winddirValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "winddirdevice");
-	}
-	if (m_windspeedValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_windspeedValuesByID.size(), 0);
-		std::map<uint64_t, float>::iterator p;
-		for (p = m_windspeedValuesByID.begin(); p != m_windspeedValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "windspeeddevice");
-	}
-	if (m_windgustValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_windgustValuesByID.size(), 0);
-		std::map<uint64_t, float>::iterator p;
-		for (p = m_windgustValuesByID.begin(); p != m_windgustValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "windgustdevice");
-	}
-	if (m_zwaveAlarmValuesByID.size() > 0) {
-		lua_createtable(lua_state, (int)m_zwaveAlarmValuesByID.size(), 0);
-		std::map<uint64_t, int>::iterator p;
-		for (p = m_zwaveAlarmValuesByID.begin(); p != m_zwaveAlarmValuesByID.end(); ++p)
-		{
-			lua_pushnumber(lua_state, (lua_Number)p->first);
-			lua_pushnumber(lua_state, (lua_Number)p->second);
-			lua_rawset(lua_state, -3);
-		}
-		lua_setglobal(lua_state, "zwavealarms");
-	}
-
-	lua_pushnumber(lua_state, (lua_Number)m_SecStatus);
-	lua_setglobal(lua_state, "securitystatus");
-
-	return lua_state;
-}
-
-lua_State *CEventSystem::ParseBlocklyLua(lua_State *lua_state, const _tEventItem &item)
-{
-	std::string conditions = item.Conditions;
-	// Replace Sunrise and sunset placeholder with actual time for query
-	if (conditions.find("@Sunrise") != std::string::npos)
-	{
-		stdreplace(conditions, "@Sunrise", std::to_string(getSunRiseSunSetMinutes("Sunrise")));
-	}
-	if (conditions.find("@Sunset") != std::string::npos)
-	{
-		stdreplace(conditions, "@Sunset", std::to_string(getSunRiseSunSetMinutes("Sunset")));
-	}
-
-	std::string ifCondition = "result = 0; weekday = os.date('*t')['wday']; timeofday = ((os.date('*t')['hour']*60)+os.date('*t')['min']); if " + conditions + " then result = 1 end; return result";
-
-	if (lua_state == NULL)
-	{
-		lua_state = CreateBlocklyLuaState();
-		if (lua_state == NULL)
-			return NULL;
-	}
-
-	//_log.Log(LOG_STATUS,"EventSystem: ifc: %s",ifCondition.c_str());
-	if (luaL_dostring(lua_state, ifCondition.c_str()))
-	{
-		_log.Log(LOG_ERROR, "EventSystem: Lua script error (Blockly), Name: %s => %s", item.Name.c_str(), lua_tostring(lua_state, -1));
-	}
-	else
-	{
-		lua_Number ruleTrue = lua_tonumber(lua_state, -1);
-		if (ruleTrue != 0)
-		{
-			if (m_sql.m_bLogEventScriptTrigger)
-				_log.Log(LOG_NORM, "EventSystem: Event triggered: %s", item.Name.c_str());
-			parseBlocklyActions(item);
-		}
-	}
-	return lua_state;
-}
-
 void CEventSystem::EvaluateDatabaseEvents(const _tEventQueue &item)
 {
 	lua_State *lua_state = NULL;
@@ -1971,45 +1614,12 @@ void CEventSystem::EvaluateDatabaseEvents(const _tEventQueue &item)
 	{
 		for (it = m_events.begin(); it != m_events.end(); ++it)
 		{
-			bool eventInScope = ((it->Type == "all") || (it->Type == m_szReason[item.reason]));
+			bool eventInScope = ((it->Type == "all"));
 			bool eventActive = (it->EventStatus == 1);
 
 			if (eventInScope && eventActive)
 			{
-				if (it->Interpreter == "Blockly")
-				{
-					std::size_t found = std::string::npos;
-					if ((item.reason == REASON_DEVICE) && (item.id > 0))
-					{
-						std::stringstream sstr;
-						sstr << "[" << item.id << "]";
-						found = it->Conditions.find(sstr.str());
-					}
-					else if (item.reason == REASON_SECURITY)
-					{
-						// security status change
-						std::stringstream sstr;
-						sstr << "securitystatus";
-						found = it->Conditions.find(sstr.str());
-					}
-					else if (item.reason == REASON_TIME)
-					{
-						// time rules will only run when time or date based criteria are found
-						found = it->Conditions.find("timeofday");
-						if (found == std::string::npos)
-							found = it->Conditions.find("weekday");
-					}
-					else if ((item.reason == REASON_USERVARIABLE) && (item.id > 0))
-					{
-						std::stringstream sstr;
-						sstr << "variable[" << item.id << "]";
-						found = it->Conditions.find(sstr.str());
-					}
-
-					if (found != std::string::npos)
-						lua_state = ParseBlocklyLua(lua_state, *it);
-				}
-				else if (it->Interpreter == "Lua")
+				if (it->Interpreter == "Lua")
 					EvaluateLua(item, it->Name, it->Actions);
 
 				else if (it->Interpreter == "Python")
@@ -2195,337 +1805,6 @@ std::string CEventSystem::ProcessVariableArgument(const std::string &Argument)
 	return ret;
 }
 
-std::string CEventSystem::ParseBlocklyString(const std::string &oString)
-{
-	std::string retString = oString;
-
-	while (1)
-	{
-		size_t pos1, pos2;
-		pos1 = retString.find("{{");
-		if (pos1 == std::string::npos)
-			return retString;
-		pos2 = retString.find("}}");
-		if (pos2 == std::string::npos)
-			return retString;
-		std::string part_left = retString.substr(0, pos1);
-		std::string part_middle = retString.substr(pos1 + 2, pos2 - pos1 - 2);
-		std::string part_right = retString.substr(pos2 + 2);
-		part_middle = ProcessVariableArgument(part_middle);
-		retString = part_left + part_middle + part_right;
-	}
-
-	return retString;
-}
-
-bool CEventSystem::parseBlocklyActions(const _tEventItem &item)
-{
-	if (isEventscheduled(item.Name))
-	{
-		//_log.Log(LOG_NORM,"Already scheduled this event, skipping");
-		return false;
-	}
-	bool actionsDone = false;
-	std::string csubstr;
-	std::string tmpstr(item.Actions);
-	size_t sPos = 0, ePos;
-	do
-	{
-		ePos = tmpstr.find(",commandArray[");
-		if (ePos != std::string::npos)
-		{
-			csubstr = tmpstr.substr(0, ePos);
-			tmpstr = tmpstr.substr(ePos + 1);
-		}
-		else
-		{
-			csubstr = tmpstr;
-			tmpstr.clear();
-		}
-		sPos = csubstr.find_first_of("[");
-		ePos = csubstr.find_first_of("]");
-
-		if ((sPos == std::string::npos) || (ePos == std::string::npos))
-		{
-			_log.Log(LOG_ERROR, "EventSystem: Malformed action sequence!");
-			break;
-		}
-
-		size_t eQPos = csubstr.find_first_of("=");
-		if (eQPos == std::string::npos) {
-			_log.Log(LOG_ERROR, "EventSystem: Malformed action sequence!");
-			break;
-		}
-		std::string doWhat = csubstr.substr(eQPos + 1);
-		StripQuotes(doWhat);
-
-		std::string deviceName = csubstr.substr(sPos + 1, ePos - sPos - 1);
-		if (deviceName.empty())
-		{
-			_log.Log(LOG_ERROR, "EventSystem: Malformed action sequence!");
-			break;
-		}
-
-		int deviceNo = atoi(deviceName.c_str());
-		if (deviceNo)
-		{
-			boost::shared_lock<boost::shared_mutex> devicestatesMutexLock(m_devicestatesMutex);
-			if (m_devicestates.count(deviceNo)) {
-				devicestatesMutexLock.unlock(); // Unlock to avoid recursive lock (because the ScheduleEvent function locks again)
-				if (ScheduleEvent(deviceNo, doWhat, false, item.Name, 0)) {
-					actionsDone = true;
-				}
-			}
-			else {
-				reportMissingDevice(deviceNo, item);
-			}
-			continue;
-		}
-
-		if ((deviceName.find("Scene:") == 0) || (deviceName.find("Group:") == 0))
-		{
-			int sceneType = 1;
-			if (deviceName.find("Group:") == 0)
-			{
-				sceneType = 2;
-			}
-			deviceNo = atoi(deviceName.substr(6).c_str());
-			if (deviceNo)
-			{
-				if (ScheduleEvent(deviceNo, doWhat, true, item.Name, sceneType))
-				{
-					actionsDone = true;
-				}
-			}
-			continue;
-		}
-		else if (deviceName.find("Variable:") == 0)
-		{
-			std::string variableNo = deviceName.substr(9);
-			_tActionParseResults parseResult;
-			parseResult.fAfterSec = 0;
-			ParseActionString(doWhat, parseResult);
-			StripQuotes(parseResult.sCommand);
-
-			doWhat = ProcessVariableArgument(parseResult.sCommand);
-			if (parseResult.fAfterSec < (1. / timer_resolution_hz / 2))
-			{
-				std::vector<std::vector<std::string> > result;
-				result = m_sql.safe_query("SELECT Name, ValueType FROM UserVariables WHERE (ID == '%q')", variableNo.c_str());
-				if (!result.empty())
-				{
-					std::vector<std::string> sd = result[0];
-					std::string errorMessage;
-					if (!m_sql.UpdateUserVariable(variableNo, sd[0], (const _eUsrVariableType)atoi(sd[1].c_str()), doWhat, false, errorMessage))
-					{
-						_log.Log(LOG_ERROR, "EventSystem: Error updating variable %s: %s", sd[0].c_str(), errorMessage.c_str());
-					}
-				}
-			}
-			else
-				m_sql.AddTaskItem(_tTaskItem::SetVariable(parseResult.fAfterSec, (const uint64_t)atol(variableNo.c_str()), doWhat, false));
-
-			actionsDone = true;
-			continue;
-		}
-		else if (deviceName.find("Text:") == 0)
-		{
-			std::string variableName = deviceName.substr(5);
-			_tActionParseResults parseResult;
-			parseResult.fAfterSec = 0;
-			ParseActionString(doWhat, parseResult);
-			StripQuotes(parseResult.sCommand);
-
-			if (parseResult.fAfterSec < (1. / timer_resolution_hz / 2))
-				m_mainworker.UpdateDevice(std::stoi(variableName.c_str()), 0, parseResult.sCommand, 12, 255, false);
-			else
-				m_sql.AddTaskItem(_tTaskItem::UpdateDevice(parseResult.fAfterSec, std::stoull(variableName.c_str()), 0, parseResult.sCommand, false, false));
-
-			actionsDone = true;
-		}
-		else if (deviceName.find("SendCamera:") == 0)
-		{
-			if (!atoi(deviceName.substr(11).c_str()))
-				continue;
-			ScheduleEvent(deviceName, doWhat, item.Name);
-			actionsDone = true;
-			continue;
-		}
-		else if (deviceName.find("SetSetpoint:") == 0)
-		{
-			int idx = atoi(deviceName.substr(12).c_str());
-			std::string temp, mode, until;
-			std::vector<std::string> aParam;
-			StringSplit(doWhat, "#", aParam);
-			switch (aParam.size()) {
-			case 3:
-				until = ParseBlocklyString(aParam[2]);
-			case 2:
-				mode = ParseBlocklyString(aParam[1]);
-			case 1:
-				temp = ParseBlocklyString(aParam[0]);
-				m_sql.AddTaskItem(_tTaskItem::SetSetPoint(0.5f, idx, temp, mode, until));
-				actionsDone = true;
-				break;
-
-			default:
-				//Invalid
-				_log.Log(LOG_ERROR, "EventSystem: SetPoint, not enough parameters!");
-				break;
-			}
-			continue;
-		}
-		else if (deviceName.find("SendEmail") != std::string::npos)
-		{
-			std::string subject, body, to;
-			std::vector<std::string> aParam;
-			StringSplit(doWhat, "#", aParam);
-			if (aParam.size() != 3)
-			{
-				//Invalid
-				_log.Log(LOG_ERROR, "EventSystem: SendEmail, not enough parameters!");
-				continue;
-			}
-			subject = ParseBlocklyString(aParam[0]);
-			body = ParseBlocklyString(aParam[1]);
-			stdreplace(body, "\\n", "<br>");
-			to = aParam[2];
-			m_sql.AddTaskItem(_tTaskItem::SendEmailTo(1, subject, body, to));
-			actionsDone = true;
-			continue;
-		}
-		else if (deviceName.find("SendSMS") != std::string::npos)
-		{
-			if (doWhat.empty())
-			{
-				//Invalid
-				_log.Log(LOG_ERROR, "EventSystem: SendSMS, not enough parameters!");
-				continue;
-			}
-			doWhat = ParseBlocklyString(doWhat);
-			m_sql.AddTaskItem(_tTaskItem::SendSMS(1, doWhat));
-			actionsDone = true;
-			continue;
-		}
-		else if (deviceName.find("TriggerIFTTT") != std::string::npos)
-		{
-			std::vector<std::string> aParam;
-			StringSplit(doWhat, "#", aParam);
-			if ((aParam.empty()) || (aParam.size() > 4))
-			{
-				//Invalid
-				_log.Log(LOG_ERROR, "EventSystem: TriggerIFTTT, not enough parameters!");
-				continue;
-			}
-			std::string sID = ParseBlocklyString(aParam[0]);
-			std::string sValue1, sValue2, sValue3;
-			if (aParam.size() > 1)
-				sValue1 = ParseBlocklyString(aParam[1]);
-			if (aParam.size() > 2)
-				sValue2 = ParseBlocklyString(aParam[2]);
-			if (aParam.size() > 3)
-				sValue3 = ParseBlocklyString(aParam[3]);
-			m_sql.AddTaskItem(_tTaskItem::SendIFTTTTrigger(1, sID, sValue1, sValue2, sValue3));
-			actionsDone = true;
-			continue;
-		}
-		else if (deviceName.find("OpenURL") != std::string::npos)
-		{
-			_tActionParseResults parseResult;
-			parseResult.fAfterSec = 0.2f;
-			ParseActionString(doWhat, parseResult);
-			OpenURL(parseResult.fAfterSec, parseResult.sCommand);
-			actionsDone = true;
-			continue;
-		}
-		else if (deviceName.find("StartScript") != std::string::npos)
-		{
-			if (doWhat.empty())
-			{
-				//Invalid
-				_log.Log(LOG_ERROR, "EventSystem: StartScript, not enough parameters!");
-				break;
-			}
-			std::string sPath = doWhat;
-			std::string sParam = "";
-			size_t tpos = sPath.find('$');
-			if (tpos != std::string::npos)
-			{
-				sPath = sPath.substr(0, tpos);
-				sParam = doWhat.substr(tpos + 1);
-				sParam = ParseBlocklyString(sParam);
-			}
-#if !defined WIN32
-			if (sPath.find("/") != 0)
-				sPath = szUserDataFolder + "scripts/" + sPath;
-#endif
-
-			m_sql.AddTaskItem(_tTaskItem::ExecuteScript(0.2f, sPath, sParam));
-			actionsDone = true;
-			continue;
-		}
-		else if (deviceName.find("WriteToLog") != std::string::npos)
-		{
-			std::string devNameNoQuotes = deviceName.substr(1, deviceName.size() - 2);
-			WriteToLog(devNameNoQuotes, doWhat);
-			actionsDone = true;
-			continue;
-		}
-		else if (deviceName.find("SendNotification") != std::string::npos)
-		{
-			std::string subject, body, priority("0"), sound, subsystem;
-			std::vector<std::string> aParam;
-			StringSplit(doWhat, "#", aParam);
-			subject = body = aParam[0];
-			if (aParam.size() > 1)
-			{
-				body = aParam[1];
-			}
-
-			StripQuotes(subject);
-			StripQuotes(body);
-
-			subject = ParseBlocklyString(ProcessVariableArgument(subject));
-			body = ParseBlocklyString(ProcessVariableArgument(body));
-
-			if (aParam.size() == 3)
-			{
-				priority = aParam[2];
-			}
-			else if (aParam.size() == 4)
-			{
-				priority = aParam[2];
-				sound = aParam[3];
-			}
-			else if (aParam.size() == 5)
-			{
-				priority = aParam[2];
-				sound = aParam[3];
-				subsystem = aParam[4];
-			}
-			m_sql.AddTaskItem(_tTaskItem::SendNotification(0, subject, body, std::string(""), atoi(priority.c_str()), sound, subsystem));
-			actionsDone = true;
-			continue;
-		}
-		else if (deviceName.find("CustomCommand:") == 0)
-		{
-			int idx = atoi(deviceName.substr(14).c_str());
-			_tActionParseResults parseResult;
-			parseResult.fAfterSec = 0;
-			ParseActionString(doWhat, parseResult);
-			m_sql.AddTaskItem(_tTaskItem::CustomCommand(parseResult.fAfterSec, idx, doWhat));
-			actionsDone = true;
-			continue;
-		}
-		else
-		{
-			_log.Log(LOG_ERROR, "EventSystem: Unknown action sequence! (%s)", csubstr.c_str());
-			break;
-		}
-	} while ((sPos = tmpstr.find("commandArray[")) == 0);
-	return actionsDone;
-}
-
 void CEventSystem::ParseActionString(const std::string &oAction_, _tActionParseResults &oResults_) {
 	int iLastTokenType = 0;
 
@@ -2687,8 +1966,8 @@ void CEventSystem::EvaluatePython(const _tEventQueue &item, const std::string &f
 	//_log.Log(LOG_NORM, "EventSystem: Already scheduled this event, skipping");
 	// _log.Log(LOG_STATUS, "EventSystem: script %s trigger, file: %s, script: %s, deviceName: %s" , reason.c_str(), filename.c_str(), PyString.c_str(), devname.c_str());
 
-	Plugins::PythonEventsProcessPython(m_szReason[item.reason], filename, PyString, item.id, m_devicestates, m_uservariables, getSunRiseSunSetMinutes("Sunrise"),
-		getSunRiseSunSetMinutes("Sunset"));
+	//Plugins::PythonEventsProcessPython(m_szReason[item.reason], filename, PyString, item.id, m_devicestates, m_uservariables, getSunRiseSunSetMinutes("Sunrise"),
+	//	getSunRiseSunSetMinutes("Sunset"));
 
 	//Py_Finalize();
 }
@@ -3201,10 +2480,6 @@ void CEventSystem::EvaluateLua(const std::vector<_tEventQueue> &items, const std
 	lua_pushcfunction(lua_state, l_domoticz_applyXPath);
 	lua_setglobal(lua_state, "domoticz_applyXPath");
 
-#ifdef _DEBUG
-	_log.Log(LOG_STATUS, "EventSystem: script %s trigger (%s)", m_szReason[items[0].reason].c_str(), filename.c_str());
-#endif
-
 	int sunTimers[10];
 	if (m_mainworker.m_SunRiseSetMins.size() == 10)
 	{
@@ -3289,11 +2564,7 @@ void CEventSystem::EvaluateLua(const std::vector<_tEventQueue> &items, const std
 
 	int secstatus = 0;
 	m_sql.GetPreferencesVar("SecStatus", secstatus);
-	CdzVents* dzvents = CdzVents::GetInstance();
-	if (!m_sql.m_bDisableDzVentsSystem && filename == dzvents->m_runtimeDir + "dzVents.lua")
-		dzvents->EvaluateDzVents(lua_state, items, secstatus);
-	else
-		EvaluateLuaClassic(lua_state, items[0], secstatus);
+	EvaluateLuaClassic(lua_state, items[0], secstatus);
 
 	int status = 0;
 	if (LuaString.length() == 0)
@@ -3380,8 +2651,7 @@ void CEventSystem::luaThread(lua_State *lua_state, const std::string &filename)
 
 	if (scriptTrue)
 	{
-		if (m_sql.m_bLogEventScriptTrigger)
-			_log.Log(LOG_STATUS, "EventSystem: Script event triggered: %s", filename.c_str());
+		_log.Log(LOG_STATUS, "EventSystem: Script event triggered: %s", filename.c_str());
 	}
 
 	lua_close(lua_state);
@@ -3402,7 +2672,6 @@ void CEventSystem::luaStop(lua_State *L, lua_Debug *ar)
 
 bool CEventSystem::iterateLuaTable(lua_State *lua_state, const int tIndex, const std::string &filename)
 {
-	CdzVents* dzvents = CdzVents::GetInstance();
 	bool scriptTrue = false;
 	lua_pushnil(lua_state); // first key
 	while (lua_next(lua_state, tIndex) != 0)
@@ -3414,10 +2683,6 @@ bool CEventSystem::iterateLuaTable(lua_State *lua_state, const int tIndex, const
 		else if ((std::string(luaL_typename(lua_state, -2)) == "number") && lua_istable(lua_state, -1))
 		{
 			scriptTrue = iterateLuaTable(lua_state, tIndex + 2, filename);
-		}
-		else if (!m_sql.m_bDisableDzVentsSystem && lua_istable(lua_state, -1) && std::string(luaL_typename(lua_state, -2)) == "string")
-		{
-			scriptTrue = dzvents->processLuaCommand(lua_state, filename, tIndex);
 		}
 		else
 		{
@@ -3495,28 +2760,6 @@ bool CEventSystem::processLuaCommand(lua_State *lua_state, const std::string &fi
 		m_sql.AddTaskItem(_tTaskItem::SendSMS(1, luaString));
 		scriptTrue = true;
 	}
-	else if (lCommand == "TriggerIFTTT")
-	{
-		std::string luaString = lua_tostring(lua_state, -1);
-		std::vector<std::string> aParam;
-		StringSplit(luaString, "#", aParam);
-		if ((aParam.empty()) || (aParam.size() > 4))
-		{
-			//Invalid
-			_log.Log(LOG_ERROR, "EventSystem: TriggerIFTTT, not enough parameters!");
-			return false;
-		}
-		std::string sID = ParseBlocklyString(aParam[0]);
-		std::string sValue1, sValue2, sValue3;
-		if (aParam.size() > 1)
-			sValue1 = ParseBlocklyString(aParam[1]);
-		if (aParam.size() > 2)
-			sValue2 = ParseBlocklyString(aParam[2]);
-		if (aParam.size() > 3)
-			sValue3 = ParseBlocklyString(aParam[3]);
-		m_sql.AddTaskItem(_tTaskItem::SendIFTTTTrigger(1, sID, sValue1, sValue2, sValue3));
-		scriptTrue = true;
-	}
 	else if (lCommand == "OpenURL")
 	{
 		std::string luaString = lua_tostring(lua_state, -1);
@@ -3547,39 +2790,6 @@ bool CEventSystem::processLuaCommand(lua_State *lua_state, const std::string &fi
 
 		m_mainworker.UpdateDevice(idx, nValue, sValue, 12, 255, false);
 		scriptTrue = true;
-	}
-	else if (lCommand.find("Variable:") == 0)
-	{
-		std::string variableName = lCommand.substr(9);
-		std::string variableValue = lua_tostring(lua_state, -1);
-
-		std::vector<std::vector<std::string> > result;
-
-		_tActionParseResults parseResult;
-		parseResult.fAfterSec = 0;
-		ParseActionString(variableValue, parseResult);
-
-		result = m_sql.safe_query("SELECT ID, ValueType FROM UserVariables WHERE (Name == '%q')", variableName.c_str());
-		if (!result.empty())
-		{
-			std::vector<std::string> sd = result[0];
-			variableValue = ProcessVariableArgument(parseResult.sCommand);
-
-			if (parseResult.fAfterSec < (1. / timer_resolution_hz / 2))
-			{
-				std::string errorMessage;
-				if (!m_sql.UpdateUserVariable(sd[0], variableName, (const _eUsrVariableType)atoi(sd[1].c_str()), variableValue, false, errorMessage))
-				{
-					_log.Log(LOG_ERROR, "EventSystem: Error updating variable %s: %s", variableName.c_str(), errorMessage.c_str());
-				}
-			}
-			else
-			{
-				uint64_t idx = std::stoull(sd[0]);
-				m_sql.AddTaskItem(_tTaskItem::SetVariable(parseResult.fAfterSec, idx, variableValue, false));
-			}
-			scriptTrue = true;
-		}
 	}
 	else if (lCommand.find("SetSetPoint:") == 0)
 	{
@@ -3649,20 +2859,10 @@ bool CEventSystem::CustomCommand(const uint64_t idx, const std::string &sCommand
 
 void CEventSystem::OpenURL(const float delay, const std::string &URL)
 {
-	if (m_sql.m_bEnableEventSystemFullURLLog)
-	{
-		if (!delay)
-			_log.Log(LOG_STATUS, "EventSystem: Fetching URL %s...", URL.c_str());
-		else
-			_log.Log(LOG_STATUS, "EventSystem: Fetching URL %s after %.1f seconds...", URL.c_str(), delay);
-	}
+	if (!delay)
+		_log.Log(LOG_STATUS, "EventSystem: Fetching URL %s...", URL.c_str());
 	else
-	{
-		if (!delay)
-			_log.Log(LOG_STATUS, "EventSystem: Opening a URL...");
-		else
-			_log.Log(LOG_STATUS, "EventSystem: Opening a URL after %.1f seconds...", delay);
-	}
+		_log.Log(LOG_STATUS, "EventSystem: Fetching URL %s after %.1f seconds...", URL.c_str(), delay);
 
 	m_sql.AddTaskItem(_tTaskItem::GetHTTPPage(delay, URL, "OpenURL"));
 	// maybe do something with sResult in the future.
@@ -3672,7 +2872,7 @@ void CEventSystem::WriteToLog(const std::string &devNameNoQuotes, const std::str
 {
 	if (devNameNoQuotes == "WriteToLogText")
 	{
-		_log.Log(LOG_STATUS, "%s", ParseBlocklyString(doWhat).c_str());
+		_log.Log(LOG_STATUS, "%s", doWhat.c_str());
 	}
 	else if (devNameNoQuotes == "WriteToLogUserVariable")
 	{
@@ -3714,27 +2914,6 @@ bool CEventSystem::ScheduleEvent(std::string deviceName, const std::string &Acti
 		}
 		deviceName = deviceName.substr(6);
 	}
-	else if (deviceName.find("SendCamera:") == 0)
-	{
-		deviceName = deviceName.substr(11);
-		result = m_sql.safe_query("SELECT Name FROM Cameras WHERE (ID == '%q')", deviceName.c_str());
-		if (result.empty())
-			return false;
-
-		_tActionParseResults parseResult;
-		parseResult.fAfterSec = 0;
-		ParseActionString(Action, parseResult);
-		StripQuotes(parseResult.sCommand);
-
-		std::string subject = parseResult.sCommand;
-		if (parseResult.fAfterSec < (1. / timer_resolution_hz / 2))
-		{
-			m_mainworker.m_cameras.EmailCameraSnapshot(deviceName, subject);
-		}
-		else
-			m_sql.AddTaskItem(_tTaskItem::EmailCameraSnapshot(parseResult.fAfterSec, deviceName, subject));
-		return true;
-	}
 
 	if (isScene) {
 		result = m_sql.safe_query("SELECT ID FROM Scenes WHERE (Name == '%q')",
@@ -3775,62 +2954,6 @@ bool CEventSystem::ScheduleEvent(int deviceID, const std::string &Action, bool i
 	else if (oParseResults.sCommand.substr(0, 10) == "Set Volume") {
 		level = atoi(oParseResults.sCommand.substr(11).c_str());
 		oParseResults.sCommand = oParseResults.sCommand.substr(0, 10);
-	}
-	else if (oParseResults.sCommand.substr(0, 13) == "Play Playlist") {
-		std::string	sParams = oParseResults.sCommand.substr(14);
-
-		CDomoticzHardwareBase *pBaseHardware = m_mainworker.GetHardwareByType(HTYPE_Kodi);
-		if (pBaseHardware != NULL)
-		{
-			CKodi			*pHardware = reinterpret_cast<CKodi*>(pBaseHardware);
-			std::string		sPlayList = sParams;
-			size_t			iLastSpace = sParams.find_last_of(' ', sParams.length());
-
-			if (iLastSpace != std::string::npos)
-			{
-				sPlayList = sParams.substr(0, iLastSpace);
-				level = atoi(sParams.substr(iLastSpace).c_str());
-			}
-			if (!pHardware->SetPlaylist(deviceID, sPlayList.c_str()))
-			{
-				pBaseHardware = NULL; // Kodi hardware exists, but the device for the event is not a Kodi
-			}
-		}
-
-		if (pBaseHardware == NULL)  // if not handled try Logitech
-		{
-			pBaseHardware = m_mainworker.GetHardwareByType(HTYPE_LogitechMediaServer);
-			if (pBaseHardware == NULL) return false;
-			CLogitechMediaServer *pHardware = reinterpret_cast<CLogitechMediaServer*>(pBaseHardware);
-
-			int iPlaylistID = pHardware->GetPlaylistRefID(oParseResults.sCommand.substr(14).c_str());
-			if (iPlaylistID == 0) return false;
-
-			level = iPlaylistID;
-		}
-		oParseResults.sCommand = oParseResults.sCommand.substr(0, 13);
-	}
-	else if (oParseResults.sCommand.substr(0, 14) == "Play Favorites") {
-		std::string	sParams = oParseResults.sCommand.substr(15);
-		CDomoticzHardwareBase *pBaseHardware = m_mainworker.GetHardwareByType(HTYPE_Kodi);
-		if (pBaseHardware != NULL)
-		{
-			CKodi			*pHardware = reinterpret_cast<CKodi*>(pBaseHardware);
-			if (sParams.length() > 0)
-			{
-				level = atoi(sParams.c_str());
-			}
-		}
-		oParseResults.sCommand = oParseResults.sCommand.substr(0, 14);
-	}
-	else if (oParseResults.sCommand.substr(0, 7) == "Execute") {
-		std::string	sParams = oParseResults.sCommand.substr(8);
-		CDomoticzHardwareBase *pBaseHardware = m_mainworker.GetHardwareByType(HTYPE_Kodi);
-		if (pBaseHardware != NULL)
-		{
-			CKodi	*pHardware = reinterpret_cast<CKodi*>(pBaseHardware);
-			pHardware->SetExecuteCommand(deviceID, sParams);
-		}
 	}
 
 	if (previousState.substr(0, 9) == "Set Level" || previousState.substr(0, 5) == "Level") {

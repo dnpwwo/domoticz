@@ -130,32 +130,6 @@ namespace http {
 			 }
 		}
 
-		//JSon
-		void CWebServerHelper::	GetJSonDevices(
-			Json::Value &root,
-			const std::string &rused,
-			const std::string &rfilter,
-			const std::string &order,
-			const std::string &rowid,
-			const std::string &planID,
-			const std::string &floorID,
-			const bool bDisplayHidden,
-			const bool bDisplayDisabled,
-			const bool bFetchFavorites,
-			const time_t LastUpdate,
-			const std::string &username,
-			const std::string &hardwareid) // OTO
-		{
-			if (plainServer_) { // assert
-				plainServer_->GetJSonDevices(root, rused, rfilter, order, rowid, planID, floorID, bDisplayHidden, bDisplayDisabled, bFetchFavorites, LastUpdate, username, hardwareid);
-			}
-#ifdef WWW_ENABLE_SSL
-			else if (secureServer_) {
-				secureServer_->GetJSonDevices(root, rused, rfilter, order, rowid, planID, floorID, bDisplayHidden, bDisplayDisabled, bFetchFavorites, LastUpdate, username, hardwareid);
-			}
-#endif
-		}
-
 		void CWebServerHelper::ReloadCustomSwitchIcons()
 		{
 			for (server_iterator it = serverCollection.begin(); it != serverCollection.end(); ++it) {

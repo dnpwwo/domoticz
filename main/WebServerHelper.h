@@ -31,21 +31,6 @@ namespace http {
 			void SetWebTheme(const std::string &themename);
 			void SetWebRoot(const std::string &webRoot);
 			void ClearUserPasswords();
-			// called from OTGWBase()
-			void GetJSonDevices(
-				Json::Value &root,
-				const std::string &rused,
-				const std::string &rfilter,
-				const std::string &order,
-				const std::string &rowid,
-				const std::string &planID,
-				const std::string &floorID,
-				const bool bDisplayHidden,
-				const bool bDisplayDisabled,
-				const bool bFetchFavorites,
-				const time_t LastUpdate,
-				const std::string &username,
-				const std::string &hardwareid = "");
 			// called from CSQLHelper
 			void ReloadCustomSwitchIcons();
 			std::string our_listener_port;

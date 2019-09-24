@@ -22,7 +22,6 @@ extern "C" {
 
 class CEventSystem : public CLuaCommon, StoppableTask
 {
-	friend class CdzVents;
 	friend class CLuaHandler;
 	typedef struct lua_State lua_State;
 
@@ -205,8 +204,6 @@ private:
 	std::string UpdateSingleState(const uint64_t ulDevID, const std::string &devname, const int nValue, const char* sValue, const unsigned char devType, const unsigned char subType, const _eSwitchType switchType, const std::string &lastUpdate, const unsigned char lastLevel, const std::map<std::string, std::string> & options);
 	void EvaluateEvent(const std::vector<_tEventQueue> &items);
 	void EvaluateDatabaseEvents(const _tEventQueue &item);
-	lua_State *ParseBlocklyLua(lua_State *lua_state, const _tEventItem &item);
-	bool parseBlocklyActions(const _tEventItem &item);
 	std::string ProcessVariableArgument(const std::string &Argument);
 #ifdef ENABLE_PYTHON
 	std::string m_python_Dir;
@@ -222,9 +219,6 @@ private:
 	void WriteToLog(const std::string &devNameNoQuotes, const std::string &doWhat);
 	bool ScheduleEvent(int deviceID, const std::string &Action, bool isScene, const std::string &eventName, int sceneType);
 	bool ScheduleEvent(std::string ID, const std::string &Action, const std::string &eventName);
-	lua_State *CreateBlocklyLuaState();
-
-	std::string ParseBlocklyString(const std::string &oString);
 	void ParseActionString( const std::string &oAction_, _tActionParseResults &oResults_ );
 	void UpdateJsonMap(_tDeviceStatus &item, const uint64_t ulDevID);
 	void EventQueueThread();
