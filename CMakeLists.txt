@@ -93,27 +93,6 @@ ELSE(USE_BUILTIN_LUA)
   ENDIF(LUA_FOUND)
 ENDIF(USE_BUILTIN_LUA)
 
-option(USE_BUILTIN_MQTT "Use builtin Mosquitto library" YES)
-IF(USE_BUILTIN_MQTT)
-  message(STATUS "Using builtin Mosquitto library")
-  add_subdirectory (MQTT)
-  get_directory_property (MQTT_LIBRARIES DIRECTORY MQTT
-      DEFINITION MQTT_LIBRARIES)
-  add_definitions(-DBUILTIN_MQTT)
-ELSE(USE_BUILTIN_MQTT)
-  find_path(MQTT_INCLUDE_DIRS NAMES mosquittopp.h)
-  IF(MQTT_INCLUDE_DIRS)
-    message(STATUS "Found mosquittopp.h at: ${MQTT_INCLUDE_DIRS}")
-    find_library(MQTT_LIBRARIES NAMES libmosquittopp.so)
-    IF(MQTT_LIBRARIES)
-      message(STATUS "Found libmosquittopp at: ${MQTT_LIBRARIES}")
-    ENDIF(MQTT_LIBRARIES)
-    INCLUDE_DIRECTORIES(${MQTT_INCLUDE_DIRS})
-  ELSE(MQTT_INCLUDE_DIRS)
-     message(FATAL_ERROR "Mosquitto includes or library cannot be found, and you ask to NOT use builtin")
-  ENDIF(MQTT_INCLUDE_DIRS)
-ENDIF(USE_BUILTIN_MQTT)
-
 option(USE_BUILTIN_SQLITE "Use builtin sqlite library" YES)
 IF(USE_BUILTIN_SQLITE)
   add_subdirectory (sqlite)
@@ -130,7 +109,7 @@ ELSE(USE_BUILTIN_SQLITE)
   ENDIF(SQLite_FOUND)
 ENDIF(USE_BUILTIN_SQLITE)
 
-option(USE_PYTHON "Use Python for Plugins and Event-Scripts" YES)
+option(USE_PYTHON "Use Python for Plugins" YES)
 IF(USE_PYTHON)
   find_package(PythonInterp 3.4)
   find_package(PythonLibs 3.4)
@@ -168,28 +147,6 @@ IF(HAVE_EXECINFO_H)
 ENDIF(HAVE_EXECINFO_H)
 
 INCLUDE(CheckIncludeFiles)
-
-option(INCLUDE_LINUX_I2C "Include I2C support" YES)
-IF (INCLUDE_LINUX_I2C)
-	CHECK_INCLUDE_FILES ("sys/types.h;linux/i2c-dev.h;linux/i2c.h" HAVE_LINUX_I2C_H)
-	IF (HAVE_LINUX_I2C_H)
-		message(STATUS "Building with I2C support")
-		add_definitions(-DHAVE_LINUX_I2C)
-	ELSE()
-		message(WARNING "I2C support disabled: headers not found!")
-	ENDIF (HAVE_LINUX_I2C_H)
-ENDIF (INCLUDE_LINUX_I2C)
-
-option(INCLUDE_SPI "Include SPI support" YES)
-IF (INCLUDE_SPI)
-	CHECK_INCLUDE_FILES ("sys/types.h;linux/spi/spidev.h" HAVE_LINUX_SPI_H)
-	IF (HAVE_LINUX_SPI_H)
-		message(STATUS "Building with SPI support")
-		add_definitions(-DHAVE_LINUX_SPI)
-	ELSE()
-		message(WARNING "SPI support disabled: headers not found!")
-	ENDIF (HAVE_LINUX_SPI_H)
-ENDIF (INCLUDE_SPI)
 
 #set(CMAKE_EXE_LINKER_FLAGS "-static")
 
@@ -330,110 +287,22 @@ main/WebServer.cpp
 main/WebServerHelper.cpp
 main/WindCalculation.cpp
 push/BasePush.cpp
-push/FibaroPush.cpp
-push/GooglePubSubPush.cpp
-push/HttpPush.cpp
-push/InfluxPush.cpp
 push/WebsocketPush.cpp
 httpclient/HTTPClient.cpp
 httpclient/UrlEncode.cpp
 hardware/ASyncSerial.cpp
 hardware/ASyncTCP.cpp
-hardware/AtagOne.cpp
-hardware/BleBox.cpp
-hardware/Buienradar.cpp
-hardware/cayenne_lpp/CayenneLPP_Dec.cpp
-hardware/ColorSwitch.cpp
-hardware/Comm5Serial.cpp
-hardware/Comm5SMTCP.cpp
-hardware/Comm5TCP.cpp
 hardware/csocket.cpp
-hardware/CurrentCostMeterBase.cpp
-hardware/CurrentCostMeterSerial.cpp
-hardware/CurrentCostMeterTCP.cpp
-hardware/Daikin.cpp
-hardware/DarkSky.cpp
-hardware/DavisLoggerSerial.cpp
-hardware/DenkoviDevices.cpp
-hardware/DenkoviUSBDevices.cpp
-hardware/DenkoviTCPDevices.cpp
 hardware/DomoticzHardware.cpp
 hardware/DomoticzInternal.cpp
 hardware/DomoticzTCP.cpp
-hardware/Dummy.cpp
-hardware/HardwareMonitor.cpp
-hardware/HarmonyHub.cpp
-hardware/Honeywell.cpp
-hardware/HEOS.cpp
-hardware/I2C.cpp
-hardware/ICYThermostat.cpp
-hardware/InComfort.cpp
-hardware/KMTronicBase.cpp
-hardware/KMTronic433.cpp
-hardware/KMTronicSerial.cpp
-hardware/KMTronicTCP.cpp
-hardware/KMTronicUDP.cpp
-hardware/Kodi.cpp
-hardware/Limitless.cpp
-hardware/LogitechMediaServer.cpp
-hardware/Meteostick.cpp
-hardware/MochadTCP.cpp
-hardware/MQTT.cpp
-hardware/MultiFun.cpp
-hardware/HttpPoller.cpp
-hardware/OnkyoAVTCP.cpp
 hardware/OpenZWave.cpp
 hardware/openzwave/control_panel/ozwcp.cpp
 hardware/openzwave/control_panel/zwavelib.cpp
-hardware/OTGWBase.cpp
-hardware/OTGWSerial.cpp
-hardware/OTGWTCP.cpp
-hardware/PanasonicTV.cpp
 hardware/P1MeterBase.cpp
-hardware/P1MeterSerial.cpp
-hardware/P1MeterTCP.cpp
-hardware/PiFace.cpp
-hardware/Pinger.cpp
-hardware/PVOutput_Input.cpp
-hardware/RAVEn.cpp
-hardware/Rego6XXSerial.cpp
-hardware/RelayNet.cpp
-hardware/RFLinkBase.cpp
-hardware/RFLinkSerial.cpp
-hardware/RFLinkTCP.cpp
 hardware/RFXBase.cpp
-hardware/RFXComSerial.cpp
-hardware/RFXComTCP.cpp
-hardware/Rtl433.cpp
 hardware/serial/serial.cpp
 hardware/serial/impl/unix.cpp
-hardware/SolarEdgeAPI.cpp
-hardware/SolarMaxTCP.cpp
-hardware/Sterbox.cpp
-hardware/SysfsGpio.cpp
-hardware/Tado.cpp
-hardware/TCPProxy/tcpproxy_server.cpp
-hardware/TE923.cpp
-hardware/TE923Tool.cpp
-hardware/TeleinfoBase.cpp
-hardware/TeleinfoSerial.cpp
-hardware/Tellstick.cpp
-hardware/TellstickFactory.cpp
-hardware/Thermosmart.cpp
-hardware/ToonThermostat.cpp
-hardware/TTNMQTT.cpp
-hardware/USBtin.cpp
-hardware/USBtin_MultiblocV8.cpp
-hardware/VolcraftCO20.cpp
-hardware/Winddelen.cpp
-hardware/WOL.cpp
-hardware/Wunderground.cpp
-hardware/XiaomiGateway.cpp
-hardware/Yeelight.cpp
-hardware/YouLess.cpp
-hardware/ZiBlueBase.cpp
-hardware/ZiBlueSerial.cpp
-hardware/ZiBlueTCP.cpp
 hardware/ZWaveBase.cpp
 hardware/plugins/DelayedLink.cpp
 hardware/plugins/Plugins.cpp
@@ -443,20 +312,7 @@ hardware/plugins/PluginTransports.cpp
 hardware/plugins/PythonObjects.cpp
 notifications/NotificationBase.cpp
 notifications/NotificationBrowser.cpp
-notifications/NotificationEmail.cpp
-notifications/NotificationGCM.cpp
 notifications/NotificationHelper.cpp
-notifications/NotificationHTTP.cpp
-notifications/NotificationKodi.cpp
-notifications/NotificationLogitechMediaServer.cpp
-notifications/NotificationPushbullet.cpp
-notifications/NotificationProwl.cpp
-notifications/NotificationPushover.cpp
-notifications/NotificationPushsafer.cpp
-notifications/NotificationPushalot.cpp
-notifications/NotificationSMS.cpp
-notifications/NotificationTelegram.cpp
-smtpclient/SMTPClient.cpp
 tcpserver/TCPClient.cpp
 tcpserver/TCPServer.cpp
 webserver/Base64.cpp
@@ -656,27 +512,7 @@ ELSE()
 ENDIF(OpenZWave)
 
 
-IF(EXISTS /sys/class/gpio)
-  message(STATUS "GPIO is available")
-  add_definitions(-DWITH_GPIO)
-ELSE()
-  message(STATUS "GPIO is not available")
-ENDIF()
-
-
-find_path(TELLDUSCORE_INCLUDE NAMES telldus-core.h)
-if (TELLDUSCORE_INCLUDE)
-  message(STATUS "Found telldus-core (telldus-core.h) at : ${TELLDUSCORE_INCLUDE}")
-  find_library(TELLDUS_LIBRARIES NAMES libtelldus-core.so)
-  if(TELLDUS_LIBRARIES)
-    message(STATUS "Found libtelldus-core at : ${TELLDUS_LIBRARIES}, adding telldus support")
-    add_definitions(-DWITH_TELLDUSCORE)
-  endif(TELLDUS_LIBRARIES)
-else()
-  message(STATUS "Not found telldus-core (telldus-core.h), not adding tellstick support")
-endif (TELLDUSCORE_INCLUDE)
-
-target_link_libraries(domoticz ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${MINIZIP_LIBRARIES} ${CURL_LIBRARIES} pthread ${LUA_LIBRARIES} ${MQTT_LIBRARIES} ${SQLite_LIBRARIES} ${CMAKE_DL_LIBS} ${TELLDUS_LIBRARIES})
+target_link_libraries(domoticz ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${MINIZIP_LIBRARIES} ${CURL_LIBRARIES} pthread ${LUA_LIBRARIES} ${SQLite_LIBRARIES} ${CMAKE_DL_LIBS})
 
 IF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   target_link_libraries(domoticz -lresolv)
