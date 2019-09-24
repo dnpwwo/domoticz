@@ -294,7 +294,7 @@ bool CRFXBase::SetRFXCOMHardwaremodes(const unsigned char Mode1, const unsigned 
 	Response.ICMND.msg6 = Mode6;
 	if (!WriteToHardware((const char*)&Response, sizeof(Response.ICMND)))
 		return false;
-	m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&Response, NULL, -1);
+	//m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&Response, NULL, -1);
 	//Save it also
 	SendCommand(cmdSAVE);
 

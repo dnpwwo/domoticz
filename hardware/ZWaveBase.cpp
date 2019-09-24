@@ -227,7 +227,7 @@ void ZWaveBase::SendSwitchIfNotExists(const _tZWaveDevice* pDevice)
 		lcmd.command = Color_LedOff;
 		lcmd.subtype = SubType;
 		lcmd.value = 0;
-		m_mainworker.PushAndWaitRxMessage(this, (const unsigned char*)& lcmd, pDevice->label.c_str(), pDevice->batValue);
+		//m_mainworker.PushAndWaitRxMessage(this, (const unsigned char*)& lcmd, pDevice->label.c_str(), pDevice->batValue);
 	}
 	else
 	{
@@ -266,7 +266,7 @@ void ZWaveBase::SendSwitchIfNotExists(const _tZWaveDevice* pDevice)
 		// Update the lcmd with the correct level value.
 		gswitch.level = level;
 
-		m_mainworker.PushAndWaitRxMessage(this, (const unsigned char*)& gswitch, pDevice->label.c_str(), pDevice->batValue);
+		//m_mainworker.PushAndWaitRxMessage(this, (const unsigned char*)& gswitch, pDevice->label.c_str(), pDevice->batValue);
 	}
 
 	//Set SwitchType
@@ -430,13 +430,13 @@ void ZWaveBase::SendDevice2Domoticz(const _tZWaveDevice* pDevice)
 		{
 			if (pEnergyDevice->bValidValue)
 			{
-				SendKwhMeter(pEnergyDevice->nodeID, pEnergyDevice->instanceID, BatLevel, pDevice->floatValue, pEnergyDevice->floatValue / pEnergyDevice->scaleMultiply, "kWh Meter");
+				//SendKwhMeter(pEnergyDevice->nodeID, pEnergyDevice->instanceID, BatLevel, pDevice->floatValue, pEnergyDevice->floatValue / pEnergyDevice->scaleMultiply, "kWh Meter");
 			}
 		}
 		else
 		{
 			//No kWh meter, send as normal Power device
-			SendWattMeter(pDevice->nodeID, pDevice->instanceID, BatLevel, pDevice->floatValue, "Power Meter");
+			//SendWattMeter(pDevice->nodeID, pDevice->instanceID, BatLevel, pDevice->floatValue, "Power Meter");
 		}
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_POWERENERGYMETER)
@@ -479,21 +479,21 @@ void ZWaveBase::SendDevice2Domoticz(const _tZWaveDevice* pDevice)
 		}
 		if (bHaveValidPowerDevice)
 		{
-			SendKwhMeter(pDevice->nodeID, pDevice->instanceID, BatLevel, pPowerDevice->floatValue, pDevice->floatValue / pDevice->scaleMultiply, "kWh Meter");
+			//SendKwhMeter(pDevice->nodeID, pDevice->instanceID, BatLevel, pPowerDevice->floatValue, pDevice->floatValue / pDevice->scaleMultiply, "kWh Meter");
 		}
 		else
 		{
-			SendKwhMeter(pDevice->nodeID, pDevice->instanceID, BatLevel, 0, pDevice->floatValue / pDevice->scaleMultiply, "kWh Meter");
+			//SendKwhMeter(pDevice->nodeID, pDevice->instanceID, BatLevel, 0, pDevice->floatValue / pDevice->scaleMultiply, "kWh Meter");
 		}
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_VOLTAGE)
 	{
 		int sid = (int)(ID1 << 24) | (ID2 << 16) | (ID3 << 8) | ID4;
-		SendVoltageSensor(0, sid, BatLevel, pDevice->floatValue, "Voltage");
+		//SendVoltageSensor(0, sid, BatLevel, pDevice->floatValue, "Voltage");
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_PERCENTAGE)
 	{
-		SendPercentageSensor((int)(ID1 << 24) | (ID2 << 16) | (ID3 << 8) | ID4, 0, BatLevel, pDevice->floatValue, "Percentage");
+		//SendPercentageSensor((int)(ID1 << 24) | (ID2 << 16) | (ID3 << 8) | ID4, 0, BatLevel, pDevice->floatValue, "Percentage");
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_AMPERE)
 	{
@@ -518,7 +518,7 @@ void ZWaveBase::SendDevice2Domoticz(const _tZWaveDevice* pDevice)
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_UV)
 	{
-		SendUVSensor(ID3, ID4, BatLevel, pDevice->floatValue, "UV");
+		//SendUVSensor(ID3, ID4, BatLevel, pDevice->floatValue, "UV");
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_TEMPERATURE)
 	{
@@ -533,12 +533,12 @@ void ZWaveBase::SendDevice2Domoticz(const _tZWaveDevice* pDevice)
 			if (!pHumDevice->bValidValue)
 				return;
 			uint16_t NodeID = (ID3 << 8) | ID4;
-			SendTempHumSensor(NodeID, BatLevel, pDevice->floatValue, pHumDevice->intvalue, "TempHum");
+			//SendTempHumSensor(NodeID, BatLevel, pDevice->floatValue, pHumDevice->intvalue, "TempHum");
 		}
 		else
 		{
 			uint16_t NodeID = (ID3 << 8) | ID4;
-			SendTempSensor(NodeID, BatLevel, pDevice->floatValue, "Temperature");
+			//SendTempSensor(NodeID, BatLevel, pDevice->floatValue, "Temperature");
 		}
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_HUMIDITY)
@@ -561,12 +561,12 @@ void ZWaveBase::SendDevice2Domoticz(const _tZWaveDevice* pDevice)
 			ID4 = pTempDevice->instanceID;
 
 			uint16_t NodeID = (ID3 << 8) | ID4;
-			SendTempHumSensor(NodeID, BatLevel, pTempDevice->floatValue, pDevice->intvalue, "TempHum");
+			//SendTempHumSensor(NodeID, BatLevel, pTempDevice->floatValue, pDevice->intvalue, "TempHum");
 		}
 		else
 		{
 			uint16_t NodeID = (ID3 << 8) | ID4;
-			SendHumiditySensor(NodeID, BatLevel, pDevice->intvalue, "Humidity");
+			//SendHumiditySensor(NodeID, BatLevel, pDevice->intvalue, "Humidity");
 		}
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_VELOCITY)
@@ -644,7 +644,7 @@ void ZWaveBase::SendDevice2Domoticz(const _tZWaveDevice* pDevice)
 			}
 			else if (pressure >= 1029)
 				nforecast = wsbaroforcast_sunny;
-			SendTempHumBaroSensorFloat(pDevice->nodeID, BatLevel, pTempDevice->floatValue, pHumDevice->intvalue, pDevice->floatValue, nforecast, "TempHumBaro");
+			//SendTempHumBaroSensorFloat(pDevice->nodeID, BatLevel, pTempDevice->floatValue, pHumDevice->intvalue, pDevice->floatValue, nforecast, "TempHumBaro");
 		}
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_LIGHT)
@@ -671,22 +671,22 @@ void ZWaveBase::SendDevice2Domoticz(const _tZWaveDevice* pDevice)
 	else if (pDevice->devType == ZDTYPE_SENSOR_WATER)
 	{
 		uint16_t NodeID = (ID3 << 8) | ID4;
-		SendRainSensor(NodeID, BatLevel, pDevice->floatValue * 1000.0f, "Water");
+		//SendRainSensor(NodeID, BatLevel, pDevice->floatValue * 1000.0f, "Water");
 		//SendMeterSensor(ID3, ID4, BatLevel, pDevice->floatValue,"Water");
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_CO2)
 	{
-		SendAirQualitySensor(ID3, (uint8_t)pDevice->orgInstanceID, BatLevel, int(pDevice->floatValue), "CO2 Sensor");
+		//SendAirQualitySensor(ID3, (uint8_t)pDevice->orgInstanceID, BatLevel, int(pDevice->floatValue), "CO2 Sensor");
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_MOISTURE)
 	{
 		//uint16_t NodeID = (ID3 << 8) | ID4;
-		SendPercentageSensor((int)(ID1 << 24) | (ID2 << 16) | (ID3 << 8) | ID4, 0, BatLevel, pDevice->floatValue, "Moisture");
+		//SendPercentageSensor((int)(ID1 << 24) | (ID2 << 16) | (ID3 << 8) | ID4, 0, BatLevel, pDevice->floatValue, "Moisture");
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_TANK_CAPACITY)
 	{
 		//uint16_t NodeID = (ID3 << 8) | ID4;
-		SendCustomSensor(ID3, ID4, BatLevel, pDevice->floatValue, "Tank Capacity", "l");
+		//SendCustomSensor(ID3, ID4, BatLevel, pDevice->floatValue, "Tank Capacity", "l");
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_SETPOINT)
 	{
@@ -750,7 +750,7 @@ void ZWaveBase::SendDevice2Domoticz(const _tZWaveDevice* pDevice)
 	}
 	else if (pDevice->devType == ZDTYPE_SENSOR_CUSTOM)
 	{
-		SendCustomSensor(ID3, ID4, BatLevel, pDevice->floatValue, pDevice->label, pDevice->custom_label);
+		//SendCustomSensor(ID3, ID4, BatLevel, pDevice->floatValue, pDevice->label, pDevice->custom_label);
 	}
 }
 

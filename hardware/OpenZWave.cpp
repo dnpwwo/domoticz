@@ -1510,8 +1510,8 @@ void COpenZWave::AddValue(NodeInfo* pNode, const OpenZWave::ValueID& vID)
 {
 	if (m_pManager == NULL)
 		return;
-	if (!m_pManager->IsValueValid(vID))
-		return;
+//	if (!m_pManager->IsValueValid(vID))
+//		return;
 
 	if (m_controllerID == 0)
 		return;
@@ -2360,8 +2360,8 @@ void COpenZWave::UpdateNodeEvent(const OpenZWave::ValueID& vID, int EventID)
 {
 	if (m_pManager == NULL)
 		return;
-	if (!m_pManager->IsValueValid(vID))
-		return;
+//	if (!m_pManager->IsValueValid(vID))
+//		return;
 
 	if (m_controllerID == 0)
 		return;
@@ -2442,8 +2442,8 @@ void COpenZWave::UpdateValue(NodeInfo* pNode, const OpenZWave::ValueID& vID)
 {
 	if (m_pManager == NULL)
 		return;
-	if (!m_pManager->IsValueValid(vID))
-		return;
+//	if (!m_pManager->IsValueValid(vID))
+//		return;
 
 	if (m_controllerID == 0)
 		return;
@@ -2862,7 +2862,7 @@ void COpenZWave::UpdateValue(NodeInfo* pNode, const OpenZWave::ValueID& vID)
 					char szDeviceName[50];
 					sprintf(szDeviceName, "Alarm Type: 0x%02X", m_LastAlarmTypeReceived);
 					std::string tmpstr = szDeviceName;
-					SendSwitch(NodeID, m_LastAlarmTypeReceived, pDevice->batValue, (intValue != 0) ? true : false, 0, tmpstr);
+					//SendSwitch(NodeID, m_LastAlarmTypeReceived, pDevice->batValue, (intValue != 0) ? true : false, 0, tmpstr);
 					m_LastAlarmTypeReceived = -1;
 				}
 			}
@@ -2872,7 +2872,7 @@ void COpenZWave::UpdateValue(NodeInfo* pNode, const OpenZWave::ValueID& vID)
 				{
 					char szTmp[100];
 					sprintf(szTmp, "Alarm Type: %s %d (0x%02X)", vLabel.c_str(), vOrgIndex, vOrgIndex);
-					SendZWaveAlarmSensor(pDevice->nodeID, pDevice->instanceID, pDevice->batValue, (uint8_t)vOrgIndex, intListValue, szListValue, szTmp);
+					//SendZWaveAlarmSensor(pDevice->nodeID, pDevice->instanceID, pDevice->batValue, (uint8_t)vOrgIndex, intListValue, szListValue, szTmp);
 				}
 
 				if (vOrgIndex == ValueID_Index_Alarm::Type_Access_Control)

@@ -272,13 +272,13 @@ bool P1MeterBase::MatchLine()
 				m_lastUpdateTime = atime;
 				sDecodeRXMessage(this, (const unsigned char*)& m_power, "Power", 255);
 				if (m_voltagel1 != -1) {
-					SendVoltageSensor(0, 1, 255, m_voltagel1, "Voltage L1");
+					//SendVoltageSensor(0, 1, 255, m_voltagel1, "Voltage L1");
 				}
 				if (m_voltagel2 != -1) {
-					SendVoltageSensor(0, 2, 255, m_voltagel2, "Voltage L2");
+					//SendVoltageSensor(0, 2, 255, m_voltagel2, "Voltage L2");
 				}
 				if (m_voltagel3 != -1) {
-					SendVoltageSensor(0, 3, 255, m_voltagel3, "Voltage L3");
+					//SendVoltageSensor(0, 3, 255, m_voltagel3, "Voltage L3");
 				}
 				/* The ampere is rounded to whole numbers and therefor not accurate enough
 				//we could calculate this ourselfs I=P/U I1=(m_power.powerusage1/m_voltagel1)
@@ -287,23 +287,23 @@ bool P1MeterBase::MatchLine()
 				}
 				*/
 				if (m_powerusel1 != -1) {
-					SendWattMeter(0, 1, 255, m_powerusel1, "Usage L1");
+					//SendWattMeter(0, 1, 255, m_powerusel1, "Usage L1");
 				}
 				if (m_powerusel2 != -1) {
-					SendWattMeter(0, 2, 255, m_powerusel2, "Usage L2");
+					//SendWattMeter(0, 2, 255, m_powerusel2, "Usage L2");
 				}
 				if (m_powerusel3 != -1) {
-					SendWattMeter(0, 3, 255, m_powerusel3, "Usage L3");
+					//SendWattMeter(0, 3, 255, m_powerusel3, "Usage L3");
 				}
 
 				if (m_powerdell1 != -1) {
-					SendWattMeter(0, 4, 255, m_powerdell1, "Delivery L1");
+					//SendWattMeter(0, 4, 255, m_powerdell1, "Delivery L1");
 				}
 				if (m_powerdell2 != -1) {
-					SendWattMeter(0, 5, 255, m_powerdell2, "Delivery L2");
+					//SendWattMeter(0, 5, 255, m_powerdell2, "Delivery L2");
 				}
 				if (m_powerdell3 != -1) {
-					SendWattMeter(0, 6, 255, m_powerdell3, "Delivery L3");
+					//SendWattMeter(0, 6, 255, m_powerdell3, "Delivery L3");
 				}
 
 				if ((m_gas.gasusage > 0) && ((m_gas.gasusage != m_lastgasusage) || (difftime(atime, m_lastSharedSendGas) >= 300)))

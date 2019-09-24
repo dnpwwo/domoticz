@@ -866,14 +866,14 @@ namespace Plugins {
 			if (Name)
 			{
 				sName = Name;
-				m_sql.UpdateDeviceValue("Name", sName, sID);
+				//m_sql.UpdateDeviceValue("Name", sName, sID);
 			}
 
 			// Description change
 			if (Description)
 			{
 				std::string sDescription = Description;
-				m_sql.UpdateDeviceValue("Description", sDescription, sID);
+				//m_sql.UpdateDeviceValue("Description", sDescription, sID);
 			}
 
 			// TypeName change - actually derives new Type, SubType and SwitchType values
@@ -882,45 +882,45 @@ namespace Plugins {
 				maptypename(std::string(TypeName), iType, iSubType, iSwitchType, stdsValue, pOptionsDict, pOptionsDict);
 
 				// Reset nValue and sValue when changing device types
-				m_sql.UpdateDeviceValue("nValue", 0, sID);
-				m_sql.UpdateDeviceValue("sValue", stdsValue, sID);
+				//m_sql.UpdateDeviceValue("nValue", 0, sID);
+				//m_sql.UpdateDeviceValue("sValue", stdsValue, sID);
 			}
 
 			// Type change
 			if (iType != self->Type)
 			{
-				m_sql.UpdateDeviceValue("Type", iType, sID);
+				//m_sql.UpdateDeviceValue("Type", iType, sID);
 			}
 
 			// SubType change
 			if (iSubType != self->SubType)
 			{
-				m_sql.UpdateDeviceValue("SubType", iSubType, sID);
+				//m_sql.UpdateDeviceValue("SubType", iSubType, sID);
 			}
 
 			// SwitchType change
 			if (iSwitchType != self->SwitchType)
 			{
-				m_sql.UpdateDeviceValue("SwitchType", iSwitchType, sID);
+				//m_sql.UpdateDeviceValue("SwitchType", iSwitchType, sID);
 			}
 
 			// Image change
 			if (iImage != self->Image)
 			{
-				m_sql.UpdateDeviceValue("CustomImage", iImage, sID);
+				//m_sql.UpdateDeviceValue("CustomImage", iImage, sID);
 			}
 
 			// Used change
 			if (iUsed != self->Used)
 			{
-				m_sql.UpdateDeviceValue("Used", iUsed, sID);
+				//m_sql.UpdateDeviceValue("Used", iUsed, sID);
 			}
 
 			// Color change
 			if (Color)
 			{
 				std::string	sColor = _tColor(std::string(Color)).toJSONString(); //Parse the color to detect incorrectly formatted color data
-				m_sql.UpdateDeviceValue("Color", sColor, sID);
+				//m_sql.UpdateDeviceValue("Color", sColor, sID);
 			}
 
 			// Options provided, assume change
@@ -953,7 +953,7 @@ namespace Plugins {
 					time_t now = time(0);
 					struct tm ltime;
 					localtime_r(&now, &ltime);
-					m_sql.UpdateDeviceValue("Options", iUsed, sID);
+					//m_sql.UpdateDeviceValue("Options", iUsed, sID);
 					m_sql.safe_query("UPDATE DeviceStatus SET Options='%q', LastUpdate='%04d-%02d-%02d %02d:%02d:%02d' WHERE (HardwareID==%d) and (Unit==%d)",
 						sOptionValue.c_str(), ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday, ltime.tm_hour, ltime.tm_min, ltime.tm_sec, self->HwdID, self->Unit);
 				}
@@ -973,7 +973,7 @@ namespace Plugins {
 					_log.Log(LOG_NORM, "(%s) Updating device from %d:'%s' to have values %d:'%s'.", sName.c_str(), self->nValue, PyUnicode_AsUTF8(self->sValue), nValue, sValue);
 				}
 
-				DevRowIdx = m_sql.UpdateValue(self->HwdID, sDeviceID.c_str(), (const unsigned char)self->Unit, (const unsigned char)iType, (const unsigned char)iSubType, iSignalLevel, iBatteryLevel, nValue, sValue, sName, true);
+				//DevRowIdx = m_sql.UpdateValue(self->HwdID, sDeviceID.c_str(), (const unsigned char)self->Unit, (const unsigned char)iType, (const unsigned char)iSubType, iSignalLevel, iBatteryLevel, nValue, sValue, sName, true);
 
 				// if this is an internal Security Panel then there are some extra updates required if state has changed
 				if ((self->Type == pTypeSecurity1) && (self->SubType == sTypeDomoticzSecurity) && (self->nValue != nValue))
