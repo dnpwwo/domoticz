@@ -292,6 +292,7 @@ httpclient/HTTPClient.cpp
 httpclient/UrlEncode.cpp
 hardware/ASyncSerial.cpp
 hardware/ASyncTCP.cpp
+hardware/ColorSwitch.cpp
 hardware/csocket.cpp
 hardware/DomoticzHardware.cpp
 hardware/DomoticzInternal.cpp
