@@ -8,20 +8,7 @@
 #include "../hardware/DomoticzHardware.h"
 #include "../hardware/hardwaretypes.h"
 #include "NotificationHelper.h"
-#include "NotificationProwl.h"
-#include "NotificationPushbullet.h"
-#include "NotificationPushover.h"
-#include "NotificationPushsafer.h"
-#include "NotificationPushalot.h"
-#include "NotificationEmail.h"
-#include "NotificationTelegram.h"
-#include "NotificationSMS.h"
-#include "NotificationHTTP.h"
-#include "NotificationKodi.h"
-#include "NotificationLogitechMediaServer.h"
-#include "NotificationGCM.h"
 
-#include "NotificationBrowser.h"
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
@@ -39,20 +26,6 @@ CNotificationHelper::CNotificationHelper()
 	m_NotificationSensorInterval = 12 * 3600;
 
 	/* more notifiers can be added here */
-
-	AddNotifier(new CNotificationProwl());
-	AddNotifier(new CNotificationPushbullet());
-	AddNotifier(new CNotificationTelegram());
-	AddNotifier(new CNotificationPushover());
-	AddNotifier(new CNotificationPushsafer());
-	AddNotifier(new CNotificationPushalot());
-	AddNotifier(new CNotificationEmail());
-	AddNotifier(new CNotificationSMS());
-	AddNotifier(new CNotificationHTTP());
-	AddNotifier(new CNotificationKodi());
-	AddNotifier(new CNotificationLogitechMediaServer());
-	AddNotifier(new CNotificationGCM());
-	AddNotifier(new CNotificationBrowser());
 }
 
 CNotificationHelper::~CNotificationHelper()
@@ -527,13 +500,6 @@ bool CNotificationHelper::CheckAndHandleTempHumidityNotification(
 
 			if ((ntype == signtemp) && (bHaveTemp))
 			{
-				//temperature
-				if (m_sql.m_tempunit == TEMPUNIT_F)
-				{
-					//Convert to Celsius
-					svalue = static_cast<float>(ConvertToCelsius(svalue));
-				}
-
 				if (temp > 30.0) szExtraData += "Image=temp-gt-30|";
 				else if (temp > 25.0) szExtraData += "Image=temp-25-30|";
 				else if (temp > 20.0) szExtraData += "Image=temp-20-25|";
