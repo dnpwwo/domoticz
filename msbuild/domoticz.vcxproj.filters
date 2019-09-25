@@ -21,18 +21,6 @@
     <Filter Include="Windows">
       <UniqueIdentifier>{b2fc9567-e487-4cee-b23e-9f6002b503b9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="zlib">
-      <UniqueIdentifier>{96351f00-f848-4e75-84be-0bccaecc2a02}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="zip">
-      <UniqueIdentifier>{38a9cebe-efb0-4fc7-bcc1-86fe4704ceb1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="zip\Base">
-      <UniqueIdentifier>{213a4775-a8c1-4660-bbe9-bfc83ff11a0d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="zip\Main">
-      <UniqueIdentifier>{d94c51e7-f020-47eb-b458-27268f4853eb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="SQLite">
       <UniqueIdentifier>{63d66a0f-1455-45ce-8e5a-8678aafbe57a}</UniqueIdentifier>
     </Filter>
@@ -1120,15 +1108,6 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\RFXNames.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\RFXtrx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\Scheduler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\main\SQLHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1147,41 +1126,14 @@
     <ClInclude Include="Version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\GZipHelper.h">
-      <Filter>zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\zip\ioapi.h">
-      <Filter>zip\Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\zip\unzip.h">
-      <Filter>zip\Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\zip\zip.h">
-      <Filter>zip\Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\unzip_iterator.h">
-      <Filter>zip\Main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\unzip_stream.h">
-      <Filter>zip\Main</Filter>
-    </ClInclude>
     <ClInclude Include="..\sqlite\sqlite3.h">
       <Filter>SQLite</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\NefitEasy.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\tinyxpath\tinyxml.h">
       <Filter>XML</Filter>
     </ClInclude>
     <ClInclude Include="..\tinyxpath\xpath_processor.h">
       <Filter>XML</Filter>
-    </ClInclude>
-    <ClInclude Include="..\zip\iowin32.h">
-      <Filter>zip\Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\zip\minizip_crypt.h">
-      <Filter>zip\Base</Filter>
     </ClInclude>
     <ClInclude Include="..\main\Noncopyable.h">
       <Filter>Helpers</Filter>
@@ -1322,15 +1274,6 @@
     </ClCompile>
     <ClCompile Include="..\tinyxpath\tokenlist.cpp">
       <Filter>XML</Filter>
-    </ClCompile>
-    <ClCompile Include="..\zip\ioapi.c">
-      <Filter>zip\Base</Filter>
-    </ClCompile>
-    <ClCompile Include="..\zip\iowin32.c">
-      <Filter>zip\Base</Filter>
-    </ClCompile>
-    <ClCompile Include="..\zip\unzip.c">
-      <Filter>zip\Base</Filter>
     </ClCompile>
     <ClCompile Include="..\main\CmdLine.cpp">
       <Filter>Helpers</Filter>

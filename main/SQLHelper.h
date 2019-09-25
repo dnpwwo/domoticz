@@ -82,8 +82,6 @@ public:
 	void DeletePreferencesVar(const std::string &Key);
 	void AllowNewHardwareTimer(const int iTotMinutes);
 
-	bool InsertCustomIconFromZip(const std::string &szZip, std::string &ErrorMessage);
-	bool InsertCustomIconFromZipFile(const std::string & szZipFile, std::string & ErrorMessage);
 public:
 	bool		m_bAcceptNewHardware;
 	bool		m_bAllowWidgetOrdering;

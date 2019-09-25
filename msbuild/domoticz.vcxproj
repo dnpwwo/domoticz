@@ -434,28 +434,17 @@
     <ClInclude Include="..\hardware\DomoticzHardware.h" />
     <ClInclude Include="..\main\concurrent_queue.h" />
     <ClInclude Include="..\main\dirent_windows.h" />
-    <ClInclude Include="..\main\GZipHelper.h" />
     <ClInclude Include="..\main\HTMLSanitizer.h" />
     <ClInclude Include="..\main\localtime_r.h" />
     <ClInclude Include="..\main\Logger.h" />
     <ClInclude Include="..\main\mainstructs.h" />
     <ClInclude Include="..\main\Noncopyable.h" />
     <ClInclude Include="..\main\StoppableTask.h" />
-    <ClInclude Include="..\main\unzip_iterator.h" />
-    <ClInclude Include="..\main\unzip_stream.h" />
-    <ClInclude Include="..\zip\ioapi.h" />
-    <ClInclude Include="..\zip\iowin32.h" />
-    <ClInclude Include="..\zip\minizip_crypt.h" />
-    <ClInclude Include="..\zip\unzip.h" />
-    <ClInclude Include="..\zip\zip.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="..\main\Scheduler.h" />
     <ClInclude Include="..\main\SignalHandler.h" />
     <ClInclude Include="..\main\SQLHelper.h" />
     <ClInclude Include="..\main\Helper.h" />
     <ClInclude Include="..\main\mainworker.h" />
-    <ClInclude Include="..\main\RFXNames.h" />
-    <ClInclude Include="..\main\RFXtrx.h" />
     <ClInclude Include="Version.h" />
     <ClInclude Include="..\sqlite\sqlite3.h" />
     <ClInclude Include="..\tinyxpath\tinyxml.h" />
@@ -511,18 +500,6 @@
     <ClCompile Include="..\tinyxpath\xpath_static.cpp" />
     <ClCompile Include="..\tinyxpath\xpath_stream.cpp" />
     <ClCompile Include="..\tinyxpath\xpath_syntax.cpp" />
-    <ClCompile Include="..\zip\unzip.c">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\zip\iowin32.c">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\zip\ioapi.c">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="WindowsHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
