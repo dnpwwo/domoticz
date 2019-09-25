@@ -1,13 +1,7 @@
 #pragma once
 
 #include <boost/signals2.hpp>
-#include "../main/RFXNames.h"
 #include "../main/StoppableTask.h"
-// type support
-#include "../cereal/types/string.hpp"
-#include "../cereal/types/memory.hpp"
-// the archiver
-#include "../cereal/archives/portable_binary.hpp"
 
 enum _eLogLevel : uint32_t;
 enum _eDebugLevel : uint32_t;
@@ -41,7 +35,6 @@ public:
 	unsigned long m_DataTimeout = { 0 };
 	std::string m_Name;
 	std::string m_ShortName;
-	_eHardwareTypes HwdType;
 	unsigned char m_SeqNr = { 0 };
 	bool m_bEnableReceive = { false };
 	boost::signals2::signal<void(CDomoticzHardwareBase *pHardware, const unsigned char *pRXCommand, const char *defaultName, const int BatteryLevel)> sDecodeRXMessage;
