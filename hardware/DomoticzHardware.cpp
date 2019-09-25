@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include <stdarg.h>
 #include <iostream>
 #include "DomoticzHardware.h"
 #include "../main/Logger.h"
