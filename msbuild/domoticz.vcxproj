@@ -112,7 +112,6 @@
   <ItemGroup>
     <None Include="..\CMakeLists.txt" />
     <None Include="..\getsvn.cmake" />
-    <None Include="..\webserver\proxydef.def" />
     <None Include="..\www\app\AboutController.js" />
     <None Include="..\www\app\app.js" />
     <None Include="..\www\app\CamController.js" />
@@ -421,9 +420,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\hardware\ASyncSerial.h" />
-    <ClInclude Include="..\hardware\HardwareCereal.h" />
-    <ClInclude Include="..\hardware\OpenZWave.h" />
-    <ClInclude Include="..\hardware\openzwave\control_panel\ozwcp.h" />
     <ClInclude Include="..\hardware\plugins\DelayedLink.h" />
     <ClInclude Include="..\hardware\plugins\icmp_header.hpp" />
     <ClInclude Include="..\hardware\plugins\ipv4_header.hpp" />
@@ -433,45 +429,20 @@
     <ClInclude Include="..\hardware\plugins\Plugins.h" />
     <ClInclude Include="..\hardware\plugins\PluginTransports.h" />
     <ClInclude Include="..\hardware\plugins\PythonObjects.h" />
-    <ClInclude Include="..\hardware\serial\serial.h" />
-    <ClInclude Include="..\hardware\TCPProxy\tcpproxy_server.h" />
-    <ClInclude Include="..\hardware\ZWaveBase.h" />
-    <ClInclude Include="..\hardware\ZWaveCommands.h" />
-    <ClInclude Include="..\httpclient\HTTPClient.h" />
     <ClInclude Include="..\main\appversion.h" />
-    <ClInclude Include="..\main\BaroForecastCalculator.h" />
-    <ClInclude Include="..\main\Camera.h" />
     <ClInclude Include="..\main\CmdLine.h" />
-    <ClInclude Include="..\hardware\ColorSwitch.h" />
     <ClInclude Include="..\hardware\DomoticzHardware.h" />
-    <ClInclude Include="..\hardware\DomoticzTCP.h" />
-    <ClInclude Include="..\hardware\hardwaretypes.h" />
     <ClInclude Include="..\main\concurrent_queue.h" />
     <ClInclude Include="..\main\dirent_windows.h" />
-    <ClInclude Include="..\main\EventsPythonDevice.h" />
-    <ClInclude Include="..\main\EventsPythonModule.h" />
-    <ClInclude Include="..\main\EventSystem.h" />
     <ClInclude Include="..\main\GZipHelper.h" />
     <ClInclude Include="..\main\HTMLSanitizer.h" />
     <ClInclude Include="..\main\localtime_r.h" />
     <ClInclude Include="..\main\Logger.h" />
-    <ClInclude Include="..\main\LuaCommon.h" />
-    <ClInclude Include="..\main\LuaHandler.h" />
     <ClInclude Include="..\main\mainstructs.h" />
     <ClInclude Include="..\main\Noncopyable.h" />
     <ClInclude Include="..\main\StoppableTask.h" />
-    <ClInclude Include="..\main\TrendCalculator.h" />
     <ClInclude Include="..\main\unzip_iterator.h" />
     <ClInclude Include="..\main\unzip_stream.h" />
-    <ClInclude Include="..\main\WebServerHelper.h" />
-    <ClInclude Include="..\push\WebsocketPush.h" />
-    <ClInclude Include="..\push\BasePush.h" />
-    <ClInclude Include="..\webserver\fastcgi.hpp" />
-    <ClInclude Include="..\webserver\GZipHelper.h" />
-    <ClInclude Include="..\webserver\proxycereal.hpp" />
-    <ClInclude Include="..\webserver\proxyclient.h" />
-    <ClInclude Include="..\webserver\WebsocketHandler.h" />
-    <ClInclude Include="..\webserver\Websockets.hpp" />
     <ClInclude Include="..\zip\ioapi.h" />
     <ClInclude Include="..\zip\iowin32.h" />
     <ClInclude Include="..\zip\minizip_crypt.h" />
@@ -486,65 +457,27 @@
     <ClInclude Include="..\main\RFXNames.h" />
     <ClInclude Include="..\main\RFXtrx.h" />
     <ClInclude Include="Version.h" />
-    <ClInclude Include="..\main\WindCalculation.h" />
     <ClInclude Include="..\sqlite\sqlite3.h" />
     <ClInclude Include="..\tinyxpath\tinyxml.h" />
     <ClInclude Include="..\tinyxpath\xpath_processor.h" />
     <ClInclude Include="..\main\stdafx.h" />
     <ClInclude Include="..\main\SunRiseSet.h" />
-    <ClInclude Include="..\tcpserver\TCPClient.h" />
-    <ClInclude Include="..\tcpserver\TCPServer.h" />
-    <ClInclude Include="..\httpclient\UrlEncode.h" />
-    <ClInclude Include="..\main\WebServer.h" />
-    <ClInclude Include="..\webserver\Base64.h" />
-    <ClInclude Include="..\webserver\connection.hpp" />
-    <ClInclude Include="..\webserver\connection_manager.hpp" />
-    <ClInclude Include="..\webserver\cWebem.h" />
-    <ClInclude Include="..\webserver\header.hpp" />
-    <ClInclude Include="..\webserver\mime_types.hpp" />
-    <ClInclude Include="..\webserver\reply.hpp" />
-    <ClInclude Include="..\webserver\request.hpp" />
-    <ClInclude Include="..\webserver\request_handler.hpp" />
-    <ClInclude Include="..\webserver\request_parser.hpp" />
-    <ClInclude Include="..\webserver\server.hpp" />
-    <ClInclude Include="..\webserver\server_settings.hpp" />
-    <ClInclude Include="..\webserver\utf.hpp" />
     <ClInclude Include="WindowsHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\hardware\ASyncSerial.cpp" />
-    <ClCompile Include="..\hardware\ASyncTCP.cpp" />
-    <ClCompile Include="..\hardware\ColorSwitch.cpp" />
-    <ClCompile Include="..\hardware\OpenZWave.cpp" />
-    <ClCompile Include="..\hardware\openzwave\control_panel\ozwcp.cpp" />
-    <ClCompile Include="..\hardware\openzwave\control_panel\zwavelib.cpp" />
-    <ClCompile Include="..\hardware\P1MeterBase.cpp" />
+    <ClCompile Include="..\hardware\plugins\Base64.cpp" />
     <ClCompile Include="..\hardware\plugins\DelayedLink.cpp" />
     <ClCompile Include="..\hardware\plugins\PluginManager.cpp" />
     <ClCompile Include="..\hardware\plugins\PluginProtocols.cpp" />
     <ClCompile Include="..\hardware\plugins\Plugins.cpp" />
     <ClCompile Include="..\hardware\plugins\PluginTransports.cpp" />
     <ClCompile Include="..\hardware\plugins\PythonObjects.cpp" />
-    <ClCompile Include="..\hardware\RFXBase.cpp" />
-    <ClCompile Include="..\hardware\serial\impl\win.cpp" />
-    <ClCompile Include="..\hardware\serial\serial.cpp" />
-    <ClCompile Include="..\hardware\TCPProxy\tcpproxy_server.cpp" />
-    <ClCompile Include="..\hardware\ZWaveBase.cpp" />
-    <ClCompile Include="..\httpclient\HTTPClient.cpp" />
-    <ClCompile Include="..\main\BaroForecastCalculator.cpp" />
-    <ClCompile Include="..\main\Camera.cpp" />
     <ClCompile Include="..\main\CmdLine.cpp" />
     <ClCompile Include="..\hardware\DomoticzHardware.cpp" />
-    <ClCompile Include="..\hardware\DomoticzTCP.cpp" />
-    <ClCompile Include="..\main\EventsPythonDevice.cpp" />
-    <ClCompile Include="..\main\EventsPythonModule.cpp" />
-    <ClCompile Include="..\main\EventSystem.cpp" />
     <ClCompile Include="..\main\HTMLSanitizer.cpp" />
     <ClCompile Include="..\main\localtime_r.cpp" />
     <ClCompile Include="..\main\Logger.cpp" />
-    <ClCompile Include="..\main\LuaCommon.cpp" />
-    <ClCompile Include="..\main\LuaHandler.cpp" />
-    <ClCompile Include="..\main\Scheduler.cpp" />
     <ClCompile Include="..\main\SignalHandler.cpp" />
     <ClCompile Include="..\main\SQLHelper.cpp" />
     <ClCompile Include="..\main\Helper.cpp" />
@@ -553,28 +486,15 @@
     <ClCompile Include="..\json\json_writer.cpp" />
     <ClCompile Include="..\main\mainworker.cpp" />
     <ClCompile Include="..\main\domoticz.cpp" />
-    <ClCompile Include="..\main\RFXNames.cpp" />
     <ClCompile Include="..\main\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\main\SunRiseSet.cpp" />
-    <ClCompile Include="..\main\TrendCalculator.cpp" />
-    <ClCompile Include="..\main\WebServerHelper.cpp" />
-    <ClCompile Include="..\main\WindCalculation.cpp" />
-    <ClCompile Include="..\notifications\NotificationBase.cpp" />
-    <ClCompile Include="..\notifications\NotificationBrowser.cpp" />
-    <ClCompile Include="..\notifications\NotificationHelper.cpp" />
-    <ClCompile Include="..\push\WebsocketPush.cpp" />
-    <ClCompile Include="..\push\BasePush.cpp" />
     <ClCompile Include="..\sqlite\sqlite3.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\tcpserver\TCPClient.cpp" />
-    <ClCompile Include="..\tcpserver\TCPServer.cpp" />
-    <ClCompile Include="..\httpclient\UrlEncode.cpp" />
-    <ClCompile Include="..\main\WebServer.cpp" />
     <ClCompile Include="..\tinyxpath\action_store.cpp" />
     <ClCompile Include="..\tinyxpath\htmlutil.cpp" />
     <ClCompile Include="..\tinyxpath\lex_util.cpp" />
@@ -591,23 +511,6 @@
     <ClCompile Include="..\tinyxpath\xpath_static.cpp" />
     <ClCompile Include="..\tinyxpath\xpath_stream.cpp" />
     <ClCompile Include="..\tinyxpath\xpath_syntax.cpp" />
-    <ClCompile Include="..\webserver\Base64.cpp" />
-    <ClCompile Include="..\webserver\connection.cpp" />
-    <ClCompile Include="..\webserver\connection_manager.cpp" />
-    <ClCompile Include="..\webserver\cWebem.cpp" />
-    <ClCompile Include="..\webserver\fastcgi.cpp" />
-    <ClCompile Include="..\webserver\mime_types.cpp" />
-    <ClCompile Include="..\webserver\proxycereal.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\webserver\proxyclient.cpp" />
-    <ClCompile Include="..\webserver\reply.cpp" />
-    <ClCompile Include="..\webserver\request_handler.cpp" />
-    <ClCompile Include="..\webserver\request_parser.cpp" />
-    <ClCompile Include="..\webserver\server.cpp" />
-    <ClCompile Include="..\webserver\WebsocketHandler.cpp" />
-    <ClCompile Include="..\webserver\Websockets.cpp" />
     <ClCompile Include="..\zip\unzip.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -994,7 +897,6 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\History.txt" />
-    <Text Include="..\www\switch_icons.txt" />
     <Text Include="..\www\templates\readme.txt" />
   </ItemGroup>
   <ItemGroup>

@@ -300,7 +300,6 @@ hardware/DomoticzTCP.cpp
 hardware/OpenZWave.cpp
 hardware/openzwave/control_panel/ozwcp.cpp
 hardware/openzwave/control_panel/zwavelib.cpp
-hardware/P1MeterBase.cpp
 hardware/RFXBase.cpp
 hardware/serial/serial.cpp
 hardware/serial/impl/unix.cpp

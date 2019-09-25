@@ -19,8 +19,6 @@
 #include "../main/mainworker.h"
 #include "../main/localtime_r.h"
 
-#include "../../notifications/NotificationHelper.h"
-
 #define ADD_STRING_TO_DICT(pDict, key, value) \
 		{	\
 			PyObject*	pObj = Py_BuildValue("s", value.c_str());	\
@@ -1912,7 +1910,7 @@ Error:
 	{
 		return true;
 	}
-
+/*
 	void CPlugin::SendCommand(const int Unit, const std::string &command, const int level, const _tColor color)
 	{
 		//	Add command to message queue
@@ -1925,7 +1923,7 @@ Error:
 		//	Add command to message queue
 		MessagePlugin(new onCommandCallback(this, Unit, command, level));
 	}
-
+*/
 	bool CPlugin::HasNodeFailed(const int Unit)
 	{
 		if (!m_DeviceDict)	return true;
@@ -1951,15 +1949,14 @@ Error:
 		return false;
 	}
 
-
-	CPluginNotifier::CPluginNotifier(CPlugin* pPlugin, const std::string &NotifierName) : CNotificationBase(NotifierName, OPTIONS_NONE), m_pPlugin(pPlugin)
+	CPluginNotifier::CPluginNotifier(CPlugin* pPlugin, const std::string &NotifierName) //: CNotificationBase(NotifierName, OPTIONS_NONE), m_pPlugin(pPlugin)
 	{
-		m_notifications.AddNotifier(this);
+//		m_notifications.AddNotifier(this);
 	}
 
 	CPluginNotifier::~CPluginNotifier()
 	{
-		m_notifications.RemoveNotifier(this);
+//		m_notifications.RemoveNotifier(this);
 	}
 
 	bool CPluginNotifier::IsConfigured()
@@ -1967,219 +1964,11 @@ Error:
 		return true;
 	}
 
-	std::string CPluginNotifier::GetCustomIcon(std::string &szCustom)
-	{
-		int	iIconLine = atoi(szCustom.c_str());
-		std::string szRetVal = "Light48";
-		if (iIconLine < 100)  // default set of custom icons
-		{
-			std::string sLine = "";
-			std::ifstream infile;
-			std::string switchlightsfile = szWWWFolder + "/switch_icons.txt";
-			infile.open(switchlightsfile.c_str());
-			if (infile.is_open())
-			{
-				int index = 0;
-				while (!infile.eof())
-				{
-					getline(infile, sLine);
-					if ((sLine.size() != 0) && (index++ == iIconLine))
-					{
-						std::vector<std::string> results;
-						StringSplit(sLine, ";", results);
-						if (results.size() == 3)
-						{
-							szRetVal = results[0] + "48";
-							break;
-						}
-					}
-				}
-				infile.close();
-			}
-		}
-		else  // Uploaded icons
-		{
-			std::vector<std::vector<std::string> > result;
-			result = m_sql.safe_query("SELECT Base FROM CustomImages WHERE ID = %d", iIconLine - 100);
-			if (result.size() == 1)
-			{
-				std::string sBase = result[0][0];
-				return sBase;
-			}
-		}
-
-		return szRetVal;
-	}
-
-	std::string CPluginNotifier::GetIconFile(const std::string &ExtraData)
-	{
-		std::string	szImageFile;
-#ifdef WIN32
-		std::string	szImageFolder = szWWWFolder + "\\images\\";
-#else
-		std::string	szImageFolder = szWWWFolder + "/images/";
-#endif
-
-		std::string	szStatus = "Off";
-		int	posStatus = (int)ExtraData.find("|Status=");
-		if (posStatus >= 0)
-		{
-			posStatus += 8;
-			szStatus = ExtraData.substr(posStatus, ExtraData.find("|", posStatus) - posStatus);
-			if (szStatus != "Off") szStatus = "On";
-		}
-
-		// Use image is specified
-		int	posImage = (int)ExtraData.find("|Image=");
-		if (posImage >= 0)
-		{
-			posImage += 7;
-			szImageFile = szImageFolder + ExtraData.substr(posImage, ExtraData.find("|", posImage) - posImage) + ".png";
-			if (file_exist(szImageFile.c_str()))
-			{
-				return szImageFile;
-			}
-		}
-
-		// Use uploaded and custom images
-		int	posCustom = (int)ExtraData.find("|CustomImage=");
-		if (posCustom >= 0)
-		{
-			posCustom += 13;
-			std::string szCustom = ExtraData.substr(posCustom, ExtraData.find("|", posCustom) - posCustom);
-			int iCustom = atoi(szCustom.c_str());
-			if (iCustom)
-			{
-				szImageFile = szImageFolder + GetCustomIcon(szCustom) + "_" + szStatus + ".png";
-				if (file_exist(szImageFile.c_str()))
-				{
-					return szImageFile;
-				}
-				szImageFile = szImageFolder + GetCustomIcon(szCustom) + "48_" + szStatus + ".png";
-				if (file_exist(szImageFile.c_str()))
-				{
-					return szImageFile;
-				}
-				szImageFile = szImageFolder + GetCustomIcon(szCustom) + ".png";
-				if (file_exist(szImageFile.c_str()))
-				{
-					return szImageFile;
-				}
-			}
-		}
-
-		// if a switch type was supplied try and work out the image
-		int	posType = (int)ExtraData.find("|SwitchType=");
-		if (posType >= 0)
-		{
-			posType += 12;
-			std::string	szType = ExtraData.substr(posType, ExtraData.find("|", posType) - posType);
-			std::string	szTypeImage;
-			_eSwitchType switchtype = (_eSwitchType)atoi(szType.c_str());
-			switch (switchtype)
-			{
-			case STYPE_OnOff:
-				if (posCustom >= 0)
-				{
-					std::string szCustom = ExtraData.substr(posCustom, ExtraData.find("|", posCustom) - posCustom);
-					szTypeImage = GetCustomIcon(szCustom);
-				}
-				else 
-					szTypeImage = "Light48";
-				break;
-			case STYPE_Doorbell:
-				szTypeImage = "doorbell48";
-				break;
-			case STYPE_Contact:
-				szTypeImage = "Contact48";
-				break;
-			case STYPE_Blinds:
-			case STYPE_BlindsPercentage:
-			case STYPE_VenetianBlindsUS:
-			case STYPE_VenetianBlindsEU:
-			case STYPE_BlindsPercentageInverted:
-			case STYPE_BlindsInverted:
-				szTypeImage = "blinds48";
-				break;
-			case STYPE_X10Siren:
-				szTypeImage = "siren";
-				break;
-			case STYPE_SMOKEDETECTOR:
-				szTypeImage = "smoke48";
-				break;
-			case STYPE_Dimmer:
-				szTypeImage = "Dimmer48";
-				break;
-			case STYPE_Motion:
-				szTypeImage = "motion48";
-				break;
-			case STYPE_PushOn:
-				szTypeImage = "Push48";
-				break;
-			case STYPE_PushOff:
-				szTypeImage = "Push48";
-				break;
-			case STYPE_DoorContact:
-				szTypeImage = "Door48";
-				break;
-			case STYPE_DoorLock:
-				szTypeImage = "Door48";
-				break;
-			case STYPE_DoorLockInverted:
-				szTypeImage = "Door48";
-				break;
-			case STYPE_Media:
-				if (posCustom >= 0)
-				{
-					std::string szCustom = ExtraData.substr(posCustom, ExtraData.find("|", posCustom) - posCustom);
-					szTypeImage = GetCustomIcon(szCustom);
-				}
-				else
-					szTypeImage = "Media48";
-				break;
-			default:
-				szTypeImage = "logo";
-			}
-			szImageFile = szImageFolder + szTypeImage + "_" + szStatus + ".png";
-			if (file_exist(szImageFile.c_str()))
-			{
-				return szImageFile;
-			}
-
-			szImageFile = szImageFolder + szTypeImage + ((szStatus == "Off") ? "-off" : "-on") + ".png";
-			if (file_exist(szImageFile.c_str()))
-			{
-				return szImageFile;
-			}
-
-			szImageFile = szImageFolder + szTypeImage + ((szStatus == "Off") ? "off" : "on") + ".png";
-			if (file_exist(szImageFile.c_str()))
-			{
-				return szImageFile;
-			}
-
-			szImageFile = szImageFolder + szTypeImage + ".png";
-			if (file_exist(szImageFile.c_str()))
-			{
-				return szImageFile;
-			}
-		}
-
-		// Image of last resort is the logo
-		szImageFile = szImageFolder + "logo.png";
-		if (!file_exist(szImageFile.c_str()))
-		{
-			_log.Log(LOG_ERROR, "Logo image file does not exist: %s", szImageFile.c_str());
-			szImageFile = "";
-		}
-		return szImageFile;
-	}
-
 	bool CPluginNotifier::SendMessageImplementation(const uint64_t Idx, const std::string & Name, const std::string & Subject, const std::string & Text, const std::string & ExtraData, const int Priority, const std::string & Sound, const bool bFromNotification)
 	{
 		// ExtraData = |Name=Test|SwitchType=9|CustomImage=0|Status=On|
 
-		std::string	sIconFile = GetIconFile(ExtraData);
+		std::string	sIconFile = ""; // GetIconFile(ExtraData);
 		std::string	sName = "Unknown";
 		int	posName = (int)ExtraData.find("|Name=");
 		if (posName >= 0)

@@ -398,7 +398,7 @@ namespace Plugins {
 			//m_TLSSock->set_verify_callback(boost::bind(&CPluginTransportTCPSecure::VerifyCertificate, this, _1, _2));
 			try
 			{
-				m_TLSSock->handshake(ssl_socket::client);
+				m_TLSSock->handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client);
 
 				m_bConnected = true;
 				pPlugin->MessagePlugin(new onConnectCallback(pPlugin, m_pConnection, err.value(), err.message()));

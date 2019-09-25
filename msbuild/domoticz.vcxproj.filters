@@ -12,41 +12,17 @@
     <Filter Include="crosscompile">
       <UniqueIdentifier>{52d21c18-6d21-4d97-9a96-e7a3f33b1dd5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Webserver">
-      <UniqueIdentifier>{0636fc98-3ba6-4dc9-8323-48dc959944c4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="json">
       <UniqueIdentifier>{caed8300-c22a-4d76-9380-2b55120edaaa}</UniqueIdentifier>
     </Filter>
     <Filter Include="Devices">
       <UniqueIdentifier>{f1967572-afca-4c81-a06e-1eb4d560bb60}</UniqueIdentifier>
     </Filter>
-    <Filter Include="TCPServer">
-      <UniqueIdentifier>{7c74c4ee-c056-4e43-98a8-248084de2d02}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Devices\Domoticz">
-      <UniqueIdentifier>{222696d2-1c77-4abb-a483-83548f0b75d4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Windows">
       <UniqueIdentifier>{b2fc9567-e487-4cee-b23e-9f6002b503b9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="EventSystem">
-      <UniqueIdentifier>{2d51924f-03d7-4afb-8b48-329a7d18317c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Devices\ZWave">
-      <UniqueIdentifier>{8541fa16-1ca3-4b1c-8658-7075b91f73a8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Camera">
-      <UniqueIdentifier>{adaa661b-4aaf-443c-a368-2c2f384d9c1a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="zlib">
       <UniqueIdentifier>{96351f00-f848-4e75-84be-0bccaecc2a02}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="TCPProxy">
-      <UniqueIdentifier>{242d77c7-709a-4c87-8d92-a87a489af891}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="HTTPClient">
-      <UniqueIdentifier>{43e678ba-2229-48dc-8d72-a10a52186b82}</UniqueIdentifier>
     </Filter>
     <Filter Include="zip">
       <UniqueIdentifier>{38a9cebe-efb0-4fc7-bcc1-86fe4704ceb1}</UniqueIdentifier>
@@ -186,23 +162,11 @@
     <Filter Include="XML">
       <UniqueIdentifier>{19baf552-3c12-432c-bebe-8bb25fa327d0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Pushers">
-      <UniqueIdentifier>{b669cde0-9cf1-43ae-a5c0-5f01851e9b45}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Devices\ZWave\Control Panel">
-      <UniqueIdentifier>{2467c1b1-dd49-4842-9931-bb5a12d729e2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Pushers\Websocket">
-      <UniqueIdentifier>{ec8bbfd7-5375-4170-93dd-c470284d1512}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Helpers">
       <UniqueIdentifier>{28b4175c-7997-44b0-8cf5-a27fe0b661cc}</UniqueIdentifier>
     </Filter>
     <Filter Include="Logger">
       <UniqueIdentifier>{00a6f809-e840-406e-bb5e-4796d71ed4a4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="EventSystem\Lua">
-      <UniqueIdentifier>{330b5cf1-0528-4eaf-96b7-406823b99afe}</UniqueIdentifier>
     </Filter>
     <Filter Include="www\app\hardware">
       <UniqueIdentifier>{35489dbf-0ffd-4619-95f6-31966e23f1d7}</UniqueIdentifier>
@@ -215,9 +179,6 @@
     </Filter>
     <Filter Include="Devices\Plugins">
       <UniqueIdentifier>{badebd31-6786-449e-86f2-16d87ae055da}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Python">
-      <UniqueIdentifier>{5963621f-6d1b-49cd-9e55-f76a0f0d287d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1058,9 +1019,6 @@
     <None Include="..\www\app\TimerplanController.js">
       <Filter>www\app</Filter>
     </None>
-    <None Include="..\webserver\proxydef.def">
-      <Filter>Webserver</Filter>
-    </None>
     <None Include="..\www\app\hardware\Hardware.html">
       <Filter>www\app\hardware</Filter>
     </None>
@@ -1147,65 +1105,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\webserver\Base64.h">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\connection.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\connection_manager.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\cWebem.h">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\mime_types.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\reply.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\request.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\request_handler.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\request_parser.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\server.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\tcpserver\TCPClient.h">
-      <Filter>TCPServer</Filter>
-    </ClInclude>
-    <ClInclude Include="..\tcpserver\TCPServer.h">
-      <Filter>TCPServer</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\DomoticzTCP.h">
-      <Filter>Devices\Domoticz</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\ColorSwitch.h">
-      <Filter>Devices</Filter>
-    </ClInclude>
     <ClInclude Include="..\hardware\DomoticzHardware.h">
       <Filter>Devices</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\hardwaretypes.h">
-      <Filter>Devices</Filter>
-    </ClInclude>
-    <ClInclude Include="..\httpclient\UrlEncode.h">
-      <Filter>HTTPClient</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\header.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\server_settings.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\utf.hpp">
-      <Filter>Webserver</Filter>
     </ClInclude>
     <ClInclude Include="..\main\appversion.h">
       <Filter>Header Files</Filter>
@@ -1234,44 +1135,20 @@
     <ClInclude Include="..\main\stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\WebServer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="WindowsHelper.h">
       <Filter>Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\Camera.h">
-      <Filter>Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="..\httpclient\HTTPClient.h">
-      <Filter>HTTPClient</Filter>
     </ClInclude>
     <ClInclude Include="..\main\dirent_windows.h">
       <Filter>Windows</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\EventSystem.h">
-      <Filter>EventSystem</Filter>
-    </ClInclude>
     <ClInclude Include="..\main\mainstructs.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\ZWaveBase.h">
-      <Filter>Devices\ZWave</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\ZWaveCommands.h">
-      <Filter>Devices\ZWave</Filter>
     </ClInclude>
     <ClInclude Include="Version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\main\GZipHelper.h">
       <Filter>zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\TCPProxy\tcpproxy_server.h">
-      <Filter>TCPProxy</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\openzwave\control_panel\ozwcp.h">
-      <Filter>Devices\ZWave\Control Panel</Filter>
     </ClInclude>
     <ClInclude Include="..\zip\ioapi.h">
       <Filter>zip\Base</Filter>
@@ -1291,38 +1168,11 @@
     <ClInclude Include="..\sqlite\sqlite3.h">
       <Filter>SQLite</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\WebServerHelper.h">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\GZipHelper.h">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\proxyclient.h">
-      <Filter>Webserver</Filter>
-    </ClInclude>
     <ClInclude Include="..\hardware\NefitEasy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\webserver\fastcgi.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\OpenZWave.h">
-      <Filter>Devices\ZWave</Filter>
-    </ClInclude>
-    <ClInclude Include="..\push\BasePush.h">
-      <Filter>Pushers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\push\WebsocketPush.h">
-      <Filter>Pushers\Websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\Websockets.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
     <ClInclude Include="..\tinyxpath\tinyxml.h">
       <Filter>XML</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\WebsocketHandler.h">
-      <Filter>Webserver</Filter>
     </ClInclude>
     <ClInclude Include="..\tinyxpath\xpath_processor.h">
       <Filter>XML</Filter>
@@ -1332,12 +1182,6 @@
     </ClInclude>
     <ClInclude Include="..\zip\minizip_crypt.h">
       <Filter>zip\Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\BaroForecastCalculator.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\WindCalculation.h">
-      <Filter>Helpers</Filter>
     </ClInclude>
     <ClInclude Include="..\main\Noncopyable.h">
       <Filter>Helpers</Filter>
@@ -1363,48 +1207,6 @@
     <ClInclude Include="..\main\StoppableTask.h">
       <Filter>Helpers</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\TrendCalculator.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\webserver\proxycereal.hpp">
-      <Filter>Webserver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\HardwareCereal.h">
-      <Filter>Devices</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\LuaCommon.h">
-      <Filter>EventSystem\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\LuaHandler.h">
-      <Filter>EventSystem\Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\EventsPythonDevice.h">
-      <Filter>Python</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\EventsPythonModule.h">
-      <Filter>Python</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\plugins\DelayedLink.h">
-      <Filter>Python</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\plugins\PluginManager.h">
-      <Filter>Python</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\plugins\PluginMessages.h">
-      <Filter>Python</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\plugins\PluginProtocols.h">
-      <Filter>Python</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\plugins\Plugins.h">
-      <Filter>Python</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\plugins\PluginTransports.h">
-      <Filter>Python</Filter>
-    </ClInclude>
-    <ClInclude Include="..\hardware\plugins\PythonObjects.h">
-      <Filter>Python</Filter>
-    </ClInclude>
     <ClInclude Include="..\main\HTMLSanitizer.h">
       <Filter>Helpers</Filter>
     </ClInclude>
@@ -1414,41 +1216,32 @@
     <ClInclude Include="..\hardware\plugins\ipv4_header.hpp">
       <Filter>Devices\Plugins</Filter>
     </ClInclude>
-    <ClInclude Include="..\hardware\serial\serial.h">
-      <Filter>Devices\ZWave</Filter>
-    </ClInclude>
     <ClInclude Include="..\hardware\ASyncSerial.h">
+      <Filter>Devices\Plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\hardware\plugins\DelayedLink.h">
+      <Filter>Devices\Plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\hardware\plugins\PluginManager.h">
+      <Filter>Devices\Plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\hardware\plugins\PluginMessages.h">
+      <Filter>Devices\Plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\hardware\plugins\PluginProtocols.h">
+      <Filter>Devices\Plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\hardware\plugins\Plugins.h">
+      <Filter>Devices\Plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\hardware\plugins\PluginTransports.h">
+      <Filter>Devices\Plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\hardware\plugins\PythonObjects.h">
       <Filter>Devices\Plugins</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\webserver\Base64.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\connection.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\connection_manager.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\cWebem.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\mime_types.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\reply.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\request_handler.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\request_parser.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\server.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
     <ClCompile Include="..\json\json_value.cpp">
       <Filter>json</Filter>
     </ClCompile>
@@ -1458,20 +1251,8 @@
     <ClCompile Include="..\json\json_reader.cpp">
       <Filter>json</Filter>
     </ClCompile>
-    <ClCompile Include="..\tcpserver\TCPClient.cpp">
-      <Filter>TCPServer</Filter>
-    </ClCompile>
-    <ClCompile Include="..\tcpserver\TCPServer.cpp">
-      <Filter>TCPServer</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\DomoticzTCP.cpp">
-      <Filter>Devices\Domoticz</Filter>
-    </ClCompile>
     <ClCompile Include="..\hardware\DomoticzHardware.cpp">
       <Filter>Devices</Filter>
-    </ClCompile>
-    <ClCompile Include="..\httpclient\UrlEncode.cpp">
-      <Filter>HTTPClient</Filter>
     </ClCompile>
     <ClCompile Include="..\main\domoticz.cpp">
       <Filter>Source Files</Filter>
@@ -1482,56 +1263,17 @@
     <ClCompile Include="..\main\mainworker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\main\RFXNames.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\Scheduler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\main\SQLHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\main\stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\main\WebServer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="WindowsHelper.cpp">
       <Filter>Windows</Filter>
     </ClCompile>
-    <ClCompile Include="..\main\Camera.cpp">
-      <Filter>Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="..\httpclient\HTTPClient.cpp">
-      <Filter>HTTPClient</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\EventSystem.cpp">
-      <Filter>EventSystem</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\ZWaveBase.cpp">
-      <Filter>Devices\ZWave</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\ColorSwitch.cpp">
-      <Filter>Devices</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\TCPProxy\tcpproxy_server.cpp">
-      <Filter>TCPProxy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\openzwave\control_panel\ozwcp.cpp">
-      <Filter>Devices\ZWave\Control Panel</Filter>
-    </ClCompile>
     <ClCompile Include="..\sqlite\sqlite3.c">
       <Filter>SQLite</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\WebServerHelper.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\proxyclient.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\openzwave\control_panel\zwavelib.cpp">
-      <Filter>Devices\ZWave\Control Panel</Filter>
     </ClCompile>
     <ClCompile Include="..\tinyxpath\xml_util.cpp">
       <Filter>XML</Filter>
@@ -1581,24 +1323,6 @@
     <ClCompile Include="..\tinyxpath\tokenlist.cpp">
       <Filter>XML</Filter>
     </ClCompile>
-    <ClCompile Include="..\webserver\fastcgi.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\OpenZWave.cpp">
-      <Filter>Devices\ZWave</Filter>
-    </ClCompile>
-    <ClCompile Include="..\push\BasePush.cpp">
-      <Filter>Pushers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\push\WebsocketPush.cpp">
-      <Filter>Pushers\Websocket</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\Websockets.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\WebsocketHandler.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
     <ClCompile Include="..\zip\ioapi.c">
       <Filter>zip\Base</Filter>
     </ClCompile>
@@ -1607,12 +1331,6 @@
     </ClCompile>
     <ClCompile Include="..\zip\unzip.c">
       <Filter>zip\Base</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\BaroForecastCalculator.cpp">
-      <Filter>Helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\WindCalculation.cpp">
-      <Filter>Helpers</Filter>
     </ClCompile>
     <ClCompile Include="..\main\CmdLine.cpp">
       <Filter>Helpers</Filter>
@@ -1629,71 +1347,32 @@
     <ClCompile Include="..\main\Logger.cpp">
       <Filter>Logger</Filter>
     </ClCompile>
-    <ClCompile Include="..\main\TrendCalculator.cpp">
-      <Filter>Helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\webserver\proxycereal.cpp">
-      <Filter>Webserver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\LuaCommon.cpp">
-      <Filter>EventSystem\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\LuaHandler.cpp">
-      <Filter>EventSystem\Lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\EventsPythonDevice.cpp">
-      <Filter>Python</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\EventsPythonModule.cpp">
-      <Filter>Python</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\plugins\DelayedLink.cpp">
-      <Filter>Python</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\plugins\PluginManager.cpp">
-      <Filter>Python</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\plugins\PluginProtocols.cpp">
-      <Filter>Python</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\plugins\Plugins.cpp">
-      <Filter>Python</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\plugins\PluginTransports.cpp">
-      <Filter>Python</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\plugins\PythonObjects.cpp">
-      <Filter>Python</Filter>
-    </ClCompile>
     <ClCompile Include="..\main\HTMLSanitizer.cpp">
       <Filter>Helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\hardware\serial\serial.cpp">
-      <Filter>Devices\ZWave</Filter>
     </ClCompile>
     <ClCompile Include="..\hardware\ASyncSerial.cpp">
       <Filter>Devices\Plugins</Filter>
     </ClCompile>
-    <ClCompile Include="..\hardware\serial\impl\win.cpp">
-      <Filter>Devices\ZWave</Filter>
+    <ClCompile Include="..\hardware\plugins\Base64.cpp">
+      <Filter>Devices\Plugins</Filter>
     </ClCompile>
-    <ClCompile Include="..\hardware\ASyncTCP.cpp">
-      <Filter>Devices\Domoticz</Filter>
+    <ClCompile Include="..\hardware\plugins\DelayedLink.cpp">
+      <Filter>Devices\Plugins</Filter>
     </ClCompile>
-    <ClCompile Include="..\hardware\RFXBase.cpp">
-      <Filter>Devices\Domoticz</Filter>
+    <ClCompile Include="..\hardware\plugins\PluginManager.cpp">
+      <Filter>Devices\Plugins</Filter>
     </ClCompile>
-    <ClCompile Include="..\hardware\P1MeterBase.cpp">
-      <Filter>Devices\Domoticz</Filter>
+    <ClCompile Include="..\hardware\plugins\PluginProtocols.cpp">
+      <Filter>Devices\Plugins</Filter>
     </ClCompile>
-    <ClCompile Include="..\notifications\NotificationBase.cpp">
-      <Filter>Python</Filter>
+    <ClCompile Include="..\hardware\plugins\Plugins.cpp">
+      <Filter>Devices\Plugins</Filter>
     </ClCompile>
-    <ClCompile Include="..\notifications\NotificationHelper.cpp">
-      <Filter>Python</Filter>
+    <ClCompile Include="..\hardware\plugins\PluginTransports.cpp">
+      <Filter>Devices\Plugins</Filter>
     </ClCompile>
-    <ClCompile Include="..\notifications\NotificationBrowser.cpp">
-      <Filter>Python</Filter>
+    <ClCompile Include="..\hardware\plugins\PythonObjects.cpp">
+      <Filter>Devices\Plugins</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2799,9 +2478,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\www\switch_icons.txt">
-      <Filter>www</Filter>
-    </Text>
     <Text Include="..\www\templates\readme.txt">
       <Filter>www\templates</Filter>
     </Text>

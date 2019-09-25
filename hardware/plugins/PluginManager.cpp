@@ -17,22 +17,15 @@
 #include "../main/Helper.h"
 #include "../main/Logger.h"
 #include "../main/SQLHelper.h"
-#include "../main/WebServer.h"
 #include "../main/mainworker.h"
-#include "../main/EventSystem.h"
-#include "../json/json.h"
 #include "../main/localtime_r.h"
 #ifdef WIN32
 #	include <direct.h>
 #else
 #	include <sys/stat.h>
 #endif
-
+#include <boost/thread.hpp>
 #include "DelayedLink.h"
-
-#ifdef ENABLE_PYTHON
-#include "../../main/EventsPythonModule.h"
-#endif
 
 #define MINIMUM_PYTHON_VERSION "3.4.0"
 
@@ -130,12 +123,6 @@ namespace Plugins {
 			if (PyImport_AppendInittab("Domoticz", PyInit_Domoticz) == -1)
 			{
 				_log.Log(LOG_ERROR, "PluginSystem: Failed to append 'Domoticz' to the existing table of built-in modules.");
-				return false;
-			}
-
-			if (PyImport_AppendInittab("DomoticzEvents", PyInit_DomoticzEvents) == -1)
-			{
-				_log.Log(LOG_ERROR, "PluginSystem: Failed to append 'DomoticzEvents' to the existing table of built-in modules.");
 				return false;
 			}
 
@@ -403,181 +390,14 @@ namespace Plugins {
 			std::vector<std::string> sd = result[0];
 			std::string sHwdID = sd[0];
 			std::string Unit = sd[1];
-			CDomoticzHardwareBase *pHardware = m_mainworker.GetHardwareByIDType(sHwdID, HTYPE_PythonPlugin);
+			//CDomoticzHardwareBase *pHardware = m_mainworker.GetHardwareByIDType(sHwdID, HTYPE_PythonPlugin);
+			CDomoticzHardwareBase *pHardware = NULL;
 			if (pHardware != NULL)
 			{
 				//std::vector<std::string> sd = result[0];
 				_log.Debug(DEBUG_NORM, "CPluginSystem::DeviceModified: Notifying plugin %u about modification of device %u", atoi(sHwdID.c_str()), atoi(Unit.c_str()));
 				Plugins::CPlugin *pPlugin = (Plugins::CPlugin*)pHardware;
 				pPlugin->DeviceModified(atoi(Unit.c_str()));
-			}
-		}
-	}
-}
-
-//Webserver helpers
-namespace http {
-	namespace server {
-		void CWebServer::PluginList(Json::Value &root)
-		{
-			int		iPluginCnt = root.size();
-			Plugins::CPluginSystem Plugins;
-			std::map<std::string, std::string>*	PluginXml = Plugins.GetManifest();
-			for (std::map<std::string, std::string>::iterator it_type = PluginXml->begin(); it_type != PluginXml->end(); ++it_type)
-			{
-				TiXmlDocument	XmlDoc;
-				XmlDoc.Parse(it_type->second.c_str());
-				if (XmlDoc.Error())
-				{
-					_log.Log(LOG_ERROR, "%s: Parsing '%s', '%s' at line %d column %d in XML '%s'.", __func__, it_type->first.c_str(), XmlDoc.ErrorDesc(), XmlDoc.ErrorRow(), XmlDoc.ErrorCol(), it_type->second.c_str());
-				}
-				else
-				{
-					TiXmlNode* pXmlNode = XmlDoc.FirstChild("plugin");
-					TiXmlPrinter Xmlprinter;
-					Xmlprinter.SetStreamPrinting();
-					for (pXmlNode; pXmlNode; pXmlNode = pXmlNode->NextSiblingElement())
-					{
-						TiXmlElement* pXmlEle = pXmlNode->ToElement();
-						if (pXmlEle)
-						{
-							root[iPluginCnt]["idx"] = HTYPE_PythonPlugin;
-							ATTRIBUTE_VALUE(pXmlEle, "key", root[iPluginCnt]["key"]);
-							ATTRIBUTE_VALUE(pXmlEle, "name", root[iPluginCnt]["name"]);
-							ATTRIBUTE_VALUE(pXmlEle, "author", root[iPluginCnt]["author"]);
-							ATTRIBUTE_VALUE(pXmlEle, "wikilink", root[iPluginCnt]["wikiURL"]);
-							ATTRIBUTE_VALUE(pXmlEle, "externallink", root[iPluginCnt]["externalURL"]);
-
-							TiXmlElement* pXmlDescNode = (TiXmlElement*)pXmlEle->FirstChild("description");
-							std::string		sDescription;
-							if (pXmlDescNode)
-							{
-								pXmlDescNode->Accept(&Xmlprinter);
-								sDescription = Xmlprinter.CStr();
-							}
-							root[iPluginCnt]["description"] = sDescription;
-
-							TiXmlNode* pXmlParamsNode = pXmlEle->FirstChild("params");
-							int	iParams = 0;
-							if (pXmlParamsNode) pXmlParamsNode = pXmlParamsNode->FirstChild("param");
-							for (pXmlParamsNode; pXmlParamsNode; pXmlParamsNode = pXmlParamsNode->NextSiblingElement())
-							{
-								// <params>
-								//		<param field = "Address" label = "IP/Address" width = "100px" required = "true" default = "127.0.0.1" / >
-								TiXmlElement* pXmlEle = pXmlParamsNode->ToElement();
-								if (pXmlEle)
-								{
-									ATTRIBUTE_VALUE(pXmlEle, "field", root[iPluginCnt]["parameters"][iParams]["field"]);
-									ATTRIBUTE_VALUE(pXmlEle, "label", root[iPluginCnt]["parameters"][iParams]["label"]);
-									ATTRIBUTE_VALUE(pXmlEle, "width", root[iPluginCnt]["parameters"][iParams]["width"]);
-									ATTRIBUTE_VALUE(pXmlEle, "required", root[iPluginCnt]["parameters"][iParams]["required"]);
-									ATTRIBUTE_VALUE(pXmlEle, "default", root[iPluginCnt]["parameters"][iParams]["default"]);
-									ATTRIBUTE_VALUE(pXmlEle, "password", root[iPluginCnt]["parameters"][iParams]["password"]);
-
-									TiXmlNode* pXmlOptionsNode = pXmlEle->FirstChild("options");
-									int	iOptions = 0;
-									if (pXmlOptionsNode) pXmlOptionsNode = pXmlOptionsNode->FirstChild("option");
-									for (pXmlOptionsNode; pXmlOptionsNode; pXmlOptionsNode = pXmlOptionsNode->NextSiblingElement())
-									{
-										// <options>
-										//		<option label="Hibernate" value="1" default="true" />
-										TiXmlElement* pXmlEle = pXmlOptionsNode->ToElement();
-										if (pXmlEle)
-										{
-											std::string sDefault;
-											ATTRIBUTE_VALUE(pXmlEle, "label", root[iPluginCnt]["parameters"][iParams]["options"][iOptions]["label"]);
-											ATTRIBUTE_VALUE(pXmlEle, "value", root[iPluginCnt]["parameters"][iParams]["options"][iOptions]["value"]);
-											ATTRIBUTE_VALUE(pXmlEle, "default", sDefault);
-											if (sDefault == "true")
-											{
-												root[iPluginCnt]["parameters"][iParams]["options"][iOptions]["default"] = sDefault;
-											}
-											iOptions++;
-										}
-									}
-									iParams++;
-								}
-							}
-							iPluginCnt++;
-						}
-					}
-				}
-			}
-		}
-
-		void CWebServer::PluginLoadConfig()
-		{
-			Plugins::CPluginSystem Plugins;
-			Plugins.LoadSettings();
-		}
-
-		std::string CWebServer::PluginHardwareDesc(int HwdID)
-		{
-			Plugins::CPluginSystem Plugins;
-			std::map<int, CDomoticzHardwareBase*>*	PluginHwd = Plugins.GetHardware();
-			std::string		sRetVal = Hardware_Type_Desc(HTYPE_PythonPlugin);
-			Plugins::CPlugin*	pPlugin = NULL;
-
-			// Disabled plugins will not be in plugin hardware map
-			if (PluginHwd->count(HwdID))
-			{
-				pPlugin = (Plugins::CPlugin*)(*PluginHwd)[HwdID];
-			}
-
-			if (pPlugin)
-			{
-				std::string	sKey = "key=\"" + pPlugin->m_PluginKey + "\"";
-				std::map<std::string, std::string>*	PluginXml = Plugins.GetManifest();
-				for (std::map<std::string, std::string>::iterator it_type = PluginXml->begin(); it_type != PluginXml->end(); ++it_type)
-				{
-					if (it_type->second.find(sKey) != std::string::npos)
-					{
-						TiXmlDocument	XmlDoc;
-						XmlDoc.Parse(it_type->second.c_str());
-						if (XmlDoc.Error())
-						{
-							_log.Log(LOG_ERROR, "%s: Error '%s' at line %d column %d in XML '%s'.", __func__, XmlDoc.ErrorDesc(), XmlDoc.ErrorRow(), XmlDoc.ErrorCol(), it_type->second.c_str());
-						}
-						else
-						{
-							TiXmlNode* pXmlNode = XmlDoc.FirstChild("plugin");
-							for (pXmlNode; pXmlNode; pXmlNode = pXmlNode->NextSiblingElement())
-							{
-								TiXmlElement* pXmlEle = pXmlNode->ToElement();
-								if (pXmlEle)
-								{
-									const char*	pAttributeValue = pXmlEle->Attribute("name");
-									if (pAttributeValue) sRetVal = pAttributeValue;
-								}
-							}
-						}
-						break;
-					}
-				}
-			}
-
-			return sRetVal;
-		}
-
-		void CWebServer::Cmd_PluginCommand(WebEmSession & session, const request& req, Json::Value &root)
-		{
-			std::string sIdx = request::findValue(&req, "idx");
-			std::string sAction = request::findValue(&req, "action");
-			if (sIdx.empty())
-				return;
-			std::vector<std::vector<std::string> > result;
-			result = m_sql.safe_query("SELECT HardwareID, Unit FROM DeviceStatus WHERE (ID=='%q') ", sIdx.c_str());
-			if (result.size() == 1)
-			{
-				int HwID = atoi(result[0][0].c_str());
-				int Unit = atoi(result[0][1].c_str());
-				Plugins::CPluginSystem Plugins;
-				std::map<int, CDomoticzHardwareBase*>*	PluginHwd = Plugins.GetHardware();
-				Plugins::CPlugin*	pPlugin = (Plugins::CPlugin*)(*PluginHwd)[HwID];
-				if (pPlugin)
-				{
-					pPlugin->SendCommand(Unit, sAction, 0, NoColor);
-				}
 			}
 		}
 	}

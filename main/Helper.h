@@ -67,8 +67,6 @@ void rgb2hsb(const int r, const int g, const int b, float hsbvals[3]);
 bool is_number(const std::string& s);
 void padLeft(std::string &str, const size_t num, const char paddingChar = '0');
 
-bool IsLightOrSwitch(const int devType, const int subType);
-
 int MStoBeaufort(const float ms);
 
 void FixFolderEnding(std::string &folder);

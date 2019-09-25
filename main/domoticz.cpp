@@ -26,9 +26,7 @@
 #include "CmdLine.h"
 #include "Logger.h"
 #include "Helper.h"
-#include "WebServerHelper.h"
 #include "SQLHelper.h"
-#include "../notifications/NotificationHelper.h"
 #include "appversion.h"
 #include "localtime_r.h"
 #include "SignalHandler.h"
@@ -140,21 +138,14 @@ time_t m_StartTime=time(NULL);
 
 MainWorker m_mainworker;
 CLogger _log;
-http::server::CWebServerHelper m_webservers;
 CSQLHelper m_sql;
-CNotificationHelper m_notifications;
 
 std::string logfile;
 bool g_bStopApplication = false;
 bool g_bUseSyslog = false;
 bool g_bRunAsDaemon = false;
 bool g_bDontCacheWWW = false;
-http::server::_eWebCompressionMode g_wwwCompressMode = http::server::WWW_USE_GZIP;
 bool g_bUseUpdater = true;
-http::server::server_settings webserver_settings;
-#ifdef WWW_ENABLE_SSL
-http::server::ssl_server_settings secure_webserver_settings;
-#endif
 bool bStartWebBrowser = true;
 bool g_bUseWatchdog = true;
 bool g_bIsWSL = false;
@@ -574,49 +565,11 @@ bool ParseConfigFile(const std::string &szConfigFile)
 		szFlag = stdstring_trim(szFlag);
 		sLine = stdstring_trim(sLine);
 
-		if (szFlag == "http_port") {
-			webserver_settings.listening_port = sLine;
-		}
-#ifdef WWW_ENABLE_SSL
-		else if (szFlag == "ssl_port") {
-			secure_webserver_settings.listening_port = sLine;
-		}
-		else if (szFlag == "ssl_cert") {
-			secure_webserver_settings.cert_file_path = sLine;
-		}
-		else if (szFlag == "ssl_key") {
-			secure_webserver_settings.private_key_file_path = sLine;
-		}
-		else if (szFlag == "ssl_dhparam") {
-			secure_webserver_settings.tmp_dh_file_path = sLine;
-		}
-		else if (szFlag == "ssl_pass") {
-			secure_webserver_settings.private_key_pass_phrase = sLine;
-		}
-		else if (szFlag == "ssl_method") {
-			secure_webserver_settings.ssl_method = sLine;
-		}
-		else if (szFlag == "ssl_options") {
-			secure_webserver_settings.ssl_options = sLine;
-		}
-#endif
-		else if (szFlag == "http_root") {
+		if (szFlag == "http_root") {
 			szWWWFolder = sLine;
 		}
 		else if (szFlag == "web_root") {
 			szWebRoot = sLine;
-		}
-		else if (szFlag == "www_compress_mode") {
-			if (sLine == "on")
-				g_wwwCompressMode = http::server::WWW_USE_GZIP;
-			else if (sLine == "off")
-				g_wwwCompressMode = http::server::WWW_FORCE_NO_GZIP_SUPPORT;
-			else if (sLine == "static")
-				g_wwwCompressMode = http::server::WWW_USE_STATIC_GZ_FILES;
-			else {
-				_log.Log(LOG_ERROR, "Invalid www_compress_mode value in Configuration file '%s'", szConfigFile.c_str());
-				return false;
-			}
 		}
 		else if (szFlag == "cache") {
 			g_bDontCacheWWW = !GetConfigBool(sLine);
@@ -652,12 +605,6 @@ bool ParseConfigFile(const std::string &szConfigFile)
 		}
 		else if (szFlag == "updates") {
 			g_bUseUpdater = GetConfigBool(sLine);
-		}
-		else if (szFlag == "php_cgi_path") {
-			webserver_settings.php_cgi_path = sLine;
-#ifdef WWW_ENABLE_SSL
-			secure_webserver_settings.php_cgi_path = sLine;
-#endif
 		}
 		else if (szFlag == "app_path") {
 			szStartupFolder = sLine;
@@ -856,40 +803,6 @@ int main(int argc, char**argv)
 			_log.Log(LOG_STATUS, "Startup delay... waiting %d seconds...", DelaySeconds);
 			sleep_seconds(DelaySeconds);
 		}
-		if (cmdLine.HasSwitch("-wwwbind"))
-		{
-			if (cmdLine.GetArgumentCount("-wwwbind") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify an address");
-				return 1;
-			}
-			webserver_settings.listening_address = cmdLine.GetSafeArgument("-wwwbind", 0, "0.0.0.0");
-		}
-		if (cmdLine.HasSwitch("-www"))
-		{
-			if (cmdLine.GetArgumentCount("-www") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify a port");
-				return 1;
-			}
-			std::string wwwport = cmdLine.GetSafeArgument("-www", 0, "");
-			int iPort = (int)atoi(wwwport.c_str());
-			if ((iPort < 0) || (iPort > 32767))
-			{
-				_log.Log(LOG_ERROR, "Please specify a valid www port");
-				return 1;
-			}
-			webserver_settings.listening_port = wwwport;
-		}
-		if (cmdLine.HasSwitch("-php_cgi_path"))
-		{
-			if (cmdLine.GetArgumentCount("-php_cgi_path") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify the path to the php-cgi command");
-				return 1;
-			}
-			webserver_settings.php_cgi_path = cmdLine.GetSafeArgument("-php_cgi_path", 0, "");
-		}
 		if (cmdLine.HasSwitch("-wwwroot"))
 		{
 			if (cmdLine.GetArgumentCount("-wwwroot") != 1)
@@ -902,98 +815,6 @@ int main(int argc, char**argv)
 				szWWWFolder = szroot;
 		}
 	}
-	webserver_settings.www_root = szWWWFolder;
-	m_mainworker.SetWebserverSettings(webserver_settings);
-#ifdef WWW_ENABLE_SSL
-	if (!bUseConfigFile) {
-		if (cmdLine.HasSwitch("-sslwww"))
-		{
-			if (cmdLine.GetArgumentCount("-sslwww") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify a port");
-				return 1;
-			}
-			std::string wwwport = cmdLine.GetSafeArgument("-sslwww", 0, "");
-			int iPort = (int)atoi(wwwport.c_str());
-			if ((iPort < 0) || (iPort > 32767))
-			{
-				_log.Log(LOG_ERROR, "Please specify a valid sslwww port");
-				return 1;
-			}
-			secure_webserver_settings.listening_port = wwwport;
-		}
-		if (!webserver_settings.listening_address.empty()) {
-			// Secure listening address has to be equal
-			secure_webserver_settings.listening_address = webserver_settings.listening_address;
-		}
-		if (cmdLine.HasSwitch("-sslcert"))
-		{
-			if (cmdLine.GetArgumentCount("-sslcert") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify a file path for your server certificate file");
-				return 1;
-			}
-			secure_webserver_settings.cert_file_path = cmdLine.GetSafeArgument("-sslcert", 0, "");
-			secure_webserver_settings.private_key_file_path = secure_webserver_settings.cert_file_path;
-		}
-		if (cmdLine.HasSwitch("-sslkey"))
-		{
-			if (cmdLine.GetArgumentCount("-sslkey") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify a file path for your server SSL key file");
-				return 1;
-			}
-			secure_webserver_settings.private_key_file_path = cmdLine.GetSafeArgument("-sslkey", 0, "");
-		}
-		if (cmdLine.HasSwitch("-sslpass"))
-		{
-			if (cmdLine.GetArgumentCount("-sslpass") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify a passphrase to access to your server private key in certificate file");
-				return 1;
-			}
-			secure_webserver_settings.private_key_pass_phrase = cmdLine.GetSafeArgument("-sslpass", 0, "");
-		}
-		if (cmdLine.HasSwitch("-sslmethod"))
-		{
-			if (cmdLine.GetArgumentCount("-sslmethod") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify a SSL method");
-				return 1;
-			}
-			secure_webserver_settings.ssl_method = cmdLine.GetSafeArgument("-sslmethod", 0, "");
-		}
-		if (cmdLine.HasSwitch("-ssloptions"))
-		{
-			if (cmdLine.GetArgumentCount("-ssloptions") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify SSL options");
-				return 1;
-			}
-			secure_webserver_settings.ssl_options = cmdLine.GetSafeArgument("-ssloptions", 0, "");
-		}
-		if (cmdLine.HasSwitch("-ssldhparam"))
-		{
-			if (cmdLine.GetArgumentCount("-ssldhparam") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify a file path for the SSL DH parameters file");
-				return 1;
-			}
-			secure_webserver_settings.tmp_dh_file_path = cmdLine.GetSafeArgument("-ssldhparam", 0, "");
-		}
-		if (cmdLine.HasSwitch("-php_cgi_path"))
-		{
-			if (cmdLine.GetArgumentCount("-php_cgi_path") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify the path to the php-cgi command");
-				return 1;
-			}
-			secure_webserver_settings.php_cgi_path = cmdLine.GetSafeArgument("-php_cgi_path", 0, "");
-		}
-	}
-	secure_webserver_settings.www_root = szWWWFolder;
-	m_mainworker.SetSecureWebserverSettings(secure_webserver_settings);
-#endif
 	if (!bUseConfigFile) {
 		if (cmdLine.HasSwitch("-nowwwpwd"))
 		{
@@ -1002,19 +823,6 @@ int main(int argc, char**argv)
 		if (cmdLine.HasSwitch("-nocache"))
 		{
 			g_bDontCacheWWW = true;
-		}
-		if (cmdLine.HasSwitch("-wwwcompress"))
-		{
-			if (cmdLine.GetArgumentCount("-wwwcompress") != 1)
-			{
-				_log.Log(LOG_ERROR, "Please specify a compress mode");
-				return 1;
-			}
-			std::string szmode = cmdLine.GetSafeArgument("-wwwcompress", 0, "on");
-			if (szmode == "off")
-				g_wwwCompressMode = http::server::WWW_FORCE_NO_GZIP_SUPPORT;
-			else if (szmode == "static")
-				g_wwwCompressMode = http::server::WWW_USE_STATIC_GZ_FILES;
 		}
 	}
 	if (dbasefile.empty()) {
@@ -1207,7 +1015,7 @@ int main(int argc, char**argv)
 #ifndef _DEBUG
 	RedirectIOToConsole();	//hide console
 #endif
-	InitWindowsHelper(hInstance, hPrevInstance, nShowCmd, m_mainworker.GetWebserverAddress(), atoi(m_mainworker.GetWebserverPort().c_str()), bStartWebBrowser);
+	InitWindowsHelper(hInstance, hPrevInstance, nShowCmd, "localhost", 8080, bStartWebBrowser);
 	MSG Msg;
 	while (!g_bStopApplication)
 	{

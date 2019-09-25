@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../../json/json.h"
+
 namespace Plugins {
 
 	class CPluginMessage;

@@ -28,8 +28,6 @@
 #include "../msbuild/WindowsHelper.h"
 #endif
 
-#include "RFXtrx.h"
-#include "../hardware/hardwaretypes.h"
 
 // Includes for SystemUptime()
 #if defined(__linux__) || defined(__linux) || defined(linux)
@@ -854,41 +852,6 @@ void padLeft(std::string &str, const size_t num, const char paddingChar)
 {
 	if (num > str.size())
 		str.insert(0, num - str.size(), paddingChar);
-}
-
-bool IsLightOrSwitch(const int devType, const int subType)
-{
-	bool bIsLightSwitch = false;
-	switch (devType)
-	{
-	case pTypeLighting1:
-	case pTypeLighting2:
-	case pTypeLighting3:
-	case pTypeLighting4:
-	case pTypeLighting5:
-	case pTypeLighting6:
-	case pTypeFan:
-	case pTypeColorSwitch:
-	case pTypeSecurity1:
-	case pTypeSecurity2:
-	case pTypeCurtain:
-	case pTypeBlinds:
-	case pTypeRFY:
-	case pTypeThermostat2:
-	case pTypeThermostat3:
-	case pTypeThermostat4:
-	case pTypeRemote:
-	case pTypeGeneralSwitch:
-	case pTypeHomeConfort:
-	case pTypeFS20:
-	case pTypeHunter:
-		bIsLightSwitch = true;
-		break;
-	case pTypeRadiator1:
-		bIsLightSwitch = (subType == sTypeSmartwaresSwitchRadiator);
-		break;
-	}
-	return bIsLightSwitch;
 }
 
 int MStoBeaufort(const float ms)

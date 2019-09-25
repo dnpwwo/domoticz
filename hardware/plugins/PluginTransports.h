@@ -2,6 +2,7 @@
 
 #include "../ASyncSerial.h"
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include <ctime>
 
 namespace Plugins {

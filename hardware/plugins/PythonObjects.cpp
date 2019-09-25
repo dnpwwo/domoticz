@@ -7,12 +7,9 @@
 
 #include "../main/Logger.h"
 #include "../main/SQLHelper.h"
-#include "../hardware/hardwaretypes.h"
 #include "../main/localtime_r.h"
 #include "../main/mainstructs.h"
 #include "../main/mainworker.h"
-#include "../main/EventSystem.h"
-#include "../notifications/NotificationHelper.h"
 #include "PythonObjects.h"
 #include "PluginMessages.h"
 #include "PluginProtocols.h"
@@ -330,7 +327,7 @@ namespace Plugins {
 				self->SignalLevel = 100;
 				self->BatteryLevel = 255;
 				self->TimedOut = 0;
-				self->Color = PyUnicode_FromString(NoColor.toJSONString().c_str());
+				self->Color = PyUnicode_FromString("");
 				if (self->Color == NULL) {
 					Py_DECREF(self);
 					return NULL;
@@ -352,6 +349,7 @@ namespace Plugins {
 
 	static void maptypename(const std::string &sTypeName, int &Type, int &SubType, int &SwitchType, std::string &sValue, PyObject* OptionsIn, PyObject* OptionsOut)
 	{
+		/*
 		Type = pTypeGeneral;
 
 		if (sTypeName == "Pressure")					SubType = sTypePressure;
@@ -515,6 +513,7 @@ namespace Plugins {
 			Type = pTypeSecurity1;
 			SubType = sTypeDomoticzSecurity;
 		}
+		*/
 	}
 
 	int CDevice_init(CDevice *self, PyObject *args, PyObject *kwds)
@@ -675,6 +674,7 @@ namespace Plugins {
 					Py_XDECREF(self->LastUpdate);
 					self->LastUpdate = PyUnicode_FromString(sd[13].c_str());
 					PyDict_Clear(self->Options);
+					/*
 					if (!sd[14].empty())
 					{
 						if (self->SubType == sTypeCustom)
@@ -700,10 +700,11 @@ namespace Plugins {
 							}
 						}
 					}
+					*/
 					Py_XDECREF(self->Description);
 					self->Description = PyUnicode_FromString(sd[15].c_str());
 					Py_XDECREF(self->Color);
-					self->Color = PyUnicode_FromString(_tColor(std::string(sd[16])).toJSONString().c_str()); //Parse the color to detect incorrectly formatted color data
+					self->Color = PyUnicode_FromString(""); //Parse the color to detect incorrectly formatted color data
 				}
 			}
 		}
@@ -740,10 +741,10 @@ namespace Plugins {
 					if (result.empty())
 					{
 						std::string	sValue = PyUnicode_AsUTF8(self->sValue);
-						std::string	sColor = _tColor(std::string(PyUnicode_AsUTF8(self->Color))).toJSONString(); //Parse the color to detect incorrectly formatted color data
+						std::string	sColor = "";
 						std::string	sLongName = self->pPlugin->m_Name + " - " + sName;
 						std::string	sDescription = PyUnicode_AsUTF8(self->Description);
-						if ((self->SubType == sTypeCustom) && (PyDict_Size(self->Options) > 0))
+						//if ((self->SubType == sTypeCustom) && (PyDict_Size(self->Options) > 0))
 						{
 							PyObject *pValueDict = PyDict_GetItemString(self->Options, "Custom");
 							std::string sOptionValue;
@@ -757,7 +758,7 @@ namespace Plugins {
 								"VALUES (%d, '%q', %d, %d, %d, %d, %d, 12, 255, '%q', 0, '%q', %d, '%q', '%q', '%q')",
 								self->HwdID, sDeviceID.c_str(), self->Unit, self->Type, self->SubType, self->SwitchType, self->Used, sLongName.c_str(), sValue.c_str(), self->Image, sDescription.c_str(), sColor.c_str(), sOptionValue.c_str());
 						}
-						else
+						//else
 						{
 							m_sql.safe_query(
 								"INSERT INTO DeviceStatus (HardwareID, DeviceID, Unit, Type, SubType, SwitchType, Used, SignalLevel, BatteryLevel, Name, nValue, sValue, CustomImage, Description, Color) "
@@ -779,7 +780,7 @@ namespace Plugins {
 							}
 
 							// Device successfully created, now set the options when supplied
-							if ((self->SubType != sTypeCustom) && (PyDict_Size(self->Options) > 0))
+							//if ((self->SubType != sTypeCustom) && (PyDict_Size(self->Options) > 0))
 							{
 								PyObject *pKeyDict, *pValueDict;
 								Py_ssize_t pos = 0;
@@ -791,7 +792,7 @@ namespace Plugins {
 									Py_XDECREF(pStr);
 									mpOptions.insert(std::pair<std::string, std::string>(sOptionName, sOptionValue));
 								}
-								m_sql.SetDeviceOptions(self->ID, mpOptions);
+								//m_sql.SetDeviceOptions(self->ID, mpOptions);
 							}
 
 							// Refresh device data to ensure it is usable straight away
@@ -919,14 +920,14 @@ namespace Plugins {
 			// Color change
 			if (Color)
 			{
-				std::string	sColor = _tColor(std::string(Color)).toJSONString(); //Parse the color to detect incorrectly formatted color data
+				std::string	sColor = "";
 				//m_sql.UpdateDeviceValue("Color", sColor, sID);
 			}
 
 			// Options provided, assume change
 			if (pOptionsDict && PyDict_Check(pOptionsDict))
 			{
-				if (self->SubType != sTypeCustom)
+				//if (self->SubType != sTypeCustom)
 				{
 					PyObject *pKeyDict, *pValueDict;
 					Py_ssize_t pos = 0;
@@ -939,9 +940,9 @@ namespace Plugins {
 						Py_XDECREF(pStr);
 						mpOptions.insert(std::pair<std::string, std::string>(sOptionName, sOptionValue));
 					}
-					m_sql.SetDeviceOptions(self->ID, mpOptions);
+					//m_sql.SetDeviceOptions(self->ID, mpOptions);
 				}
-				else
+				//else
 				{
 					std::string sOptionValue = "";
 					PyObject *pValue = PyDict_GetItemString(pOptionsDict, "Custom");
@@ -975,38 +976,12 @@ namespace Plugins {
 
 				//DevRowIdx = m_sql.UpdateValue(self->HwdID, sDeviceID.c_str(), (const unsigned char)self->Unit, (const unsigned char)iType, (const unsigned char)iSubType, iSignalLevel, iBatteryLevel, nValue, sValue, sName, true);
 
-				// if this is an internal Security Panel then there are some extra updates required if state has changed
-				if ((self->Type == pTypeSecurity1) && (self->SubType == sTypeDomoticzSecurity) && (self->nValue != nValue))
-				{
-					switch (nValue)
-					{
-					case sStatusArmHome:
-					case sStatusArmHomeDelayed:
-						m_sql.UpdatePreferencesVar("SecStatus", SECSTATUS_ARMEDHOME);
-						m_mainworker.UpdateDomoticzSecurityStatus(SECSTATUS_ARMEDHOME);
-						break;
-					case sStatusArmAway:
-					case sStatusArmAwayDelayed:
-						m_sql.UpdatePreferencesVar("SecStatus", SECSTATUS_ARMEDAWAY);
-						m_mainworker.UpdateDomoticzSecurityStatus(SECSTATUS_ARMEDAWAY);
-						break;
-					case sStatusDisarm:
-					case sStatusNormal:
-					case sStatusNormalDelayed:
-					case sStatusNormalTamper:
-					case sStatusNormalDelayedTamper:
-						m_sql.UpdatePreferencesVar("SecStatus", SECSTATUS_DISARMED);
-						m_mainworker.UpdateDomoticzSecurityStatus(SECSTATUS_DISARMED);
-						break;
-					}
-				}
-
 				// Notify MQTT and various push mechanisms and notifications
 				m_mainworker.sOnDeviceReceived(self->pPlugin->m_HwdID, self->ID, self->pPlugin->m_Name, NULL);
-				m_notifications.CheckAndHandleNotification(DevRowIdx, self->HwdID, sDeviceID, sName, self->Unit, iType, iSubType, nValue, sValue);
+				//m_notifications.CheckAndHandleNotification(DevRowIdx, self->HwdID, sDeviceID, sName, self->Unit, iType, iSubType, nValue, sValue);
 
 				// Trigger any associated scene / groups
-				m_mainworker.CheckSceneCode(DevRowIdx, (const unsigned char)self->Type, (const unsigned char)self->SubType, nValue, sValue);
+				//m_mainworker.CheckSceneCode(DevRowIdx, (const unsigned char)self->Type, (const unsigned char)self->SubType, nValue, sValue);
 			}
 
 			CDevice_refresh(self);
