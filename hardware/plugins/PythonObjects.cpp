@@ -842,7 +842,6 @@ namespace Plugins {
 			int			iSubType = self->SubType;
 			int			iSwitchType = self->SwitchType;
 			int			iUsed = self->Used;
-			uint64_t 	DevRowIdx;
 			char*		Description = NULL;
 			char*		Color = NULL;
 			int			SuppressTriggers = false;

@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.14.0)
 project(domoticz)
 
 ## required min. libBoost version
-SET(DOMO_MIN_LIBBOOST_VERSION 1.66.0)
+SET(DOMO_MIN_LIBBOOST_VERSION 1.70.0)
 ##
 
 MACRO(History_GET_REVISION variable)
@@ -58,41 +58,6 @@ IF(USE_OPENSSL_STATIC)
 	set(OPENSSL_USE_STATIC_LIBS TRUE)
 ENDIF(USE_OPENSSL_STATIC)
 
-option(USE_BUILTIN_LUA "Use builtin lua library" YES)
-IF(USE_BUILTIN_LUA)
-  IF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    add_definitions(-DLUA_USE_MACOSX)
-  ENDIF()
-  add_subdirectory (lua)
-  get_directory_property (LUA_LIBRARIES DIRECTORY lua
-    DEFINITION LUA_LIBRARIES)
-ELSE(USE_BUILTIN_LUA)
-  find_package(PkgConfig)
-  pkg_search_module(LUA lua5.2>=5.2 lua>=5.2 lua-5.2)
-  IF(LUA_FOUND)
-    # Lua 5.2 pkg-config is broken.
-    # Depending on whether the used distro fixed that to
-    # provide backward compatibility we need to find the
-    # include dir and library name ourselves.
-    IF(NOT LUA_INCLUDE_DIRS)
-      find_path(LUA_INC_DIRS NAMES "lua.h" PATH_SUFFIXES "lua5.2")
-      set(LUA_INCLUDE_DIRS ${LUA_INC_DIRS})
-    ENDIF(NOT LUA_INCLUDE_DIRS)
-    message(STATUS "Found lua.h at: ${LUA_INCLUDE_DIRS}")
-    INCLUDE_DIRECTORIES(${LUA_INCLUDE_DIRS})
-    add_definitions(-DWITH_EXTERNAL_LUA)
-    IF(LUA_LIBRARY_DIRS)
-      link_directories(${LUA_LIBRARY_DIRS})
-    ELSE(LUA_LIBRARY_DIRS)
-      find_library(LUA_LIB NAMES lua lua5.2)
-      message(STATUS "Found lua library at: ${LUA_LIB}")
-      set(LUA_LIBRARIES ${LUA_LIB})
-    ENDIF(LUA_LIBRARY_DIRS)
-  ELSE(LUA_FOUND)
-    MESSAGE(FATAL_ERROR "LUA not found but USE_BUILTIN_LUA=NO")
-  ENDIF(LUA_FOUND)
-ENDIF(USE_BUILTIN_LUA)
-
 option(USE_BUILTIN_SQLITE "Use builtin sqlite library" YES)
 IF(USE_BUILTIN_SQLITE)
   add_subdirectory (sqlite)
@@ -111,8 +76,8 @@ ENDIF(USE_BUILTIN_SQLITE)
 
 option(USE_PYTHON "Use Python for Plugins" YES)
 IF(USE_PYTHON)
-  find_package(PythonInterp 3.4)
-  find_package(PythonLibs 3.4)
+  find_package(PythonInterp 3.5)
+  find_package(PythonLibs 3.5)
   IF(PYTHONLIBS_FOUND)
     MESSAGE(STATUS "Python3 includes found at: ${PYTHON_INCLUDE_PATH}")
     INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
@@ -281,6 +246,7 @@ hardware/plugins/PluginManager.cpp
 hardware/plugins/PluginProtocols.cpp
 hardware/plugins/PluginTransports.cpp
 hardware/plugins/PythonObjects.cpp
+hardware/plugins/Base64.cpp
 json/json_reader.cpp
 json/json_value.cpp
 json/json_writer.cpp
@@ -432,39 +398,7 @@ if(WITH_LIBUSB)
   ENDIF(LIBUSB_FOUND)
 endif(WITH_LIBUSB)
 
-## support lua popen on Linux platforms
-#IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-# SET(OperatingSystem "Linux")
-# add_definitions(-DLUA_USE_LINUX)
-#ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-
-#
-# OpenZWave
-# try to find open-zwave, if found, include support
-#
-option(USE_STATIC_OPENZWAVE "Build with static OpenZwave libraries" YES)
-if(USE_STATIC_OPENZWAVE)
-  find_library(OpenZWave NAMES libopenzwave.a HINTS "../open-zwave-read-only" "../open-zwave-read-only/cpp/build")
-  set(OPENZWAVE_LIB ${OpenZWave})
-else()
-  pkg_check_modules(OPENZWAVE libopenzwave)
-  if(OPENZWAVE_FOUND)
-    MESSAGE(STATUS "==== OpenZWave package found!")
-    find_library(OpenZWave NAMES libopenzwave.so HINTS ${OPENZWAVE_LIBRARY_DIRS})
-    message(STATUS ${OpenZWave})
-  endif()
-endif()
-IF(OpenZWave)
-  message(STATUS ${OpenZWave})
-  target_link_libraries(domoticz ${OpenZWave})
-  include_directories(${CMAKE_SOURCE_DIR}/hardware/openzwave)
-  add_definitions(-DWITH_OPENZWAVE)
-ELSE()
-  MESSAGE(STATUS "==== OpenZWave not found, support disabled!")
-ENDIF(OpenZWave)
-
-
-target_link_libraries(domoticz ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${MINIZIP_LIBRARIES} ${CURL_LIBRARIES} pthread ${LUA_LIBRARIES} ${SQLite_LIBRARIES} ${CMAKE_DL_LIBS})
+target_link_libraries(domoticz ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${MINIZIP_LIBRARIES} ${CURL_LIBRARIES} pthread ${SQLite_LIBRARIES} ${CMAKE_DL_LIBS})
 
 IF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   target_link_libraries(domoticz -lresolv)
@@ -531,5 +465,4 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/server_cert.pem DESTINATION ${CMAKE_IN
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts DESTINATION ${CMAKE_INSTALL_PREFIX} USE_SOURCE_PERMISSIONS)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/plugins DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Config DESTINATION ${CMAKE_INSTALL_PREFIX})
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dzVents DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/updatedomo DESTINATION ${CMAKE_INSTALL_PREFIX} PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
