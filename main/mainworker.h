@@ -36,23 +36,6 @@ public:
 
 	bool RestartHardware(const std::string &idx);
 
-	bool AddHardwareFromParams(
-		const int ID,
-		const std::string &Name,
-		const bool Enabled,
-		const std::string &Address, const uint16_t Port, const std::string &SerialPort,
-		const std::string &Username, const std::string &Password,
-		const std::string &Extra,
-		const int Mode1,
-		const int Mode2,
-		const int Mode3,
-		const int Mode4,
-		const int Mode5,
-		const int Mode6,
-		const int DataTimeout,
-		const bool bDoStart
-	);
-
 	boost::signals2::signal<void(const int m_HwdID, const uint64_t DeviceRowIdx, const std::string &DeviceName, const uint8_t *pRXCommand)> sOnDeviceReceived;
 	boost::signals2::signal<void(const uint64_t SceneIdx, const std::string &SceneName)> sOnSwitchScene;
 
