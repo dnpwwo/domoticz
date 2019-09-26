@@ -54,12 +54,10 @@ public:
 
 	void DeleteDataPoint(const char *ID, const std::string &Date);
 
-	void UpdatePreferencesVar(const std::string &Key, const std::string &sValue);
-	void UpdatePreferencesVar(const std::string &Key, const int nValue);
-	void UpdatePreferencesVar(const std::string &Key, const int nValue, const std::string &sValue);
-	bool GetPreferencesVar(const std::string &Key, int &nValue, std::string &sValue);
-	bool GetPreferencesVar(const std::string &Key, int &nValue);
-	bool GetPreferencesVar(const std::string &Key, std::string &sValue);
+	void UpdatePreferencesVar(const std::string &Key, const std::string &Value);
+	bool GetPreferencesVar(const std::string& Key, std::string& Value, std::string& Default);
+	bool GetPreferencesVar(const std::string& Key, int* Value, int Default);
+	void DeletePreferencesVar(const std::string& Key);
 
 	int GetLastBackupNo(const char *Key, int &nValue);
 	void SetLastBackupNo(const char *Key, const int nValue);
@@ -77,9 +75,6 @@ public:
 	bool safe_UpdateBlobInTableWithID(const std::string &Table, const std::string &Column, const std::string &sID, const std::string &BlobData);
 	bool DoesColumnExistsInTable(const std::string &columnname, const std::string &tablename);
 
-	bool GetPreferencesVar(const std::string &Key, double &Value);
-	void UpdatePreferencesVar(const std::string &Key, const double Value);
-	void DeletePreferencesVar(const std::string &Key);
 	void AllowNewHardwareTimer(const int iTotMinutes);
 
 public:

@@ -26,21 +26,22 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-#define DB_VERSION 137
+#define DB_VERSION 1
 
 extern std::string szWWWFolder;
 
 const char* sqlCreatePerferences =
 		"CREATE TABLE[Preferences] ("
-			"[Key] VARCHAR(50) NOT NULL,"
-			"[nValue] INTEGER DEFAULT 0,"
-			"[sValue] VARCHAR(200))";
+			"[Key] TEXT UNIQUE NOT NULL,"
+			"[Value] Text)";
 
 const char* sqlCreateInterface =
 		"CREATE TABLE IF NOT EXISTS [Interface] ("
 			"[InterfaceID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Name] TEXT UNIQUE DEFAULT Unknown, "
+			"[Parameters] TEXT DEFAULT NULL, "
 			"[Configuration] TEXT DEFAULT NULL, "
+			"[Notifiable] INTEGER DEFAULT 0, "
 			"[Active] INTEGER DEFAULT 0);";
 
 const char* sqlCreateInterfaceLog =
@@ -205,7 +206,7 @@ bool CSQLHelper::OpenDatabase()
 	int dbversion = 0;
 	if (!bNewInstall)
 	{
-		GetPreferencesVar("DB_Version", dbversion);
+		GetPreferencesVar("DB_Version", &dbversion, 0);
 		if (dbversion > DB_VERSION)
 		{
 			//User is using a newer database on a old Domoticz version
@@ -278,81 +279,18 @@ bool CSQLHelper::OpenDatabase()
 
 		sqlite3_wal_checkpoint(m_dbase, NULL);
 	}
-	UpdatePreferencesVar("DB_Version", DB_VERSION);
+	UpdatePreferencesVar("DB_Version", std::to_string(DB_VERSION));
 
 	//Make sure we have some default preferences
-	int nValue = 10;
+	int nValue = 0;
 	std::string sValue;
-	if (!GetPreferencesVar("Title", sValue))
-	{
-		UpdatePreferencesVar("Title", "Domoticz");
-	}
-
-	if (!GetPreferencesVar("UseAutoUpdate", nValue))
-	{
-		UpdatePreferencesVar("UseAutoUpdate", 1);
-	}
-
-	if (!GetPreferencesVar("UseAutoBackup", nValue))
-	{
-		UpdatePreferencesVar("UseAutoBackup", 0);
-	}
-
-	if ((!GetPreferencesVar("Language", sValue)) || (sValue.empty()))
-	{
-		UpdatePreferencesVar("Language", "en");
-	}
-	if (!GetPreferencesVar("AuthenticationMethod", nValue))
-	{
-		UpdatePreferencesVar("AuthenticationMethod", 0);//AUTH_LOGIN=0, AUTH_BASIC=1
-	}
-	if (!GetPreferencesVar("ReleaseChannel", nValue))
-	{
-		UpdatePreferencesVar("ReleaseChannel", 0);//Stable=0, Beta=1
-	}
-
-	nValue = 1;
-	if (!GetPreferencesVar("AcceptNewHardware", nValue))
-	{
-		UpdatePreferencesVar("AcceptNewHardware", 1);
-		nValue = 1;
-	}
-	m_bAcceptNewHardware = (nValue == 1);
-	if ((!GetPreferencesVar("ZWavePollInterval", nValue)) || (nValue == 0))
-	{
-		UpdatePreferencesVar("ZWavePollInterval", 60);
-	}
-	if (!GetPreferencesVar("ZWaveEnableDebug", nValue))
-	{
-		UpdatePreferencesVar("ZWaveEnableDebug", 0);
-	}
-	if ((!GetPreferencesVar("ZWaveNetworkKey", sValue)) || (sValue.empty()))
-	{
-		sValue = "0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10";
-		UpdatePreferencesVar("ZWaveNetworkKey", sValue);
-	}
-
-	//Double check network_key
-	std::vector<std::string> splitresults;
-	StringSplit(sValue, ",", splitresults);
-	if (splitresults.size() != 16)
-	{
-		sValue = "0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10";
-		UpdatePreferencesVar("ZWaveNetworkKey", sValue);
-	}
-
-	if (!GetPreferencesVar("ZWaveEnableNightlyNetworkHeal", nValue))
-	{
-		UpdatePreferencesVar("ZWaveEnableNightlyNetworkHeal", 0);
-	}
-	if (!GetPreferencesVar("BatteryLowNotification", nValue))
-	{
-		UpdatePreferencesVar("BatteryLowNotification", 0); //default disabled
-	}
-	if ((!GetPreferencesVar("WebTheme", sValue)) || (sValue.empty()))
-	{
-		UpdatePreferencesVar("WebTheme", "default");
-	}
+	GetPreferencesVar("Title", sValue, std::string("Domoticz"));
+	GetPreferencesVar("UseAutoUpdate", sValue, std::string("True"));
+	GetPreferencesVar("UseAutoBackup", sValue, std::string("True"));
+	GetPreferencesVar("Language", sValue, std::string("en"));
+	GetPreferencesVar("AuthenticationMethod", &nValue, 0);
+	GetPreferencesVar("AcceptNewHardware", sValue, std::string("True"));
+	m_bAcceptNewHardware = (sValue == "True");
 
 	//Start background thread
 	if (!StartThread())
@@ -400,7 +338,10 @@ void CSQLHelper::Do_Work()
 			{
 				m_bAcceptHardwareTimerActive = false;
 				m_bAcceptNewHardware = m_bPreviousAcceptNewHardware;
-				UpdatePreferencesVar("AcceptNewHardware", (m_bAcceptNewHardware == true) ? 1 : 0);
+				if (m_bAcceptNewHardware)
+					UpdatePreferencesVar("AcceptNewHardware", std::string("True"));
+				else
+					UpdatePreferencesVar("AcceptNewHardware", std::string("False"));
 				if (!m_bAcceptNewHardware)
 				{
 					_log.Log(LOG_STATUS, "Receiving of new sensors disabled!...");
@@ -623,22 +564,7 @@ bool CSQLHelper::DoesDeviceExist(const int HardwareID, const char* ID, const uns
 	}
 }
 
-void CSQLHelper::UpdatePreferencesVar(const std::string &Key, const std::string &sValue)
-{
-	UpdatePreferencesVar(Key, 0, sValue);
-}
-void CSQLHelper::UpdatePreferencesVar(const std::string &Key, const double Value)
-{
-	std::string sValue = boost::to_string(Value);
-	UpdatePreferencesVar(Key, 0, sValue);
-}
-
-void CSQLHelper::UpdatePreferencesVar(const std::string &Key, const int nValue)
-{
-	UpdatePreferencesVar(Key, nValue, "");
-}
-
-void CSQLHelper::UpdatePreferencesVar(const std::string &Key, const int nValue, const std::string &sValue)
+void CSQLHelper::UpdatePreferencesVar(const std::string &Key, const std::string &Value)
 {
 	if (!m_dbase)
 		return;
@@ -649,80 +575,59 @@ void CSQLHelper::UpdatePreferencesVar(const std::string &Key, const int nValue, 
 	if (result.empty())
 	{
 		//Insert
-		result = safe_query("INSERT INTO Preferences (Key, nValue, sValue) VALUES ('%q', %d,'%q')",
-			Key.c_str(), nValue, sValue.c_str());
+		result = safe_query("INSERT INTO Preferences (Key, Value) VALUES ('%q','%q')",
+			Key.c_str(), Value.c_str());
 	}
 	else
 	{
 		//Update
-		result = safe_query("UPDATE Preferences SET Key='%q', nValue=%d, sValue='%q' WHERE (ROWID = '%q')",
-			Key.c_str(), nValue, sValue.c_str(), result[0][0].c_str());
+		result = safe_query("UPDATE Preferences SET Key='%q', Value='%q' WHERE (ROWID = '%q')",
+			Key.c_str(), Value.c_str(), result[0][0].c_str());
 	}
 }
 
-bool CSQLHelper::GetPreferencesVar(const std::string &Key, std::string &sValue)
-{
-	if (!m_dbase)
-		return false;
-
-
-	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT sValue FROM Preferences WHERE (Key='%q')",
-		Key.c_str());
-	if (result.empty())
-		return false;
-	std::vector<std::string> sd = result[0];
-	sValue = sd[0];
-	return true;
-}
-
-bool CSQLHelper::GetPreferencesVar(const std::string &Key, double &Value)
-{
-
-	std::string sValue;
-	int nValue;
-	Value = 0;
-	bool res = GetPreferencesVar(Key, nValue, sValue);
-	if (!res)
-		return false;
-	Value = atof(sValue.c_str());
-	return true;
-}
-bool CSQLHelper::GetPreferencesVar(const std::string &Key, int &nValue, std::string &sValue)
+bool CSQLHelper::GetPreferencesVar(const std::string &Key, std::string& Value, std::string &Default)
 {
 	if (!m_dbase)
 		return false;
 
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT nValue, sValue FROM Preferences WHERE (Key='%q')",
+	result = safe_query("SELECT Value FROM Preferences WHERE (Key='%q')",
 		Key.c_str());
 	if (result.empty())
-		return false;
+	{
+		Value = Default;
+		UpdatePreferencesVar(Key, Value);
+		return true;
+	}
 	std::vector<std::string> sd = result[0];
-	nValue = atoi(sd[0].c_str());
-	sValue = sd[1];
+	Value = sd[0];
 	return true;
 }
 
-bool CSQLHelper::GetPreferencesVar(const std::string &Key, int &nValue)
+bool CSQLHelper::GetPreferencesVar(const std::string& Key, int* Value, int Default)
 {
-	std::string sValue;
-	return GetPreferencesVar(Key, nValue, sValue);
+	if (!m_dbase)
+		return false;
+
+	std::vector<std::vector<std::string> > result;
+	result = safe_query("SELECT Value FROM Preferences WHERE (Key='%q')",
+		Key.c_str());
+	if (result.empty())
+	{
+		*Value = Default;
+		UpdatePreferencesVar(Key, std::to_string(*Value));
+		return true;
+	}
+	std::vector<std::string> sd = result[0];
+	*Value = atoi(sd[0].c_str());
+	return true;
 }
+
 void CSQLHelper::DeletePreferencesVar(const std::string &Key)
 {
-	std::string sValue;
-	if (!m_dbase)
-		return;
-
-	//if found, delete
-	if (GetPreferencesVar(Key, sValue) == true)
-	{
-		safe_query("DELETE FROM Preferences WHERE (Key='%q')", Key.c_str());
-	}
+	safe_query("DELETE FROM Preferences WHERE (Key='%q')", Key.c_str());
 }
-
-
 
 int CSQLHelper::GetLastBackupNo(const char *Key, int &nValue)
 {
@@ -824,7 +729,7 @@ void CSQLHelper::ScheduleDay()
 void CSQLHelper::CleanupShortLog()
 {
 	int n5MinuteHistoryDays = 1;
-	if (GetPreferencesVar("5MinuteHistoryDays", n5MinuteHistoryDays))
+	if (GetPreferencesVar("5MinuteHistoryDays", &n5MinuteHistoryDays, 1))
 	{
 		// If the history days is zero then all data in the short logs is deleted!
 		if (n5MinuteHistoryDays == 0)
@@ -857,7 +762,7 @@ void CSQLHelper::CleanupLightSceneLog()
 {
 	//cleanup the lighting log
 	int nMaxDays = 30;
-	GetPreferencesVar("LightHistoryDays", nMaxDays);
+	GetPreferencesVar("LightHistoryDays", &nMaxDays, 30);
 
 	char szDateEnd[40];
 	time_t now = mytime(NULL);

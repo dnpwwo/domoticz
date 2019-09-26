@@ -805,30 +805,6 @@
     <ClInclude Include="..\tinyxpath\xpath_processor.h">
       <Filter>XML</Filter>
     </ClInclude>
-    <ClInclude Include="..\main\Noncopyable.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\concurrent_queue.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\CmdLine.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\localtime_r.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\SignalHandler.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\SunRiseSet.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\Logger.h">
-      <Filter>Logger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\main\StoppableTask.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
     <ClInclude Include="..\hardware\plugins\icmp_header.hpp">
       <Filter>Devices\Plugins</Filter>
     </ClInclude>
@@ -876,13 +852,7 @@
     <ClCompile Include="..\main\domoticz.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\main\Helper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\main\mainworker.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\SQLHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\main\stdafx.cpp">
@@ -943,9 +913,6 @@
       <Filter>XML</Filter>
     </ClCompile>
     <ClCompile Include="..\main\CmdLine.cpp">
-      <Filter>Helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\main\localtime_r.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
     <ClCompile Include="..\main\SignalHandler.cpp">
@@ -1010,6 +977,18 @@
     </ClCompile>
     <ClCompile Include="..\web\webserver\server.cpp">
       <Filter>Web\WebEm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\main\Helper.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\main\SQLHelper.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\web\WebServerHelper.cpp">
+      <Filter>Web</Filter>
+    </ClCompile>
+    <ClCompile Include="..\main\localtime_r.cpp">
+      <Filter>Helpers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

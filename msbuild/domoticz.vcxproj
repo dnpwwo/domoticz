@@ -324,17 +324,10 @@
     <ClInclude Include="..\hardware\plugins\PluginTransports.h" />
     <ClInclude Include="..\hardware\plugins\PythonObjects.h" />
     <ClInclude Include="..\main\appversion.h" />
-    <ClInclude Include="..\main\CmdLine.h" />
     <ClInclude Include="..\hardware\DomoticzHardware.h" />
-    <ClInclude Include="..\main\concurrent_queue.h" />
     <ClInclude Include="..\main\dirent_windows.h" />
-    <ClInclude Include="..\main\localtime_r.h" />
-    <ClInclude Include="..\main\Logger.h" />
     <ClInclude Include="..\main\mainstructs.h" />
-    <ClInclude Include="..\main\Noncopyable.h" />
-    <ClInclude Include="..\main\StoppableTask.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="..\main\SignalHandler.h" />
     <ClInclude Include="..\main\SQLHelper.h" />
     <ClInclude Include="..\main\Helper.h" />
     <ClInclude Include="..\main\mainworker.h" />
@@ -343,7 +336,6 @@
     <ClInclude Include="..\tinyxpath\tinyxml.h" />
     <ClInclude Include="..\tinyxpath\xpath_processor.h" />
     <ClInclude Include="..\main\stdafx.h" />
-    <ClInclude Include="..\main\SunRiseSet.h" />
     <ClInclude Include="WindowsHelper.h" />
   </ItemGroup>
   <ItemGroup>
@@ -393,6 +385,7 @@
     <ClCompile Include="..\tinyxpath\xpath_stream.cpp" />
     <ClCompile Include="..\tinyxpath\xpath_syntax.cpp" />
     <ClCompile Include="..\web\WebServer.cpp" />
+    <ClCompile Include="..\web\WebServerHelper.cpp" />
     <ClCompile Include="..\web\webserver\Base64.cpp" />
     <ClCompile Include="..\web\webserver\connection.cpp" />
     <ClCompile Include="..\web\webserver\connection_manager.cpp" />

@@ -4,6 +4,7 @@
 #include "SunRiseSet.h"
 #include "localtime_r.h"
 #include "Logger.h"
+#include "../web/WebServerHelper.h"
 #include "SQLHelper.h"
 
 #include <boost/algorithm/string/join.hpp>
@@ -23,7 +24,6 @@
 #include <dirent.h>
 #endif
 
-#include "mainstructs.h"
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
@@ -46,12 +46,6 @@ extern std::string szWWWFolder;
 extern std::string szAppVersion;
 extern std::string szWebRoot;
 extern bool g_bUseUpdater;
-
-namespace tcp {
-	namespace server {
-		class CTCPClient;
-	} //namespace server
-} //namespace tcp
 
 MainWorker::MainWorker()
 {
@@ -81,8 +75,6 @@ MainWorker::MainWorker()
 	m_bHaveUpdate = false;
 	m_iRevision = 0;
 
-	m_SecStatus = SECSTATUS_DISARMED;
-
 	m_bForceLogNotificationCheck = false;
 }
 
@@ -95,8 +87,7 @@ void MainWorker::AddAllDomoticzHardware()
 {
 	//Add Hardware devices
 	std::vector<std::vector<std::string> > result;
-	result = m_sql.safe_query(
-		"SELECT ID, Name, Enabled, Type, Address, Port, SerialPort, Username, Password, Extra, Mode1, Mode2, Mode3, Mode4, Mode5, Mode6, DataTimeout FROM Hardware ORDER BY ID ASC");
+	result = m_sql.safe_query("SELECT InterfaceID, Name, Parameters, Configuration, Notifiable FROM Interface WHERE Active = 1 ORDER BY InterfaceID ASC");
 	if (!result.empty())
 	{
 		for (const auto & itt : result)
@@ -105,21 +96,9 @@ void MainWorker::AddAllDomoticzHardware()
 
 			int ID = atoi(sd[0].c_str());
 			std::string Name = sd[1];
-			std::string sEnabled = sd[2];
-			bool Enabled = (sEnabled == "1") ? true : false;
-			std::string Address = sd[4];
-			uint16_t Port = (uint16_t)atoi(sd[5].c_str());
-			std::string SerialPort = sd[6];
-			std::string Username = sd[7];
-			std::string Password = sd[8];
-			std::string Extra = sd[9];
-			int mode1 = atoi(sd[10].c_str());
-			int mode2 = atoi(sd[11].c_str());
-			int mode3 = atoi(sd[12].c_str());
-			int mode4 = atoi(sd[13].c_str());
-			int mode5 = atoi(sd[14].c_str());
-			int mode6 = atoi(sd[15].c_str());
-			int DataTimeout = atoi(sd[16].c_str());
+			std::string Parameters = sd[2];
+			std::string Configuration = sd[3];
+			bool bNotifiable = (sd[4] == "1") ? true : false;
 			//AddHardwareFromParams(ID, Name, Enabled, Type, Address, Port, SerialPort, Username, Password, Extra, mode1, mode2, mode3, mode4, mode5, mode6, DataTimeout, false);
 		}
 		m_hardwareStartCounter = 0;
@@ -172,7 +151,7 @@ void MainWorker::GetAvailableWebThemes()
 	//check if current theme is found, if not, select default
 	bool bFound = false;
 	std::string sValue;
-	if (m_sql.GetPreferencesVar("WebTheme", sValue))
+	if (m_sql.GetPreferencesVar("WebTheme", sValue, std::string("default")))
 	{
 		for (const auto & itt : m_webthemes)
 		{
@@ -278,10 +257,9 @@ CDomoticzHardwareBase* MainWorker::GetHardware(int HwdId)
 
 bool MainWorker::GetSunSettings()
 {
-	int nValue;
 	std::string sValue;
 	std::vector<std::string> strarray;
-	if (m_sql.GetPreferencesVar("Location", nValue, sValue))
+	if (m_sql.GetPreferencesVar("Location", sValue, std::string("")))
 		StringSplit(sValue, ";", strarray);
 
 	if (strarray.size() != 2)
@@ -436,11 +414,24 @@ bool MainWorker::Start()
 
 	GetSunSettings();
 	GetAvailableWebThemes();
-#ifdef ENABLE_PYTHON
+
+	// Start interfaces
 	m_pluginsystem.StartPluginSystem();
-#endif
 	AddAllDomoticzHardware();
 
+	// Start Web Server(s)
+	http::server::CWebServerHelper	WebServers;
+	if (!WebServers.StartServers())
+	{
+		_log.Log(LOG_ERROR, "Error starting webserver(s)");
+#ifdef WIN32
+		MessageBox(0, "Error starting webserver(s), check if ports are not in use!", MB_OK, MB_ICONERROR);
+#endif
+		return false;
+	}
+	WebServers.SetWebCompressionMode(http::server::WWW_FORCE_NO_GZIP_SUPPORT);
+
+	// Start do work thread
 	m_thread = std::make_shared<std::thread>(&MainWorker::Do_Work, this);
 	SetThreadName(m_thread->native_handle(), "MainWorker");
 	return (m_thread != nullptr);
@@ -451,6 +442,10 @@ bool MainWorker::Stop()
 {
 	if (m_thread)
 	{
+		_log.Log(LOG_STATUS, "Stopping all webservers...");
+		http::server::CWebServerHelper	WebServers;
+		WebServers.StopServers();
+
 		_log.Log(LOG_STATUS, "Stopping all hardware...");
 		StopDomoticzHardware();
 #ifdef ENABLE_PYTHON
@@ -474,9 +469,9 @@ bool MainWorker::IsUpdateAvailable(const bool bIsForced)
 
 	if (!bIsForced)
 	{
-		int nValue = 0;
-		m_sql.GetPreferencesVar("UseAutoUpdate", nValue);
-		if (nValue != 1)
+		std::string	Value;
+		m_sql.GetPreferencesVar("UseAutoUpdate", Value, std::string("True"));
+		if (Value != "True")
 		{
 			return false;
 		}
@@ -513,8 +508,7 @@ bool MainWorker::IsUpdateAvailable(const bool bIsForced)
 	}
 	m_LastUpdateCheck = atime;
 
-	int nValue;
-	m_sql.GetPreferencesVar("ReleaseChannel", nValue);
+	int nValue = 0;
 	bool bIsBetaChannel = (nValue != 0);
 
 	std::string szURL;
@@ -574,10 +568,10 @@ bool MainWorker::StartDownloadUpdate()
 
 void MainWorker::HandleAutomaticBackups()
 {
-	int nValue = 0;
-	if (!m_sql.GetPreferencesVar("UseAutoBackup", nValue))
+	std::string Value;
+	if (!m_sql.GetPreferencesVar("UseAutoBackup", Value, std::string("True")))
 		return;
-	if (nValue != 1)
+	if (Value != "True")
 		return;
 
 	_log.Log(LOG_STATUS, "Starting automatic database backup procedure...");
@@ -619,7 +613,7 @@ void MainWorker::HandleAutomaticBackups()
 
 	std::string szInstanceName = "domoticz";
 	std::string szVar;
-	if (m_sql.GetPreferencesVar("Title", szVar))
+	if (m_sql.GetPreferencesVar("Title", szVar, std::string("domoticz")))
 	{
 		stdreplace(szVar, " ", "_");
 		stdreplace(szVar, "/", "_");
