@@ -30,8 +30,12 @@
 
 extern std::string szWWWFolder;
 
-const char* sqlCreatePerferences =
-		"CREATE TABLE[Preferences] ("
+// Always create a integer primary key for tables if you can 'walk it' to another table.
+// SQLite will create one anyway so it might as well have a name
+
+const char* sqlCreatePreference =
+		"CREATE TABLE IF NOT EXISTS [Preference] ("
+			"[PreferenceID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Key] TEXT UNIQUE NOT NULL,"
 			"[Value] Text)";
 
@@ -51,8 +55,8 @@ const char* sqlCreateInterfaceLog =
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP,"
 		"FOREIGN KEY(InterfaceID) REFERENCES Interface(InterfaceID) ON DELETE CASCADE);";
 
-const char* sqlCreateInterfaceDevice =
-		"CREATE TABLE IF NOT EXISTS [InterfaceDevice] ("
+const char* sqlCreateDevice =
+		"CREATE TABLE IF NOT EXISTS [Device] ("
 			"[DeviceID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[InterfaceID] INTEGER, "
 			"[Name] TEXT DEFAULT Unknown, "
@@ -60,8 +64,8 @@ const char* sqlCreateInterfaceDevice =
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP,"
 		"FOREIGN KEY(InterfaceID) REFERENCES Interface(InterfaceID) ON DELETE CASCADE);";
 
-const char* sqlCreateValueUnit =
-	"CREATE TABLE IF NOT EXISTS [ValueUnit] ("
+const char* sqlCreateUnit =
+	"CREATE TABLE IF NOT EXISTS [Unit] ("
 			"[UnitID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Name] TEXT UNIQUE DEFAULT \"\", "
 			"[Minimum] INTEGER DEFAULT 0, "
@@ -69,8 +73,8 @@ const char* sqlCreateValueUnit =
 			"[IconList] TEXT DEFAULT \"\", "
 			"[TextLabels] TEXT DEFAULT \"\");";
 
-const char* sqlCreateDeviceValue =
-	"CREATE TABLE IF NOT EXISTS [DeviceValue] ("
+const char* sqlCreateValue =
+	"CREATE TABLE IF NOT EXISTS [Value] ("
 			"[ValueID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Name] TEXT DEFAULT \"\", "
 			"[DeviceID] INTEGER, "
@@ -79,29 +83,38 @@ const char* sqlCreateDeviceValue =
 			"[RetensionDays] INTEGER DEFAULT -1, "
 			"[RetensionInterval] INTEGER DEFAULT 900, "
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
-		"FOREIGN KEY(UnitID) REFERENCES ValueUnit(UnitID), "
-		"FOREIGN KEY(DeviceID) REFERENCES InterfaceDevice(DeviceID) ON DELETE CASCADE);";
+		"FOREIGN KEY(UnitID) REFERENCES Unit(UnitID), "
+		"FOREIGN KEY(DeviceID) REFERENCES Device(DeviceID) ON DELETE CASCADE);";
 
 const char* sqlCreateValueLog =
 	"CREATE TABLE IF NOT EXISTS [ValueLog] ("
 			"[ValueID] INTEGER, "
 			"[Message] TEXT DEFAULT \"\","
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
-		"FOREIGN KEY(ValueID) REFERENCES DeviceValue(ValueID) ON DELETE CASCADE);";
+		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
 
 const char* sqlCreateValueHistory =
 	"CREATE TABLE IF NOT EXISTS [ValueHistory] ("
 			"[ValueID] INTEGER, "
 			"[Value] TEXT DEFAULT \"\", "
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
-		"FOREIGN KEY(ValueID) REFERENCES DeviceValue(ValueID) ON DELETE CASCADE);";
+		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
 
-const char* sqlCreateValueScripts =
-	"CREATE TABLE IF NOT EXISTS [ValueScripts] ("
+const char* sqlCreateValueScript =
+	"CREATE TABLE IF NOT EXISTS [ValueScript] ("
 			"[ValueID] INTEGER, "
-			"[UpdateScript] TEXT DEFAULT NULL, "
-			"[PeriodicScript] TEXT DEFAULT NULL, "
-		"FOREIGN KEY(ValueID) REFERENCES DeviceValue(ValueID) ON DELETE CASCADE);";
+			"[Update] TEXT DEFAULT NULL, "
+			"[Periodic] TEXT DEFAULT NULL, "
+		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
+
+const char* sqlCreateValueNotification =
+	"CREATE TABLE IF NOT EXISTS [ValueNotification] ("
+			"[ValueNotificationID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[ValueID] INTEGER NOT NULL, "
+			"[InterfaceID] INTEGER NOT NULL, "
+			"[Script] TEXT DEFAULT \"\", "
+			"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE, "
+			"FOREIGN KEY(InterfaceID) REFERENCES Interface(InterfaceID));";
 
 const char* sqlCreateTimerPlan =
 	"CREATE TABLE IF NOT EXISTS [TimerPlan] ("
@@ -111,6 +124,7 @@ const char* sqlCreateTimerPlan =
 
 const char* sqlCreateValueTimer =
 	"CREATE TABLE IF NOT EXISTS [ValueTimer] ("
+			"[ValueTimerID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[TimerPlanID] INTEGER, "
 			"[ValueID] INTEGER, "
 			"[DayMask] TEXT DEFAULT \"Mon,Tue,Wed,Thu,Fri,Sat,Sun\", "
@@ -119,39 +133,41 @@ const char* sqlCreateValueTimer =
 			"[Sunset] INTEGER DEFAULT 0, "
 			"[Random] INTEGER DEFAULT 0, "
 		"FOREIGN KEY(TimerPlanID) REFERENCES TimerPlan(TimerPlanID), "
-		"FOREIGN KEY(ValueID) REFERENCES DeviceValue(ValueID) ON DELETE CASCADE);";
+		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
 
-const char* sqlCreateUserRole =
-	"CREATE TABLE IF NOT EXISTS [UserRole] ("
+const char* sqlCreateRole =
+	"CREATE TABLE IF NOT EXISTS [Role] ("
 			"[RoleID] INTEGER PRIMARY KEY AUTOINCREMENT, "
-			"[Name] TEXT UNIQUE DEFAULT \"\");";
+			"[Name] TEXT UNIQUE NOT NULL);";
 
 const char* sqlCreateUser =
 	"CREATE TABLE IF NOT EXISTS [User] ("
 			"[UserID] INTEGER PRIMARY KEY AUTOINCREMENT, "
-			"[UserName] TEXT UNIQUE DEFAULT Unknown, "
-			"[Password] TEXT DEFAULT Unknown, "
-			"[Name] TEXT DEFAULT Unknown, "
-			"[RoleID] INTEGER, "
+			"[UserName] TEXT UNIQUE NOT NULL, "
+			"[Password] TEXT DEFAULT \"\", "
+			"[Name] TEXT NOT NULL, "
+			"[RoleID] INTEGER NOT NULL, "
 			"[Active] INTEGER DEFAULT 0, "
 			"[ForceChange] INTEGER DEFAULT 1, "
 			"[FailedAttempts] INTEGER DEFAULT 0, "
 			"[Timestamp] TEXT DEFAULT 0, "
-		"FOREIGN KEY(RoleID) REFERENCES UserRole(RoleID) ON DELETE CASCADE);";
+		"FOREIGN KEY(RoleID) REFERENCES Role(RoleID) ON DELETE CASCADE);";
 
 const char* sqlCreateUserSession =
 	"CREATE TABLE IF NOT EXISTS [UserSession] ("
-			"[UserID] INTEGER, "
-			"[RoleID] INTEGER, "
-			"[AccessToken] TEXT DEFAULT \"\", "
-			"[Expiry] TEXT DEFAULT 0, "
+			"[SessionID] TEXT NOT NULL, "
+			"[AuthToken] TEXT NOT NULL, "
+			"[UserID] INTEGER NOT NULL, "
+			"[RoleID] INTEGER NOT NULL, "
+			"[Expiry] TEXT DEFAULT CURRENT_TIMESTAMP, "
 		"FOREIGN KEY(UserID) REFERENCES User(UserID) ON DELETE CASCADE, "
-		"FOREIGN KEY(RoleID) REFERENCES UserRole(RoleID) ON DELETE CASCADE);";
+		"FOREIGN KEY(RoleID) REFERENCES Role(RoleID) ON DELETE CASCADE);";
 
-const char* sqlCreateRESTPrivilege =
-	"CREATE TABLE IF NOT EXISTS [RESTPrivilege] ("
-			"[TableName] TEXT, "
-			"[RoleID] INTEGER, "
+const char* sqlCreateTableAccess =
+	"CREATE TABLE IF NOT EXISTS [TableAccess] ("
+			"[TableAccessID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[Name] TEXT NOT NULL, "
+			"[RoleID] INTEGER NOT NULL, "
 			"[CanGET] TEXT DEFAULT 0, "
 			"[CanPOST] TEXT DEFAULT 0, "
 			"[CanPUT] TEXT DEFAULT 0, "
@@ -159,7 +175,7 @@ const char* sqlCreateRESTPrivilege =
 			"[CanDELETE] TEXT DEFAULT 0, "
 			"[PUTFields] TEXT DEFAULT \"*\", "
 			"[PATCHFields] TEXT DEFAULT \"*\", "
-		"FOREIGN KEY(RoleID) REFERENCES UserRole(RoleID) ON DELETE CASCADE);";
+		"FOREIGN KEY(RoleID) REFERENCES Role(RoleID) ON DELETE CASCADE);";
 
 extern std::string szUserDataFolder;
 
@@ -220,22 +236,25 @@ bool CSQLHelper::OpenDatabase()
 	}
 
 	//create database (if not exists)
-	query(sqlCreatePerferences);
+	query(sqlCreatePreference);
 	query(sqlCreateInterface);
 	query(sqlCreateInterfaceLog);
-	query(sqlCreateInterfaceDevice);
-	query(sqlCreateValueUnit);
-	query(sqlCreateDeviceValue);
+	query(sqlCreateDevice);
+	query(sqlCreateUnit);
+	query(sqlCreateValue);
 	query(sqlCreateValueHistory);
 	query(sqlCreateValueLog);
 	query(sqlCreateValueHistory);
-	query(sqlCreateValueScripts);
+	query(sqlCreateValueScript);
+	query(sqlCreateValueNotification);
+
 	query(sqlCreateTimerPlan);
 	query(sqlCreateValueTimer);
-	query(sqlCreateUserRole);
+
+	query(sqlCreateRole);
 	query(sqlCreateUser);
 	query(sqlCreateUserSession);
-	query(sqlCreateRESTPrivilege);
+	query(sqlCreateTableAccess);
 
 	//Add indexes to log tables
 
@@ -250,32 +269,32 @@ bool CSQLHelper::OpenDatabase()
 	else if (bNewInstall)
 	{
 		// User / Security related
-		query("INSERT INTO UserRole (Name) VALUES ('Anonymous')");
-		query("INSERT INTO UserRole (Name) VALUES ('User')");
-		query("INSERT INTO UserRole (Name) VALUES ('Administrator')");
+		query("INSERT INTO Role (Name) VALUES ('Anonymous')");
+		query("INSERT INTO Role (Name) VALUES ('User')");
+		query("INSERT INTO Role (Name) VALUES ('Administrator')");
 
 		// Add a couple of users
-		query("INSERT INTO User (Username, Password, Name, RoleID) SELECT 'Anonymous','Anonymous','Anonymous User', RoleID FROM UserRole WHERE Name = 'Anonymous'");
-		query("INSERT INTO User (Username, Password, Name, RoleID) SELECT 'Admin','Admin ','Administrative User', RoleID FROM UserRole WHERE Name = 'Administrator'");
+		query("INSERT INTO User (Username, Password, Name, RoleID) SELECT 'Anonymous','Anonymous','Anonymous User', RoleID FROM Role WHERE Name = 'Anonymous'");
+		query("INSERT INTO User (Username, Password, Name, RoleID) SELECT 'Admin','Admin ','Administrative User', RoleID FROM Role WHERE Name = 'Administrator'");
 
 		// Give access to tables
-		query("INSERT INTO RESTPrivilege (TableName,RoleID,CanGET) SELECT A.name, B.RoleID, true FROM sqlite_master A, UserRole B WHERE (A.type='table' AND A.name <> 'sqlite_sequence' AND A.name NOT LIKE 'User%' AND A.name NOT LIKE 'REST%') AND (B.Name <> 'Administrator')");
-		query("UPDATE RESTPrivilege SET CanPATCH=true, PATCHFields='Value' WHERE TableName='DeviceValue' AND RoleID IN (SELECT RoleID FROM UserRole WHERE Name <> 'Administrator')");
-		query("INSERT INTO RESTPrivilege (TableName,RoleID,CanGET,CanPOST,CanPUT,CanPATCH,CanDELETE) SELECT A.name, B.RoleID, true, true, true, true, true FROM sqlite_master A, UserRole B WHERE(A.type = 'table' and A.name <> 'sqlite_sequence') AND(B.Name = 'Administrator')");
+		query("INSERT INTO TableAccess (Name,RoleID,CanGET) SELECT A.name, B.RoleID, true FROM sqlite_master A, Role B WHERE (A.type='table' AND A.name <> 'sqlite_sequence' AND A.name NOT LIKE 'User%' AND A.name NOT LIKE 'TableAccess%') AND (B.Name <> 'Administrator')");
+		query("UPDATE TableAccess SET CanPATCH=true, PATCHFields='Value' WHERE Name='DeviceValue' AND RoleID IN (SELECT RoleID FROM Role WHERE Name <> 'Administrator')");
+		query("INSERT INTO TableAccess (Name,RoleID,CanGET,CanPOST,CanPUT,CanPATCH,CanDELETE) SELECT A.name, B.RoleID, true, true, true, true, true FROM sqlite_master A, Role B WHERE(A.type = 'table' and A.name <> 'sqlite_sequence') AND(B.Name = 'Administrator')");
 
 		// Units that Values can be associated with
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Light On/Off', 0, 1, 'Light48_Off.png,Light48_On.png', 'Off,On')");
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Fan On/Off', 0, 1, 'Fan48_Off.png,Fan48_On.png', 'Off,On')");
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Laptop On/Off', 0, 1, 'Computer48_Off.png,Computer48_On.png', 'Off,On')");
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Desktop On/Off', 0, 1, 'ComputerPC48_Off.png,ComputerPC48_On.png', 'Off,On')");
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Contact Open/Close', 0, 1, 'Contact48_Off.png,Contact48_On.png', 'Closed,Open')");
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Door Open/Close', 0, 1, 'Door48_Off.png,Door48_On.png', 'Closed,Open')");
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Dimmer', 0, 100, 'Dimmer48_Off.png,Dimmer48_On.png', 'Off,On')");
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Percentage', 0, 100, 'Percentage48.png', '%')");
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Celsius', -25, 100, 'temp48.png', '°C')");
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Temperature', 0, 6, 'temp-0-5.png,temp-5-10.png,temp-10-15.png,temp-15-20.png,temp-20-25.png,temp-25-30.png,temp-gt-30.png', 'Cold,Chilly,Cool,Mild,Warm,Hot,Baking')");
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Wind Direction', 0, 15, 'WindN.png,WindNNE.png,WindNE.png,WindENE.png,WindE.png,WindESE.png,WindSE.png,WindSSE.png,WindS.png,WindSSW.png,WindSW.png,WindWSW.png,WindW.png,WindWNW.png,WindNW.png,WindNNW.png', 'N,NNE,NE,ENE,E,ESE,SE,SSE,S,SSW,SW,WSW,W,WNW,NW,NNW')");
-		query("INSERT INTO ValueUnit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Volume On/Muted', 0, 100, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,On')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Light On/Off', 0, 1, 'Light48_Off.png,Light48_On.png', 'Off,On')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Fan On/Off', 0, 1, 'Fan48_Off.png,Fan48_On.png', 'Off,On')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Laptop On/Off', 0, 1, 'Computer48_Off.png,Computer48_On.png', 'Off,On')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Desktop On/Off', 0, 1, 'ComputerPC48_Off.png,ComputerPC48_On.png', 'Off,On')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Contact Open/Close', 0, 1, 'Contact48_Off.png,Contact48_On.png', 'Closed,Open')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Door Open/Close', 0, 1, 'Door48_Off.png,Door48_On.png', 'Closed,Open')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Dimmer', 0, 100, 'Dimmer48_Off.png,Dimmer48_On.png', 'Off,On')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Percentage', 0, 100, 'Percentage48.png', '%')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Celsius', -25, 100, 'temp48.png', '°C')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Temperature', 0, 6, 'temp-0-5.png,temp-5-10.png,temp-10-15.png,temp-15-20.png,temp-20-25.png,temp-25-30.png,temp-gt-30.png', 'Cold,Chilly,Cool,Mild,Warm,Hot,Baking')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Wind Direction', 0, 15, 'WindN.png,WindNNE.png,WindNE.png,WindENE.png,WindE.png,WindESE.png,WindSE.png,WindSSE.png,WindS.png,WindSSW.png,WindSW.png,WindWSW.png,WindW.png,WindWNW.png,WindNW.png,WindNNW.png', 'N,NNE,NE,ENE,E,ESE,SE,SSE,S,SSW,SW,WSW,W,WNW,NW,NNW')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Volume On/Muted', 0, 100, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,On')");
 
 		sqlite3_wal_checkpoint(m_dbase, NULL);
 	}
@@ -570,18 +589,18 @@ void CSQLHelper::UpdatePreferencesVar(const std::string &Key, const std::string 
 		return;
 
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT ROWID FROM Preferences WHERE (Key='%q')",
+	result = safe_query("SELECT ROWID FROM Preference WHERE (Key='%q')",
 		Key.c_str());
 	if (result.empty())
 	{
 		//Insert
-		result = safe_query("INSERT INTO Preferences (Key, Value) VALUES ('%q','%q')",
+		result = safe_query("INSERT INTO Preference (Key, Value) VALUES ('%q','%q')",
 			Key.c_str(), Value.c_str());
 	}
 	else
 	{
 		//Update
-		result = safe_query("UPDATE Preferences SET Key='%q', Value='%q' WHERE (ROWID = '%q')",
+		result = safe_query("UPDATE Preference SET Key='%q', Value='%q' WHERE (ROWID = '%q')",
 			Key.c_str(), Value.c_str(), result[0][0].c_str());
 	}
 }
@@ -592,7 +611,7 @@ bool CSQLHelper::GetPreferencesVar(const std::string &Key, std::string& Value, s
 		return false;
 
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT Value FROM Preferences WHERE (Key='%q')",
+	result = safe_query("SELECT Value FROM Preference WHERE (Key='%q')",
 		Key.c_str());
 	if (result.empty())
 	{
@@ -611,7 +630,7 @@ bool CSQLHelper::GetPreferencesVar(const std::string& Key, int* Value, int Defau
 		return false;
 
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT Value FROM Preferences WHERE (Key='%q')",
+	result = safe_query("SELECT Value FROM Preference WHERE (Key='%q')",
 		Key.c_str());
 	if (result.empty())
 	{
@@ -626,7 +645,7 @@ bool CSQLHelper::GetPreferencesVar(const std::string& Key, int* Value, int Defau
 
 void CSQLHelper::DeletePreferencesVar(const std::string &Key)
 {
-	safe_query("DELETE FROM Preferences WHERE (Key='%q')", Key.c_str());
+	safe_query("DELETE FROM Preference WHERE (Key='%q')", Key.c_str());
 }
 
 int CSQLHelper::GetLastBackupNo(const char *Key, int &nValue)

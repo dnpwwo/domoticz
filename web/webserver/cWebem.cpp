@@ -668,8 +668,22 @@ namespace http {
 			}
 			std::string strMimeType = mime_types::extension_to_type(extension);
 
+			// look for an exact match
 			std::map < std::string, webem_page_function >::iterator
 				pfun = myPages.find(request_path);
+
+			// now look for partial matches
+			std::string	partial_path = request_path;
+			while (pfun == myPages.end())
+			{
+				std::size_t last_slash_pos = partial_path.find_last_of("/");
+				if (last_slash_pos != std::string::npos)
+				{
+					partial_path = partial_path.substr(0, last_slash_pos);
+					pfun = myPages.find(partial_path);
+				}
+				else break;
+			}
 
 			if (pfun != myPages.end())
 			{

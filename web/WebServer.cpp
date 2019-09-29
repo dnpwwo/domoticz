@@ -9,6 +9,7 @@
 #include "../main/Logger.h"
 #include "../main/localtime_r.h"
 #include "webserver/Base64.h"
+#include "../json/json.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -124,7 +125,7 @@ namespace http {
 			}
 
 			//register callbacks
-			//m_pWebEm->RegisterPageCode("/json.htm", boost::bind(&CWebServer::GetJSonPage, this, _1, _2, _3));
+			m_pWebEm->RegisterPageCode("/API", boost::bind(&CWebServer::HandleREST, this, _1, _2, _3));
 
 			//Start normal worker thread
 			m_bDoStop = false;
@@ -195,7 +196,7 @@ namespace http {
 			}
 			else {
 				std::vector<std::vector<std::string> > result;
-				result = m_sql.safe_query("SELECT SessionID, Username, AuthToken, ExpirationDate FROM UserSessions WHERE SessionID = '%q'",
+				result = m_sql.safe_query("SELECT SessionID, UserID, RoleID, AuthToken, Expiry FROM UserSession WHERE SessionID = '%q'",
 					sessionId.c_str());
 				if (!result.empty()) {
 					session.id = result[0][0].c_str();
@@ -235,20 +236,15 @@ namespace http {
 			WebEmStoredSession storedSession = GetSession(session.id);
 			if (storedSession.id.empty()) {
 				m_sql.safe_query(
-					"INSERT INTO UserSessions (SessionID, Username, AuthToken, ExpirationDate, RemoteHost) VALUES ('%q', '%q', '%q', '%q', '%q')",
+					"INSERT INTO UserSession (SessionID, UserID, RoleID, AuthToken, Expiry) VALUES ('%q', '%q', '%q', '%q', '%q')",
 					session.id.c_str(),
-					base64_encode(session.username).c_str(),
+					session.username,
 					session.auth_token.c_str(),
-					szExpires,
-					remote_host.c_str());
+					szExpires);
 			}
 			else {
 				m_sql.safe_query(
-					"UPDATE UserSessions set AuthToken = '%q', ExpirationDate = '%q', RemoteHost = '%q', LastUpdate = datetime('now', 'localtime') WHERE SessionID = '%q'",
-					session.auth_token.c_str(),
-					szExpires,
-					remote_host.c_str(),
-					session.id.c_str());
+					"UPDATE UserSession set AuthToken = '%q', Expiry = '%q') WHERE SessionID = '%q'", session.auth_token.c_str(), szExpires, session.id.c_str());
 			}
 		}
 
@@ -261,7 +257,7 @@ namespace http {
 				return;
 			}
 			m_sql.safe_query(
-				"DELETE FROM UserSessions WHERE SessionID = '%q'",
+				"DELETE FROM UserSession WHERE SessionID = '%q'",
 				sessionId.c_str());
 		}
 
@@ -271,7 +267,7 @@ namespace http {
 		void CWebServer::CleanSessions() {
 			//_log.Log(LOG_STATUS, "SessionStore : clean...");
 			m_sql.safe_query(
-				"DELETE FROM UserSessions WHERE ExpirationDate < datetime('now', 'localtime')");
+				"DELETE FROM UserSession WHERE Expiry < datetime('now', 'localtime')");
 		}
 
 		/**
@@ -282,8 +278,233 @@ namespace http {
 		 * because the username will be unknown (see cWebemRequestHandler::checkAuthToken).
 		 */
 		void CWebServer::RemoveUsersSessions(const std::string& username, const WebEmSession & exceptSession) {
-			m_sql.safe_query("DELETE FROM UserSessions WHERE (Username=='%q') and (SessionID!='%q')", username.c_str(), exceptSession.id.c_str());
+			m_sql.safe_query("DELETE FROM UserSession US, User U WHERE (U.Username =='%q') AND (U.UserID = US.UserID) AND (SessionID!='%q')", username.c_str(), exceptSession.id.c_str());
 		}
 
+		void CWebServer::HandleREST(WebEmSession& session, const request& req, reply& rep)
+		{
+			//API/Interfaces
+			//API/Interfaces/1
+			//API/Interfaces/1/InterfaceLogs
+			//API/Interfaces/1/Devices
+			//API/Interfaces/1/Devices/1
+			//API/Interfaces/1/Devices/1/Values
+			//API/Interfaces/1/Devices/1/Values/1
+			//API/Interfaces/1/Devices/1/Values/1/ValueLogs
+			//API/Interfaces/1/Devices/1/Values/1/ValueHistorys
+			//API/Interfaces/1/Devices/1/Values/1/ValueNotifications
+
+			//API/Interfaces/1/Devices/1/Values/1/Units		?????
+
+			//API/Units
+			//API/Units/1
+			//API/Units/1/Values
+			//API/Units/1/Values/1/ValueLogs
+			//API/Units/1/Values/1/ValueHistorys
+			//API/Units/1/Values/1/ValueNotifications
+			//API/Units/1/Values/1/ValueNotifications/?/Interfaces
+			//API/Units/1/Values/1/Devices					????
+
+			//API/Users
+			//API/Users/1
+			//API/Users/1/UserSessions
+			//API/Users/1/Role
+			//API/Users/1/Role/1
+			//API/Users/1/Role/1/RESTPrivileges
+
+			//API/Roles
+			//API/Roles/1
+			//API/Roles/1/Users
+			//API/Roles/1/Users/1
+			//API/Roles/1/Users/1/UserSessions
+			//API/Roles/1/RESTPrivieges
+
+
+			// Break URI into parts
+			std::vector<std::string> vURIElements;
+			if (req.uri.find("/", 5))
+			{
+				std::string::size_type prev_pos = 5, pos = 5; // step over '/API/'
+				std::string substring;
+				while ((pos = req.uri.find("/", pos)) != std::string::npos)
+				{
+					substring = req.uri.substr(prev_pos, pos - prev_pos);
+					if (substring.length()) vURIElements.push_back(substring);
+					prev_pos = ++pos;
+				}
+				substring = req.uri.substr(prev_pos, pos - prev_pos);
+				if (substring.length()) vURIElements.push_back(substring);
+			}
+
+			// Doesn't look like a REST request
+			if (vURIElements.empty())
+			{
+				rep = reply::stock_reply(reply::bad_request);
+				return;
+			}
+
+			// Confirm which part of the URI we are operating on
+			// Need one of three cases:
+			//	1.	/API/Interfaces					== Request for summary of a whole table (No Keys)
+			//	2.	/API/Interfaces/123				== Request for details of specific instance from a table (TableKey only)
+			//	3.	/API/Interfaces/123/Devices		== Request for summary of table filterd for a specific parent instance (ParentKey)
+			//	4.	/API/Interfaces/123/Devices/1	== THIS SHOULD BE HANDLED TO MAKE SURE DATE RETURNED IS RELEVANT TO THE PARENT
+			std::string	sTable;
+			int			iTableKey = 0;
+			std::string	sParent;
+			int			iParentKey = 0;
+			int			iTable = vURIElements.size();
+			// Target table is the rightmost non-numeric URI element 
+			while (iTable)
+			{
+				char*	p = NULL;
+				int		iNumber = strtol(vURIElements[--iTable].c_str(), &p, 10);
+				if (*p)
+				{
+					sTable = p;
+					break;
+				}
+			}
+			// Trim off trailing 's' of table name
+			if (sTable.length())
+			{
+				sTable = sTable.substr(0, sTable.length()-1);
+			}
+
+			// if there is a URI element to the right look for the TableKey (Case 2)
+			if ((iTable+1) < vURIElements.size())
+			{
+				char* p = NULL;
+				iTableKey = strtol(vURIElements[iTable + 1].c_str(), &p, 10);
+			}
+
+			// if there are URI elements to the left look for the ParentKey and Table (Case 3)
+			if ((iTable > 1) && !iTableKey)
+			{
+				char* p = NULL;
+				iParentKey = strtol(vURIElements[iTable - 1].c_str(), &p, 10);
+				sParent = vURIElements[iTable - 2];
+				if (sParent.length())
+				{
+					sParent = sParent.substr(0, sParent.length() - 1);
+				}
+			}
+
+			// Does this look like a valid request?
+			if (
+				!(!iTable && sTable.length() && !iTableKey && !iParentKey)	&&			// Case 1
+				!(sTable.length() &&  iTableKey && !iParentKey)	&&						// Case 2
+				!(sTable.length() && !iTableKey &&  iParentKey && sParent.length()) 	// Case 3
+				)
+			{
+				rep = reply::stock_reply(reply::bad_request);
+				return;
+			}
+
+			// Check user has access to the table for the requested HTTP verb
+			// TODO: get user ID from actual AccessToken Session
+			std::vector<std::vector<std::string> > result;
+			result = m_sql.safe_query("SELECT Can%q, PUTFields, PATCHFields FROM TableAccess T, User U WHERE U.Username = '%q' AND U.RoleID = T.RoleID AND T.Name = '%q'", req.method.c_str(), "Admin", sTable.c_str());
+			if (result.empty() || (result[0][0] != "1"))
+			{
+				rep = reply::stock_reply(reply::unauthorized);
+				return;
+			}
+
+			// Handle various HTTP verbs
+			Json::Value root;
+			reply::status_type	status = reply::ok;
+			if (req.method == "GET")
+			{
+				status = RESTfulGET(sTable, iTableKey, sParent, iParentKey, root);
+			}
+
+			if (status != reply::ok)
+			{
+				rep = reply::stock_reply(status);
+				return;
+			}
+
+			// Add to the response
+			Json::StyledWriter	jWriter;
+			rep.content = jWriter.write(root);
+
+
+			// req.headers (http::server::header  name,value)
+			// req.content_length (appears not set for 0 length)
+			// req.content (string)
+
+			return;
+		}
+
+		reply::status_type CWebServer::RESTfulGET(std::string& sTable, int iTableKey, std::string& sParent, int iParentKey, Json::Value& root)
+		{
+			// look up structure of requested table
+			std::string		sSQL = "pragma table_info('" + sTable + "');";
+			std::vector<std::vector<std::string> > vTableStruct = m_sql.safe_query(sSQL.c_str());
+			if (vTableStruct.empty())
+			{
+				return reply::not_found;
+			}
+
+			// look up and encode requested table
+			sSQL = "SELECT ";
+			for (int i = 0; i < vTableStruct.size(); i++)
+			{
+				sSQL += vTableStruct[i][1];
+				if (i != vTableStruct.size() - 1) sSQL += ", ";
+			}
+			sSQL += " FROM " + sTable;	// Case 1
+			if (iTableKey)
+			{	// Case 2
+				sSQL += " WHERE " + sTable + "ID=" + std::to_string(iTableKey);
+			}
+			if (iParentKey)
+			{	// Case 3
+				sSQL += " WHERE " + sParent + "ID=" + std::to_string(iParentKey);
+			}
+			std::vector<std::vector<std::string> >	result = m_sql.safe_query(sSQL.c_str());
+			if (result.empty())
+			{
+				return reply::not_found;
+			}
+
+			root["Count"] = std::to_string(result.size());
+			int		iIndex = 0;
+			for (const auto& itt : result)
+			{
+				std::vector<std::string> sd = itt;
+				for (int i = 0; i < sd.size(); i++)
+				{
+					if (vTableStruct[i][2] == "INTEGER")
+					{
+						root[sTable.c_str()][(Json::ArrayIndex)iIndex][vTableStruct[i][1]] = atoi(sd[i].c_str());
+					}
+					else
+					{
+						root[sTable.c_str()][(Json::ArrayIndex)iIndex][vTableStruct[i][1]] = sd[i];
+					}
+				}
+				iIndex++;
+			}
+
+			// Report Inward References
+			result = m_sql.safe_query(std::string("PRAGMA foreign_key_list('" + sTable + "');").c_str());
+			iIndex = 0;
+			for (const auto& itt : result)
+			{
+				root["InwardReferences"][(Json::ArrayIndex)iIndex++] = itt[2].c_str();
+			}
+
+			// Report Outward References
+			result = m_sql.safe_query(std::string("SELECT name FROM sqlite_master WHERE sql like '%%" + sTable + "ID%%' and name <> '" + sTable + "'").c_str());
+			iIndex = 0;
+			for (const auto& itt : result)
+			{
+				root["OutwardReferences"][(Json::ArrayIndex)iIndex++] = itt[0].c_str();
+			}
+
+			return reply::ok;
+		}
 	} //server
 }//http

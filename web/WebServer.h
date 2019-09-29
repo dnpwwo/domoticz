@@ -37,6 +37,10 @@ namespace http {
 			void CleanSessions() override;
 			void RemoveUsersSessions(const std::string& username, const WebEmSession& exceptSession);
 
+			void HandleREST(WebEmSession& session, const request& req, reply& rep);
+
+			reply::status_type RESTfulGET(std::string& sTable, int iTableKey, std::string& sParent, int iParentKey, Json::Value& root);
+
 		private:
 			std::shared_ptr<std::thread> m_thread;
 
