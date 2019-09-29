@@ -451,17 +451,26 @@ namespace http {
 			sSQL = "SELECT ";
 			for (int i = 0; i < vTableStruct.size(); i++)
 			{
-				sSQL += vTableStruct[i][1];
+				sSQL += "T."+vTableStruct[i][1];
 				if (i != vTableStruct.size() - 1) sSQL += ", ";
 			}
-			sSQL += " FROM " + sTable;	// Case 1
+			sSQL += " FROM " + sTable+ " T ";	// Case 1
 			if (iTableKey)
 			{	// Case 2
-				sSQL += " WHERE " + sTable + "ID=" + std::to_string(iTableKey);
+				sSQL += " WHERE T." + sTable + "ID=" + std::to_string(iTableKey);
 			}
 			if (iParentKey)
-			{	// Case 3
-				sSQL += " WHERE " + sParent + "ID=" + std::to_string(iParentKey);
+			{	// Case 3a - We can't be sure which way around the keys go
+				std::string		testSQL = sSQL + ", "+sParent+" P WHERE P." + sParent + "ID=" + std::to_string(iParentKey) + " AND P."+ sParent +"ID=T."+ sParent +"ID";
+				std::vector<std::vector<std::string> >	test = m_sql.safe_query(testSQL.c_str());
+				if (test.empty())
+				{	// Case 3b - the other way around
+					sSQL += ", " + sParent + " P WHERE P." + sParent + "ID=" + std::to_string(iParentKey) + " AND P." + sTable + "ID=T." + sTable + "ID";
+				}
+				else
+				{
+					sSQL = testSQL;
+				}
 			}
 			std::vector<std::vector<std::string> >	result = m_sql.safe_query(sSQL.c_str());
 			if (result.empty())
