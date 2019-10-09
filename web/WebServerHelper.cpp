@@ -12,7 +12,7 @@ namespace http {
 		std::shared_ptr<CWebServer> CWebServerHelper::secureServer_ = NULL;
 		std::vector<std::shared_ptr<CWebServer> > CWebServerHelper::serverCollection;
 		std::string CWebServerHelper::our_listener_port = "8080";
-		std::string CWebServerHelper::our_serverpath = "web/www";
+		std::string CWebServerHelper::our_serverpath = "web/www/domoticz/src";
 
 		CWebServerHelper::CWebServerHelper()
 		{
@@ -31,7 +31,7 @@ namespace http {
 			// start plain webserver first
 			m_sql.GetPreferencesVar("WebserverListeningAddress", web_settings.listening_address, std::string("::"));
 			m_sql.GetPreferencesVar("WebserverNormalPort", web_settings.listening_port, std::string("8080"));
-			m_sql.GetPreferencesVar("WebserverWebRoot", our_serverpath, std::string("web/www"));
+			m_sql.GetPreferencesVar("WebserverWebRoot", our_serverpath, std::string("web/www/domoticz/src"));
 			plainServer_.reset(new CWebServer());
 			serverCollection.push_back(plainServer_);
 			bRet |= plainServer_->StartServer(web_settings, our_serverpath, bIgnoreUsernamePassword);

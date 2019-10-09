@@ -36,7 +36,7 @@ extern std::string szWWWFolder;
 const char* sqlCreatePreference =
 		"CREATE TABLE IF NOT EXISTS [Preference] ("
 			"[PreferenceID] INTEGER PRIMARY KEY AUTOINCREMENT, "
-			"[Key] TEXT UNIQUE NOT NULL,"
+			"[Name] TEXT UNIQUE NOT NULL,"
 			"[Value] Text)";
 
 const char* sqlCreateInterface =
@@ -135,22 +135,42 @@ const char* sqlCreateValueTimer =
 		"FOREIGN KEY(TimerPlanID) REFERENCES TimerPlan(TimerPlanID), "
 		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
 
+const char* sqlCreateScene =
+			"CREATE TABLE IF NOT EXISTS [Scene] ("
+			"[SceneID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[Name] TEXT UNIQUE NOT NULL, "
+			"[Active] INTEGER DEFAULT 0);";
+
+const char* sqlCreateSceneValue =
+"CREATE TABLE IF NOT EXISTS [SceneValue] ("
+			"[SceneValueID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[SceneID] INTEGER, "
+			"[ValueID] INTEGER, "
+			"[Value] TEXT UNIQUE NOT NULL, "
+			"[Order] INTEGER DEFAULT 0, "
+			"[Delay] INTEGER DEFAULT 0, "
+			"FOREIGN KEY(SceneID) REFERENCES Scene(SceneID) ON DELETE CASCADE), "
+			"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
+
 const char* sqlCreateRole =
-	"CREATE TABLE IF NOT EXISTS [Role] ("
+			"CREATE TABLE IF NOT EXISTS [Role] ("
 			"[RoleID] INTEGER PRIMARY KEY AUTOINCREMENT, "
-			"[Name] TEXT UNIQUE NOT NULL);";
+			"[Name] TEXT UNIQUE NOT NULL, "
+			"[RemoteAccess] INTEGER DEFAULT 0);";
 
 const char* sqlCreateUser =
 	"CREATE TABLE IF NOT EXISTS [User] ("
 			"[UserID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[UserName] TEXT UNIQUE NOT NULL, "
 			"[Password] TEXT DEFAULT \"\", "
-			"[Name] TEXT NOT NULL, "
+			"[FirstName] TEXT NOT NULL, "
+			"[LastName] TEXT NOT NULL, "
 			"[RoleID] INTEGER NOT NULL, "
 			"[Active] INTEGER DEFAULT 0, "
 			"[ForceChange] INTEGER DEFAULT 1, "
 			"[FailedAttempts] INTEGER DEFAULT 0, "
-			"[Timestamp] TEXT DEFAULT 0, "
+			"[Theme] TEXT DEFAULT \"\", "
+			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
 		"FOREIGN KEY(RoleID) REFERENCES Role(RoleID) ON DELETE CASCADE);";
 
 const char* sqlCreateUserSession =
@@ -251,6 +271,9 @@ bool CSQLHelper::OpenDatabase()
 	query(sqlCreateTimerPlan);
 	query(sqlCreateValueTimer);
 
+	query(sqlCreateScene);
+	query(sqlCreateSceneValue);
+
 	query(sqlCreateRole);
 	query(sqlCreateUser);
 	query(sqlCreateUserSession);
@@ -274,8 +297,8 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Role (Name) VALUES ('Administrator')");
 
 		// Add a couple of users
-		query("INSERT INTO User (Username, Password, Name, RoleID) SELECT 'Anonymous','Anonymous','Anonymous User', RoleID FROM Role WHERE Name = 'Anonymous'");
-		query("INSERT INTO User (Username, Password, Name, RoleID) SELECT 'Admin','Admin ','Administrative User', RoleID FROM Role WHERE Name = 'Administrator'");
+		query("INSERT INTO User (Username, Password, FirstName, LastName, RoleID) SELECT 'Anonymous','Anonymous','Anonymous', 'User', RoleID FROM Role WHERE Name = 'Anonymous'");
+		query("INSERT INTO User (Username, Password, FirstName, LastName, RoleID) SELECT 'Admin','Admin ','Administrative', 'User', RoleID FROM Role WHERE Name = 'Administrator'");
 
 		// Give access to tables
 		query("INSERT INTO TableAccess (Name,RoleID,CanGET) SELECT A.name, B.RoleID, true FROM sqlite_master A, Role B WHERE (A.type='table' AND A.name <> 'sqlite_sequence' AND A.name NOT LIKE 'User%' AND A.name NOT LIKE 'TableAccess%') AND (B.Name <> 'Administrator')");
@@ -583,40 +606,40 @@ bool CSQLHelper::DoesDeviceExist(const int HardwareID, const char* ID, const uns
 	}
 }
 
-void CSQLHelper::UpdatePreferencesVar(const std::string &Key, const std::string &Value)
+void CSQLHelper::UpdatePreferencesVar(const std::string &Name, const std::string &Value)
 {
 	if (!m_dbase)
 		return;
 
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT ROWID FROM Preference WHERE (Key='%q')",
-		Key.c_str());
+	result = safe_query("SELECT ROWID FROM Preference WHERE (Name='%q')",
+		Name.c_str());
 	if (result.empty())
 	{
 		//Insert
-		result = safe_query("INSERT INTO Preference (Key, Value) VALUES ('%q','%q')",
-			Key.c_str(), Value.c_str());
+		result = safe_query("INSERT INTO Preference (Name, Value) VALUES ('%q','%q')",
+			Name.c_str(), Value.c_str());
 	}
 	else
 	{
 		//Update
-		result = safe_query("UPDATE Preference SET Key='%q', Value='%q' WHERE (ROWID = '%q')",
-			Key.c_str(), Value.c_str(), result[0][0].c_str());
+		result = safe_query("UPDATE Preference SET Name='%q', Value='%q' WHERE (ROWID = '%q')",
+			Name.c_str(), Value.c_str(), result[0][0].c_str());
 	}
 }
 
-bool CSQLHelper::GetPreferencesVar(const std::string &Key, std::string& Value, std::string &Default)
+bool CSQLHelper::GetPreferencesVar(const std::string &Name, std::string& Value, std::string &Default)
 {
 	if (!m_dbase)
 		return false;
 
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT Value FROM Preference WHERE (Key='%q')",
-		Key.c_str());
+	result = safe_query("SELECT Value FROM Preference WHERE (Name='%q')",
+		Name.c_str());
 	if (result.empty())
 	{
 		Value = Default;
-		UpdatePreferencesVar(Key, Value);
+		UpdatePreferencesVar(Name, Value);
 		return true;
 	}
 	std::vector<std::string> sd = result[0];
@@ -624,18 +647,18 @@ bool CSQLHelper::GetPreferencesVar(const std::string &Key, std::string& Value, s
 	return true;
 }
 
-bool CSQLHelper::GetPreferencesVar(const std::string& Key, int* Value, int Default)
+bool CSQLHelper::GetPreferencesVar(const std::string& Name, int* Value, int Default)
 {
 	if (!m_dbase)
 		return false;
 
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT Value FROM Preference WHERE (Key='%q')",
-		Key.c_str());
+	result = safe_query("SELECT Value FROM Preference WHERE (Name='%q')",
+		Name.c_str());
 	if (result.empty())
 	{
 		*Value = Default;
-		UpdatePreferencesVar(Key, std::to_string(*Value));
+		UpdatePreferencesVar(Name, std::to_string(*Value));
 		return true;
 	}
 	std::vector<std::string> sd = result[0];
@@ -643,18 +666,18 @@ bool CSQLHelper::GetPreferencesVar(const std::string& Key, int* Value, int Defau
 	return true;
 }
 
-void CSQLHelper::DeletePreferencesVar(const std::string &Key)
+void CSQLHelper::DeletePreferencesVar(const std::string &Name)
 {
-	safe_query("DELETE FROM Preference WHERE (Key='%q')", Key.c_str());
+	safe_query("DELETE FROM Preference WHERE (Name='%q')", Name.c_str());
 }
 
-int CSQLHelper::GetLastBackupNo(const char *Key, int &nValue)
+int CSQLHelper::GetLastBackupNo(const char *Name, int &nValue)
 {
 	if (!m_dbase)
 		return false;
 
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT nValue FROM BackupLog WHERE (Key='%q')", Key);
+	result = safe_query("SELECT nValue FROM BackupLog WHERE (Name='%q')", Name);
 	if (result.empty())
 		return -1;
 	std::vector<std::string> sd = result[0];
@@ -662,20 +685,20 @@ int CSQLHelper::GetLastBackupNo(const char *Key, int &nValue)
 	return nValue;
 }
 
-void CSQLHelper::SetLastBackupNo(const char *Key, const int nValue)
+void CSQLHelper::SetLastBackupNo(const char *Name, const int nValue)
 {
 	if (!m_dbase)
 		return;
 
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT ROWID FROM BackupLog WHERE (Key='%q')", Key);
+	result = safe_query("SELECT ROWID FROM BackupLog WHERE (Name='%q')", Name);
 	if (result.empty())
 	{
 		//Insert
 		safe_query(
-			"INSERT INTO BackupLog (Key, nValue) "
+			"INSERT INTO BackupLog (Name, nValue) "
 			"VALUES ('%q','%d')",
-			Key,
+			Name,
 			nValue);
 	}
 	else
@@ -684,9 +707,9 @@ void CSQLHelper::SetLastBackupNo(const char *Key, const int nValue)
 		uint64_t ID = std::strtoull(result[0][0].c_str(), nullptr, 10);
 
 		safe_query(
-			"UPDATE BackupLog SET Key='%q', nValue=%d "
+			"UPDATE BackupLog SET Name='%q', nValue=%d "
 			"WHERE (ROWID = %" PRIu64 ")",
-			Key,
+			Name,
 			nValue,
 			ID);
 	}
@@ -756,7 +779,7 @@ void CSQLHelper::CleanupShortLog()
 			_log.Log(LOG_ERROR, "CleanupShortLog(): MinuteHistoryDays is zero!");
 			return;
 		}
-		std::string szQueryFilter = "strftime('%s',datetime('now','localtime')) - strftime('%s',Date) > (SELECT p.nValue * 86400 From Preferences AS p WHERE p.Key='5MinuteHistoryDays')";
+		std::string szQueryFilter = "strftime('%s',datetime('now','localtime')) - strftime('%s',Date) > (SELECT p.nValue * 86400 From Preferences AS p WHERE p.Name='5MinuteHistoryDays')";
 	}
 }
 
@@ -882,7 +905,7 @@ bool CSQLHelper::RestoreDatabase(const std::string &dbase)
 		return false;
 	//could still be not valid
 	std::stringstream ss;
-	ss << "SELECT sValue FROM Preferences WHERE (Key='DB_Version')";
+	ss << "SELECT sValue FROM Preferences WHERE (Name='DB_Version')";
 	sqlite3_stmt *statement;
 	if (sqlite3_prepare_v2(dbase_restore, ss.str().c_str(), -1, &statement, 0) != SQLITE_OK)
 	{

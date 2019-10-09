@@ -426,7 +426,7 @@ namespace http {
 			}
 
 			// Add to the response
-			Json::StyledWriter	jWriter;
+			Json::FastWriter	jWriter;
 			rep.content = jWriter.write(root);
 
 
@@ -480,6 +480,11 @@ namespace http {
 
 			root["Count"] = std::to_string(result.size());
 			int		iIndex = 0;
+			std::string	sOutputName = sTable;
+			if (!iTableKey)
+			{
+				sOutputName += "s";		// If this is not a a request for a specific key then return '<TableName>s'
+			}
 			for (const auto& itt : result)
 			{
 				std::vector<std::string> sd = itt;
@@ -487,30 +492,14 @@ namespace http {
 				{
 					if (vTableStruct[i][2] == "INTEGER")
 					{
-						root[sTable.c_str()][(Json::ArrayIndex)iIndex][vTableStruct[i][1]] = atoi(sd[i].c_str());
+						root[sOutputName.c_str()][(Json::ArrayIndex)iIndex][vTableStruct[i][1]] = atoi(sd[i].c_str());
 					}
 					else
 					{
-						root[sTable.c_str()][(Json::ArrayIndex)iIndex][vTableStruct[i][1]] = sd[i];
+						root[sOutputName.c_str()][(Json::ArrayIndex)iIndex][vTableStruct[i][1]] = sd[i];
 					}
 				}
 				iIndex++;
-			}
-
-			// Report Inward References
-			result = m_sql.safe_query(std::string("PRAGMA foreign_key_list('" + sTable + "');").c_str());
-			iIndex = 0;
-			for (const auto& itt : result)
-			{
-				root["InwardReferences"][(Json::ArrayIndex)iIndex++] = itt[2].c_str();
-			}
-
-			// Report Outward References
-			result = m_sql.safe_query(std::string("SELECT name FROM sqlite_master WHERE sql like '%%" + sTable + "ID%%' and name <> '" + sTable + "'").c_str());
-			iIndex = 0;
-			for (const auto& itt : result)
-			{
-				root["OutwardReferences"][(Json::ArrayIndex)iIndex++] = itt[0].c_str();
 			}
 
 			return reply::ok;
