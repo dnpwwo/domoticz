@@ -29,9 +29,12 @@ namespace http {
 			bool bRet = false;
 
 			// start plain webserver first
-			m_sql.GetPreferencesVar("WebserverListeningAddress", web_settings.listening_address, std::string("::"));
-			m_sql.GetPreferencesVar("WebserverNormalPort", web_settings.listening_port, std::string("8080"));
-			m_sql.GetPreferencesVar("WebserverWebRoot", our_serverpath, std::string("web/www/domoticz/src"));
+			std::string	sParam = "::";
+			m_sql.GetPreferencesVar("WebserverListeningAddress", web_settings.listening_address, sParam);
+			sParam = "8080";
+			m_sql.GetPreferencesVar("WebserverNormalPort", web_settings.listening_port, sParam);
+			sParam = "web/www";
+			m_sql.GetPreferencesVar("WebserverWebRoot", our_serverpath, sParam);
 			plainServer_.reset(new CWebServer());
 			serverCollection.push_back(plainServer_);
 			bRet |= plainServer_->StartServer(web_settings, our_serverpath, bIgnoreUsernamePassword);
@@ -39,9 +42,11 @@ namespace http {
 
 			// start secure webserver if the required preferences are set
 			secure_web_settings.listening_address = web_settings.listening_address;
-			m_sql.GetPreferencesVar("WebserverSecurePort", secure_web_settings.listening_port, std::string("443"));
+			sParam = "443";
+			m_sql.GetPreferencesVar("WebserverSecurePort", secure_web_settings.listening_port, sParam);
 			secure_web_settings.ssl_method = "sslv23";
-			m_sql.GetPreferencesVar("WebserverSecureCertificate", secure_web_settings.certificate_chain_file_path, std::string("./server_cert.pem"));
+			sParam = "./server_cert.pem";
+			m_sql.GetPreferencesVar("WebserverSecureCertificate", secure_web_settings.certificate_chain_file_path, sParam);
 			secure_web_settings.ca_cert_file_path = secure_web_settings.certificate_chain_file_path; // not used
 			secure_web_settings.cert_file_path = secure_web_settings.certificate_chain_file_path;
 			secure_web_settings.private_key_file_path = secure_web_settings.certificate_chain_file_path;

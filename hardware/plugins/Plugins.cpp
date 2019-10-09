@@ -1252,7 +1252,8 @@ Error:
 			Py_DECREF(pObj);
 
 			std::string sLanguage;
-			m_sql.GetPreferencesVar("Language", sLanguage, std::string("en"));
+			std::string sLang = "en";
+			m_sql.GetPreferencesVar("Language", sLanguage, sLang);
 
 			std::vector<std::vector<std::string> > result;
 			result = m_sql.safe_query("SELECT Name, Address, Port, SerialPort, Username, Password, Extra, Mode1, Mode2, Mode3, Mode4, Mode5, Mode6 FROM Hardware WHERE (ID==%d)", m_HwdID);

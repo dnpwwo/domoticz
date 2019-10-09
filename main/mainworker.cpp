@@ -151,7 +151,8 @@ void MainWorker::GetAvailableWebThemes()
 	//check if current theme is found, if not, select default
 	bool bFound = false;
 	std::string sValue;
-	if (m_sql.GetPreferencesVar("WebTheme", sValue, std::string("default")))
+	std::string	sDefault = "default";
+	if (m_sql.GetPreferencesVar("WebTheme", sValue, sDefault))
 	{
 		for (const auto & itt : m_webthemes)
 		{
@@ -259,7 +260,8 @@ bool MainWorker::GetSunSettings()
 {
 	std::string sValue;
 	std::vector<std::string> strarray;
-	if (m_sql.GetPreferencesVar("Location", sValue, std::string("")))
+	std::string	sBlank = "";
+	if (m_sql.GetPreferencesVar("Location", sValue, sBlank))
 		StringSplit(sValue, ";", strarray);
 
 	if (strarray.size() != 2)
@@ -470,7 +472,8 @@ bool MainWorker::IsUpdateAvailable(const bool bIsForced)
 	if (!bIsForced)
 	{
 		std::string	Value;
-		m_sql.GetPreferencesVar("UseAutoUpdate", Value, std::string("True"));
+		std::string	sTrue = "True";
+		m_sql.GetPreferencesVar("UseAutoUpdate", Value, sTrue);
 		if (Value != "True")
 		{
 			return false;
@@ -569,7 +572,8 @@ bool MainWorker::StartDownloadUpdate()
 void MainWorker::HandleAutomaticBackups()
 {
 	std::string Value;
-	if (!m_sql.GetPreferencesVar("UseAutoBackup", Value, std::string("True")))
+	std::string	sTrue = "True";
+	if (!m_sql.GetPreferencesVar("UseAutoBackup", Value, sTrue))
 		return;
 	if (Value != "True")
 		return;
@@ -613,7 +617,8 @@ void MainWorker::HandleAutomaticBackups()
 
 	std::string szInstanceName = "domoticz";
 	std::string szVar;
-	if (m_sql.GetPreferencesVar("Title", szVar, std::string("domoticz")))
+	std::string	sDomoticz = "domoticz";
+	if (m_sql.GetPreferencesVar("Title", szVar, sDomoticz))
 	{
 		stdreplace(szVar, " ", "_");
 		stdreplace(szVar, "/", "_");

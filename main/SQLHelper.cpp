@@ -146,10 +146,10 @@ const char* sqlCreateSceneValue =
 			"[SceneValueID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[SceneID] INTEGER, "
 			"[ValueID] INTEGER, "
-			"[Value] TEXT UNIQUE NOT NULL, "
+			"[Value] TEXT NOT NULL, "
 			"[Order] INTEGER DEFAULT 0, "
 			"[Delay] INTEGER DEFAULT 0, "
-			"FOREIGN KEY(SceneID) REFERENCES Scene(SceneID) ON DELETE CASCADE), "
+			"FOREIGN KEY(SceneID) REFERENCES Scene(SceneID) ON DELETE CASCADE, "
 			"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
 
 const char* sqlCreateRole =
@@ -326,12 +326,15 @@ bool CSQLHelper::OpenDatabase()
 	//Make sure we have some default preferences
 	int nValue = 0;
 	std::string sValue;
-	GetPreferencesVar("Title", sValue, std::string("Domoticz"));
-	GetPreferencesVar("UseAutoUpdate", sValue, std::string("True"));
-	GetPreferencesVar("UseAutoBackup", sValue, std::string("True"));
-	GetPreferencesVar("Language", sValue, std::string("en"));
+	std::string	sTrue = "True";
+	std::string	sDomoticz = "Domoticz";
+	std::string	sLang = "en";
+	GetPreferencesVar("Title", sValue, sDomoticz);
+	GetPreferencesVar("UseAutoUpdate", sValue, sTrue);
+	GetPreferencesVar("UseAutoBackup", sValue, sTrue);
+	GetPreferencesVar("Language", sValue, sLang);
 	GetPreferencesVar("AuthenticationMethod", &nValue, 0);
-	GetPreferencesVar("AcceptNewHardware", sValue, std::string("True"));
+	GetPreferencesVar("AcceptNewHardware", sValue, sTrue);
 	m_bAcceptNewHardware = (sValue == "True");
 
 	//Start background thread
@@ -381,9 +384,15 @@ void CSQLHelper::Do_Work()
 				m_bAcceptHardwareTimerActive = false;
 				m_bAcceptNewHardware = m_bPreviousAcceptNewHardware;
 				if (m_bAcceptNewHardware)
-					UpdatePreferencesVar("AcceptNewHardware", std::string("True"));
+				{
+					std::string	sTrue = "True";
+					UpdatePreferencesVar("AcceptNewHardware", sTrue);
+				}
 				else
-					UpdatePreferencesVar("AcceptNewHardware", std::string("False"));
+				{
+					std::string	sFalse = "False";
+					UpdatePreferencesVar("AcceptNewHardware", sFalse);
+				}
 				if (!m_bAcceptNewHardware)
 				{
 					_log.Log(LOG_STATUS, "Receiving of new sensors disabled!...");

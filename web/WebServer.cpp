@@ -116,7 +116,8 @@ namespace http {
 			m_pWebEm->SetSessionStore(this);
 
 			std::string WebRemoteProxyIPs;
-			if (m_sql.GetPreferencesVar("WebRemoteProxyIPs", WebRemoteProxyIPs, std::string("")) && WebRemoteProxyIPs.length())
+			std::string	sBlank = "";
+			if (m_sql.GetPreferencesVar("WebRemoteProxyIPs", WebRemoteProxyIPs, sBlank) && WebRemoteProxyIPs.length())
 			{
 				std::vector<std::string> strarray;
 				StringSplit(WebRemoteProxyIPs, ";", strarray);
