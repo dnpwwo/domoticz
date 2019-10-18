@@ -340,7 +340,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\hardware\ASyncSerial.cpp" />
-    <ClCompile Include="..\hardware\plugins\Base64.cpp" />
     <ClCompile Include="..\hardware\plugins\DelayedLink.cpp" />
     <ClCompile Include="..\hardware\plugins\PluginManager.cpp" />
     <ClCompile Include="..\hardware\plugins\PluginProtocols.cpp" />

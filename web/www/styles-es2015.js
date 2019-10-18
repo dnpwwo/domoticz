@@ -376,8 +376,8 @@ if (content.locals) {
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! D:\domoticz\web\angular8\node_modules\@angular\material\prebuilt-themes\purple-green.css */"./node_modules/@angular/material/prebuilt-themes/purple-green.css");
-module.exports = __webpack_require__(/*! D:\domoticz\web\angular8\src\styles.css */"./src/styles.css");
+__webpack_require__(/*! D:\Domoticz New\Angular8\node_modules\@angular\material\prebuilt-themes\purple-green.css */"./node_modules/@angular/material/prebuilt-themes/purple-green.css");
+module.exports = __webpack_require__(/*! D:\Domoticz New\Angular8\src\styles.css */"./src/styles.css");
 
 
 /***/ })

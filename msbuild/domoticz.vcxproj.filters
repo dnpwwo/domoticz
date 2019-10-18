@@ -927,9 +927,6 @@
     <ClCompile Include="..\hardware\ASyncSerial.cpp">
       <Filter>Devices\Plugins</Filter>
     </ClCompile>
-    <ClCompile Include="..\hardware\plugins\Base64.cpp">
-      <Filter>Devices\Plugins</Filter>
-    </ClCompile>
     <ClCompile Include="..\hardware\plugins\DelayedLink.cpp">
       <Filter>Devices\Plugins</Filter>
     </ClCompile>

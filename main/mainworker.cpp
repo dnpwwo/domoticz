@@ -87,7 +87,7 @@ void MainWorker::AddAllDomoticzHardware()
 {
 	//Add Hardware devices
 	std::vector<std::vector<std::string> > result;
-	result = m_sql.safe_query("SELECT InterfaceID, Name, Parameters, Configuration, Notifiable FROM Interface WHERE Active = 1 ORDER BY InterfaceID ASC");
+	result = m_sql.safe_query("SELECT InterfaceID, Name, Script, Configuration, Notifiable FROM Interface WHERE Active = 1 ORDER BY InterfaceID ASC");
 	if (!result.empty())
 	{
 		for (const auto & itt : result)

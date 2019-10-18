@@ -231,7 +231,6 @@ main/stdafx.cpp
 main/CmdLine.cpp
 main/domoticz.cpp
 main/Helper.cpp
-main/HTMLSanitizer.cpp
 main/localtime_r.cpp
 main/Logger.cpp
 main/mainworker.cpp
@@ -246,7 +245,17 @@ hardware/plugins/PluginManager.cpp
 hardware/plugins/PluginProtocols.cpp
 hardware/plugins/PluginTransports.cpp
 hardware/plugins/PythonObjects.cpp
-hardware/plugins/Base64.cpp
+web/webserver/Base64.cpp
+web/webserver/connection.cpp
+web/webserver/connection_manager.cpp
+web/webserver/cWebem.cpp
+web/webserver/mime_types.cpp
+web/webserver/reply.cpp
+web/webserver/request_handler.cpp
+web/webserver/request_parser.cpp
+web/webserver/server.cpp
+web/WebServer.cpp
+web/WebServerHelper.cpp
 json/json_reader.cpp
 json/json_value.cpp
 json/json_writer.cpp
@@ -327,6 +336,24 @@ endif(Boost_VERSION VERSION_LESS DOMO_MIN_LIBBOOST_VERSION)
 include_directories(${Boost_INCLUDE_DIRS})
 
 #
+# ZLIB
+#
+option(USE_BUILTIN_ZLIB "Use builtin zlib library" NO)
+if(USE_BUILTIN_ZLIB)
+  add_subdirectory (web/webserver/zlib)
+  include_directories(${ZLIB_INCLUDE_DIRS})
+else(USE_BUILTIN_ZLIB)
+  find_package(ZLIB REQUIRED)
+  if(ZLIB_FOUND)
+    MESSAGE(STATUS "ZLIB libraries found at: ${ZLIB_LIBRARIES}")
+    MESSAGE(STATUS "ZLIB includes found at: ${ZLIB_INCLUDE_DIRS}")
+    include_directories(${ZLIB_INCLUDE_DIRS})
+  else()
+    MESSAGE(FATAL_ERROR "ZLIB not found on your system, see install.txt how to get them installed. (for example 'sudo apt-get install zlib1g-dev')")
+  endif(ZLIB_FOUND)
+endif(USE_BUILTIN_ZLIB)
+
+#
 # CURL
 #
 FIND_PACKAGE(CURL)
@@ -359,7 +386,7 @@ if(WITH_LIBUSB)
   ENDIF(LIBUSB_FOUND)
 endif(WITH_LIBUSB)
 
-target_link_libraries(domoticz ${Boost_LIBRARIES} ${CURL_LIBRARIES} pthread ${SQLite_LIBRARIES} ${CMAKE_DL_LIBS})
+target_link_libraries(domoticz ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${CURL_LIBRARIES} pthread ${SQLite_LIBRARIES} ${CMAKE_DL_LIBS})
 
 IF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   target_link_libraries(domoticz -lresolv)

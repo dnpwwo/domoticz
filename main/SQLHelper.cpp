@@ -43,8 +43,8 @@ const char* sqlCreateInterface =
 		"CREATE TABLE IF NOT EXISTS [Interface] ("
 			"[InterfaceID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Name] TEXT UNIQUE DEFAULT Unknown, "
-			"[Parameters] TEXT DEFAULT NULL, "
-			"[Configuration] TEXT DEFAULT NULL, "
+			"[Script] TEXT DEFAULT \"\","
+			"[Configuration] TEXT DEFAULT \"\","
 			"[Notifiable] INTEGER DEFAULT 0, "
 			"[Active] INTEGER DEFAULT 0);";
 
@@ -80,8 +80,8 @@ const char* sqlCreateValue =
 			"[DeviceID] INTEGER, "
 			"[UnitID] INTEGER, "
 			"[Value] TEXT DEFAULT \"\", "
-			"[RetensionDays] INTEGER DEFAULT -1, "
-			"[RetensionInterval] INTEGER DEFAULT 900, "
+			"[RetentionDays] INTEGER DEFAULT -1, "
+			"[RetentionInterval] INTEGER DEFAULT 900, "
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
 		"FOREIGN KEY(UnitID) REFERENCES Unit(UnitID), "
 		"FOREIGN KEY(DeviceID) REFERENCES Device(DeviceID) ON DELETE CASCADE);";
@@ -156,19 +156,22 @@ const char* sqlCreateRole =
 			"CREATE TABLE IF NOT EXISTS [Role] ("
 			"[RoleID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Name] TEXT UNIQUE NOT NULL, "
-			"[RemoteAccess] INTEGER DEFAULT 0);";
+			"[RemoteAccess] INTEGER DEFAULT 0, "
+			"[InternalTTL] INTEGER DEFAULT 43200, "  // 30 days (in minutes)
+			"[RemoteTTL] INTEGER DEFAULT 0);";
 
 const char* sqlCreateUser =
 	"CREATE TABLE IF NOT EXISTS [User] ("
 			"[UserID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[UserName] TEXT UNIQUE NOT NULL, "
 			"[Password] TEXT DEFAULT \"\", "
-			"[FirstName] TEXT NOT NULL, "
-			"[LastName] TEXT NOT NULL, "
+			"[Name] TEXT NOT NULL, "
 			"[RoleID] INTEGER NOT NULL, "
 			"[Active] INTEGER DEFAULT 0, "
 			"[ForceChange] INTEGER DEFAULT 1, "
 			"[FailedAttempts] INTEGER DEFAULT 0, "
+			"[EmailAddress] TEXT DEFAULT \"\", "
+			"[MobileNumber] TEXT DEFAULT \"\", "
 			"[Theme] TEXT DEFAULT \"\", "
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
 		"FOREIGN KEY(RoleID) REFERENCES Role(RoleID) ON DELETE CASCADE);";
@@ -196,6 +199,13 @@ const char* sqlCreateTableAccess =
 			"[PUTFields] TEXT DEFAULT \"*\", "
 			"[PATCHFields] TEXT DEFAULT \"*\", "
 		"FOREIGN KEY(RoleID) REFERENCES Role(RoleID) ON DELETE CASCADE);";
+
+const char* sqlCreateStandardScript =
+		"CREATE TABLE IF NOT EXISTS [StandardScript] ("
+			"[StandardScriptID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[Name] TEXT UNIQUE DEFAULT Unknown, "
+			"[Script] TEXT DEFAULT \"\","
+			"[Active] INTEGER DEFAULT 0);";
 
 extern std::string szUserDataFolder;
 
@@ -267,6 +277,7 @@ bool CSQLHelper::OpenDatabase()
 	query(sqlCreateValueHistory);
 	query(sqlCreateValueScript);
 	query(sqlCreateValueNotification);
+	query(sqlCreateStandardScript);
 
 	query(sqlCreateTimerPlan);
 	query(sqlCreateValueTimer);
@@ -293,12 +304,12 @@ bool CSQLHelper::OpenDatabase()
 	{
 		// User / Security related
 		query("INSERT INTO Role (Name) VALUES ('Anonymous')");
-		query("INSERT INTO Role (Name) VALUES ('User')");
-		query("INSERT INTO Role (Name) VALUES ('Administrator')");
+		query("INSERT INTO Role (Name, RemoteAccess, RemoteTTL) VALUES ('User', true, 15)");
+		query("INSERT INTO Role (Name, RemoteAccess, InternalTTL, RemoteTTL) VALUES ('Administrator', true, 15, 5)");
 
 		// Add a couple of users
-		query("INSERT INTO User (Username, Password, FirstName, LastName, RoleID) SELECT 'Anonymous','Anonymous','Anonymous', 'User', RoleID FROM Role WHERE Name = 'Anonymous'");
-		query("INSERT INTO User (Username, Password, FirstName, LastName, RoleID) SELECT 'Admin','Admin ','Administrative', 'User', RoleID FROM Role WHERE Name = 'Administrator'");
+		query("INSERT INTO User (Username, Password, Name, RoleID) SELECT 'Anonymous','Anonymous','Anonymous User', RoleID FROM Role WHERE Name = 'Anonymous'");
+		query("INSERT INTO User (Username, Password, Name, RoleID) SELECT 'Admin','Admin ','Administrative User', RoleID FROM Role WHERE Name = 'Administrator'");
 
 		// Give access to tables
 		query("INSERT INTO TableAccess (Name,RoleID,CanGET) SELECT A.name, B.RoleID, true FROM sqlite_master A, Role B WHERE (A.type='table' AND A.name <> 'sqlite_sequence' AND A.name NOT LIKE 'User%' AND A.name NOT LIKE 'TableAccess%') AND (B.Name <> 'Administrator')");
