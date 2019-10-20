@@ -256,6 +256,7 @@ web/webserver/request_parser.cpp
 web/webserver/server.cpp
 web/WebServer.cpp
 web/WebServerHelper.cpp
+web/REST.cpp
 json/json_reader.cpp
 json/json_value.cpp
 json/json_writer.cpp
