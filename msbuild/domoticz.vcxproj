@@ -383,6 +383,7 @@
     <ClCompile Include="..\tinyxpath\xpath_static.cpp" />
     <ClCompile Include="..\tinyxpath\xpath_stream.cpp" />
     <ClCompile Include="..\tinyxpath\xpath_syntax.cpp" />
+    <ClCompile Include="..\web\REST.cpp" />
     <ClCompile Include="..\web\WebServer.cpp" />
     <ClCompile Include="..\web\WebServerHelper.cpp" />
     <ClCompile Include="..\web\webserver\Base64.cpp" />

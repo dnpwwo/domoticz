@@ -39,8 +39,6 @@ namespace http {
 
 			void HandleREST(WebEmSession& session, const request& req, reply& rep);
 
-			reply::status_type RESTfulGET(std::string& sTable, int iTableKey, std::string& sParent, int iParentKey, Json::Value& root);
-
 		private:
 			std::shared_ptr<std::thread> m_thread;
 

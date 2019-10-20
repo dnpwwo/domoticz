@@ -194,6 +194,11 @@ const char not_found[] =
   "<head><title>Not Found</title></head>"
   "<body><h1>404 Not Found</h1></body>"
   "</html>";
+const char not_allowed[] =
+  "<html>"
+  "<head><title>Not Allowed</title></head>"
+  "<body><h1>405 Not Allowed</h1></body>"
+  "</html>";
 const char internal_server_error[] =
   "<html>"
   "<head><title>Internal Server Error</title></head>"
@@ -247,7 +252,9 @@ std::string to_string(reply::status_type status)
   case reply::forbidden:
     return forbidden;
   case reply::not_found:
-    return not_found;
+	  return not_found;
+  case reply::not_allowed:
+	  return not_allowed;
   case reply::internal_server_error:
     return internal_server_error;
   case reply::not_implemented:

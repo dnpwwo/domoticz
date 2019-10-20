@@ -987,6 +987,9 @@
     <ClCompile Include="..\main\localtime_r.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
+    <ClCompile Include="..\web\REST.cpp">
+      <Filter>Web</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="domoticz.rc">

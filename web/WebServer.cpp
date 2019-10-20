@@ -10,6 +10,7 @@
 #include "../main/localtime_r.h"
 #include "webserver/Base64.h"
 #include "../json/json.h"
+#include "REST.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -284,226 +285,28 @@ namespace http {
 
 		void CWebServer::HandleREST(WebEmSession& session, const request& req, reply& rep)
 		{
-			//API/Interfaces
-			//API/Interfaces/1
-			//API/Interfaces/1/InterfaceLogs
-			//API/Interfaces/1/Devices
-			//API/Interfaces/1/Devices/1
-			//API/Interfaces/1/Devices/1/Values
-			//API/Interfaces/1/Devices/1/Values/1
-			//API/Interfaces/1/Devices/1/Values/1/ValueLogs
-			//API/Interfaces/1/Devices/1/Values/1/ValueHistorys
-			//API/Interfaces/1/Devices/1/Values/1/ValueNotifications
-
-			//API/Interfaces/1/Devices/1/Values/1/Units		?????
-
-			//API/Units
-			//API/Units/1
-			//API/Units/1/Values
-			//API/Units/1/Values/1/ValueLogs
-			//API/Units/1/Values/1/ValueHistorys
-			//API/Units/1/Values/1/ValueNotifications
-			//API/Units/1/Values/1/ValueNotifications/?/Interfaces
-			//API/Units/1/Values/1/Devices					????
-
-			//API/Users
-			//API/Users/1
-			//API/Users/1/UserSessions
-			//API/Users/1/Role
-			//API/Users/1/Role/1
-			//API/Users/1/Role/1/RESTPrivileges
-
-			//API/Roles
-			//API/Roles/1
-			//API/Roles/1/Users
-			//API/Roles/1/Users/1
-			//API/Roles/1/Users/1/UserSessions
-			//API/Roles/1/RESTPrivieges
-
-
-			// Break URI into parts
-			std::vector<std::string> vURIElements;
-			if (req.uri.find("/", 5))
-			{
-				std::string::size_type prev_pos = 5, pos = 5; // step over '/API/'
-				std::string substring;
-				while ((pos = req.uri.find("/", pos)) != std::string::npos)
-				{
-					substring = req.uri.substr(prev_pos, pos - prev_pos);
-					if (substring.length()) vURIElements.push_back(substring);
-					prev_pos = ++pos;
-				}
-				substring = req.uri.substr(prev_pos, pos - prev_pos);
-				if (substring.length()) vURIElements.push_back(substring);
-			}
-
-			// Doesn't look like a REST request
-			if (vURIElements.empty())
+			CRESTBase* pREST = CRESTBase::Create(session,  req, rep);
+			// If a REST Object was not created then bail out
+			if (!pREST)
 			{
 				rep = reply::stock_reply(reply::bad_request);
 				return;
 			}
 
-			// Confirm which part of the URI we are operating on
-			// Need one of three cases:
-			//	1.	/API/Interfaces					== Request for summary of a whole table (No Keys)
-			//	2.	/API/Interfaces/123				== Request for details of specific instance from a table (TableKey only)
-			//	3.	/API/Interfaces/123/Devices		== Request for summary of table filterd for a specific parent instance (ParentKey)
-			//	4.	/API/Interfaces/123/Devices/1	== THIS SHOULD BE HANDLED TO MAKE SURE DATE RETURNED IS RELEVANT TO THE PARENT
-			std::string	sTable;
-			int			iTableKey = 0;
-			std::string	sParent;
-			int			iParentKey = 0;
-			int			iTable = vURIElements.size();
-			// Target table is the rightmost non-numeric URI element 
-			while (iTable)
+			// Do some security
+			if (!pREST->UserHasAccess())
 			{
-				char*	p = NULL;
-				int		iNumber = strtol(vURIElements[--iTable].c_str(), &p, 10);
-				if (*p)
-				{
-					sTable = p;
-					break;
-				}
-			}
-			// Trim off trailing 's' of table name
-			if (sTable.length())
-			{
-				sTable = sTable.substr(0, sTable.length()-1);
-			}
-
-			// if there is a URI element to the right look for the TableKey (Case 2)
-			if ((iTable+1) < vURIElements.size())
-			{
-				char* p = NULL;
-				iTableKey = strtol(vURIElements[iTable + 1].c_str(), &p, 10);
-			}
-
-			// if there are URI elements to the left look for the ParentKey and Table (Case 3)
-			if ((iTable > 1) && !iTableKey)
-			{
-				char* p = NULL;
-				iParentKey = strtol(vURIElements[iTable - 1].c_str(), &p, 10);
-				sParent = vURIElements[iTable - 2];
-				if (sParent.length())
-				{
-					sParent = sParent.substr(0, sParent.length() - 1);
-				}
-			}
-
-			// Does this look like a valid request?
-			if (
-				!(!iTable && sTable.length() && !iTableKey && !iParentKey)	&&			// Case 1
-				!(sTable.length() &&  iTableKey && !iParentKey)	&&						// Case 2
-				!(sTable.length() && !iTableKey &&  iParentKey && sParent.length()) 	// Case 3
-				)
-			{
-				rep = reply::stock_reply(reply::bad_request);
+				rep = reply::stock_reply(reply::not_allowed);
 				return;
 			}
 
-			// Check user has access to the table for the requested HTTP verb
-			// TODO: get user ID from actual AccessToken Session
-			std::vector<std::vector<std::string> > result;
-			result = m_sql.safe_query("SELECT Can%q, PUTFields, PATCHFields FROM TableAccess T, User U WHERE U.Username = '%q' AND U.RoleID = T.RoleID AND T.Name = '%q'", req.method.c_str(), "Admin", sTable.c_str());
-			if (result.empty() || (result[0][0] != "1"))
-			{
-				rep = reply::stock_reply(reply::unauthorized);
-				return;
-			}
+			// Action request
+			pREST->ProcessRequest();
 
-			// Handle various HTTP verbs
-			Json::Value root;
-			reply::status_type	status = reply::ok;
-			if (req.method == "GET")
-			{
-				status = RESTfulGET(sTable, iTableKey, sParent, iParentKey, root);
-			}
-
-			if (status != reply::ok)
-			{
-				rep = reply::stock_reply(status);
-				return;
-			}
-
-			// Add to the response
-			Json::FastWriter	jWriter;
-			rep.content = jWriter.write(root);
-
-
-			// req.headers (http::server::header  name,value)
-			// req.content_length (appears not set for 0 length)
-			// req.content (string)
+			// and tidy up
+			delete pREST;
 
 			return;
-		}
-
-		reply::status_type CWebServer::RESTfulGET(std::string& sTable, int iTableKey, std::string& sParent, int iParentKey, Json::Value& root)
-		{
-			// look up structure of requested table
-			std::string		sSQL = "pragma table_info('" + sTable + "');";
-			std::vector<std::vector<std::string> > vTableStruct = m_sql.safe_query(sSQL.c_str());
-			if (vTableStruct.empty())
-			{
-				return reply::not_found;
-			}
-
-			// look up and encode requested table
-			sSQL = "SELECT ";
-			for (int i = 0; i < vTableStruct.size(); i++)
-			{
-				sSQL += "T."+vTableStruct[i][1];
-				if (i != vTableStruct.size() - 1) sSQL += ", ";
-			}
-			sSQL += " FROM " + sTable+ " T ";	// Case 1
-			if (iTableKey)
-			{	// Case 2
-				sSQL += " WHERE T." + sTable + "ID=" + std::to_string(iTableKey);
-			}
-			if (iParentKey)
-			{	// Case 3a - We can't be sure which way around the keys go
-				std::string		testSQL = sSQL + ", "+sParent+" P WHERE P." + sParent + "ID=" + std::to_string(iParentKey) + " AND P."+ sParent +"ID=T."+ sParent +"ID";
-				std::vector<std::vector<std::string> >	test = m_sql.safe_query(testSQL.c_str());
-				if (test.empty())
-				{	// Case 3b - the other way around
-					sSQL += ", " + sParent + " P WHERE P." + sParent + "ID=" + std::to_string(iParentKey) + " AND P." + sTable + "ID=T." + sTable + "ID";
-				}
-				else
-				{
-					sSQL = testSQL;
-				}
-			}
-			std::vector<std::vector<std::string> >	result = m_sql.safe_query(sSQL.c_str());
-			if (result.empty())
-			{
-				return reply::not_found;
-			}
-
-			root["Count"] = std::to_string(result.size());
-			int		iIndex = 0;
-			std::string	sOutputName = sTable;
-			if (!iTableKey)
-			{
-				sOutputName += "s";		// If this is not a a request for a specific key then return '<TableName>s'
-			}
-			for (const auto& itt : result)
-			{
-				std::vector<std::string> sd = itt;
-				for (int i = 0; i < sd.size(); i++)
-				{
-					if (vTableStruct[i][2] == "INTEGER")
-					{
-						root[sOutputName.c_str()][(Json::ArrayIndex)iIndex][vTableStruct[i][1]] = atoi(sd[i].c_str());
-					}
-					else
-					{
-						root[sOutputName.c_str()][(Json::ArrayIndex)iIndex][vTableStruct[i][1]] = sd[i];
-					}
-				}
-				iIndex++;
-			}
-
-			return reply::ok;
 		}
 	} //server
 }//http
