@@ -17,10 +17,10 @@ namespace http {
 		class CRESTBase
 		{
 		private:
-			WebEmSession&	m_Session;
-			reply&			m_Reply;
+			const WebEmSession&	m_Session;
+			const request&		m_Request;
+			reply&				m_Reply;
 
-			std::string		m_Verb;
 			std::string		m_Table;
 			int				m_TableKey = 0;
 			std::string		m_Parent;
@@ -32,6 +32,9 @@ namespace http {
 			std::string		m_PUTFields;
 			std::string		m_PATCHFields;
 
+			std::string		getVerb() { return m_Request.method; };
+			bool			getFieldsAndValues(std::string*	pFields, std::string*	pValues);
+
 		protected:
 			std::vector<std::vector<std::string> >		m_GETFields;
 
@@ -41,24 +44,23 @@ namespace http {
 			virtual void	PATCH();
 			virtual void	DELETE();
 		public:
-			CRESTBase(WebEmSession& session, reply& rep);
+			CRESTBase(const WebEmSession& session, const request& req, reply& rep);
 			~CRESTBase() {};
 
-			virtual	void	SetVerb(std::string sVerb) { m_Verb = sVerb; };
-			virtual	void	SetTable(std::string sTable, int iTableKey);
-			virtual	void	SetParent(std::string sParent, int iParentKey);
-			virtual	void	SetOptions(std::string sOrder, std::string sFilter);
+			virtual	void	setTable(std::string sTable, int iTableKey);
+			virtual	void	setParent(std::string sParent, int iParentKey);
+			virtual	void	setOptions(std::string sOrder, std::string sFilter);
 
 			virtual bool	UserHasAccess();
 			virtual	void	ProcessRequest();
 
-			static CRESTBase* Create(WebEmSession& session, const request& req, reply& rep);
+			static CRESTBase* Create(const WebEmSession& session, const request& req, reply& rep);
 		};
 
 		class CRESTUser : CRESTBase
 		{
 		public:
-			CRESTUser(WebEmSession& session, reply& rep) : CRESTBase(session, rep) {};
+			CRESTUser(const WebEmSession& session, const request& req, reply& rep) : CRESTBase(session, req, rep) {};
 		protected:
 			virtual void	GET();
 		};
@@ -66,7 +68,7 @@ namespace http {
 		class CRESTUserSession : CRESTBase
 		{
 		public:
-			CRESTUserSession(WebEmSession& session, reply& rep) : CRESTBase(session, rep) {};
+			CRESTUserSession(const WebEmSession& session, const request& req, reply& rep) : CRESTBase(session, req, rep) {};
 		protected:
 			virtual void	GET();
 		};

@@ -175,7 +175,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Value Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n  <mat-form-field>\r\n    <input matInput placeholder=\"Name\" formControlName=\"Name\" />\r\n  </mat-form-field>\r\n  <mat-form-field>\r\n    <mat-label>Unit</mat-label>\r\n    <mat-select #mode formControlName=\"UnitID\" placeholder=\"Unit\" [compareWith]=\"compareUnitObjects\">\r\n      <mat-option *ngFor=\"let unit of units\" [value]=\"unit\">{{unit.Name}}</mat-option>\r\n    </mat-select>\r\n  </mat-form-field>\r\n\r\n  <mat-form-field>\r\n    <mat-label>Device ID</mat-label>\r\n    <input matInput formControlName=\"DeviceID\" />\r\n  </mat-form-field>\r\n\r\n  <mat-form-field>\r\n    <mat-label>Value</mat-label>\r\n    <input matInput formControlName=\"Value\" />\r\n  </mat-form-field>\r\n\r\n  <div>\r\n    <mat-form-field>\r\n      <mat-label>Retention Days</mat-label>\r\n      <input matInput formControlName=\"RetentionDays\" />\r\n    </mat-form-field>\r\n\r\n    <mat-form-field>\r\n      <mat-label>Retention Interval</mat-label>\r\n      <input matInput formControlName=\"RetentionInterval\" />\r\n    </mat-form-field>\r\n  </div>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Value Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n  <mat-form-field>\r\n    <input matInput placeholder=\"Name\" formControlName=\"Name\" />\r\n  </mat-form-field>\r\n  <mat-form-field>\r\n    <mat-label>Unit</mat-label>\r\n    <mat-select #mode formControlName=\"UnitID\" placeholder=\"Unit\" [compareWith]=\"compareUnitObjects\">\r\n      <mat-option *ngFor=\"let unit of units\" [value]=\"unit\">{{unit.Name}}</mat-option>\r\n    </mat-select>\r\n  </mat-form-field>\r\n\r\n  <mat-form-field>\r\n    <mat-label>Device</mat-label>\r\n    <mat-select #mode formControlName=\"DeviceID\" placeholder=\"Device\" [compareWith]=\"compareDeviceObjects\">\r\n      <mat-option *ngFor=\"let device of devices\" [value]=\"device\">{{device.Name}}</mat-option>\r\n    </mat-select>\r\n  </mat-form-field>\r\n\r\n  <mat-form-field>\r\n    <mat-label>Value</mat-label>\r\n    <input matInput formControlName=\"Value\" />\r\n  </mat-form-field>\r\n\r\n  <div>\r\n    <mat-form-field>\r\n      <mat-label>Retention Days</mat-label>\r\n      <input matInput formControlName=\"RetentionDays\" />\r\n    </mat-form-field>\r\n\r\n    <mat-form-field>\r\n      <mat-label>Retention Interval</mat-label>\r\n      <input matInput formControlName=\"RetentionInterval\" />\r\n    </mat-form-field>\r\n  </div>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(!formIsValid())\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n\r\n");
 
 /***/ }),
 
@@ -188,7 +188,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Devices</mat-card-title>\r\n    <mat-card-subtitle>Device maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/Devices/{{selectedRowNumber}}/Values\" matTooltip=\"Related Values\" [matTooltipShowDelay]=\"500\"><mat-icon>pageview</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Devices\">\r\n      <ng-container matColumnDef=\"DeviceID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let device\">{{device.DeviceID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"InterfaceID\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Interface ID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let device\" style=\"justify-content:center;\">{{device.InterfaceID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let device\">{{device.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"ExternalID\">\r\n        <mat-header-cell *matHeaderCellDef>External ID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let device\">{{device.ExternalID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Timestamp\">\r\n        <mat-header-cell *matHeaderCellDef>Timestamp</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let device\">{{device.Timestamp}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = 0 : selectedRow = row; selectedRowNumber = row.DeviceID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Devices</mat-card-title>\r\n    <mat-card-subtitle>Device maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" routerLink=\"/Devices/{{selectedRowNumber}}/Values\" matTooltip=\"Related Values\" [matTooltipShowDelay]=\"500\"><mat-icon>pageview</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Devices\">\r\n      <ng-container matColumnDef=\"DeviceID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let device\">{{device.DeviceID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"InterfaceID\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Interface ID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let device\" style=\"justify-content:center;\">{{device.InterfaceID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let device\">{{device.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"ExternalID\">\r\n        <mat-header-cell *matHeaderCellDef>External ID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let device\">{{device.ExternalID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Timestamp\">\r\n        <mat-header-cell *matHeaderCellDef>Timestamp</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let device\">{{device.Timestamp}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = null : selectedRow = row; selectedRowNumber = row.DeviceID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
 
 /***/ }),
 
@@ -201,7 +201,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Device Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n  <mat-form-field>\r\n    <input matInput placeholder=\"Name\" formControlName=\"Name\" />\r\n  </mat-form-field>\r\n  <mat-form-field>\r\n    <mat-label>Interface</mat-label>\r\n    <mat-select #mode formControlName=\"InterfaceID\" placeholder=\"Interface\" [compareWith]=\"compareInterfaceObjects\">\r\n      <mat-option *ngFor=\"let interface of interfaces\" [value]=\"interface\">{{interface.Name}}</mat-option>\r\n    </mat-select>\r\n  </mat-form-field>\r\n\r\n  <mat-form-field>\r\n    <mat-label>External ID</mat-label>\r\n    <input matInput formControlName=\"ExternalID\" />\r\n  </mat-form-field>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Device Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n  <mat-form-field>\r\n    <input matInput placeholder=\"Name\" formControlName=\"Name\" />\r\n  </mat-form-field>\r\n  <mat-form-field>\r\n    <mat-label>Interface</mat-label>\r\n    <mat-select #mode formControlName=\"InterfaceID\" placeholder=\"Interface\" [compareWith]=\"compareInterfaceObjects\">\r\n      <mat-option *ngFor=\"let interface of interfaces\" [value]=\"interface\">{{interface.Name}}</mat-option>\r\n    </mat-select>\r\n  </mat-form-field>\r\n\r\n  <mat-form-field>\r\n    <mat-label>External ID</mat-label>\r\n    <input matInput formControlName=\"ExternalID\" />\r\n  </mat-form-field>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(!formIsValid())\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n\r\n");
 
 /***/ }),
 
@@ -214,7 +214,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Interfaces</mat-card-title>\r\n    <mat-card-subtitle>Interface maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/Interfaces/{{selectedRowNumber}}/InterfaceLogs\" matTooltip=\"Log\" [matTooltipShowDelay]=\"500\"><mat-icon>message</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/Interfaces/{{selectedRowNumber}}/Devices\" matTooltip=\"Related Devices\" [matTooltipShowDelay]=\"500\"><mat-icon>extension</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Interfaces\">\r\n      <ng-container matColumnDef=\"InterfaceID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\">{{interface.InterfaceID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\">{{interface.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Script\">\r\n        <mat-header-cell *matHeaderCellDef>Python Script</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\">{{interface.Script}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Configuration\">\r\n        <mat-header-cell *matHeaderCellDef>Configuration</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\">{{interface.Configuration}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Notifiable\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Notifiable</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\" style=\"justify-content:center;\"><mat-icon>{interface.Notifiable, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Active\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Active</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\" style=\"justify-content:center;\"><mat-icon>{interface.Active, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = 0 : selectedRow = row; selectedRowNumber = row.InterfaceID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Interfaces</mat-card-title>\r\n    <mat-card-subtitle>Interface maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" routerLink=\"/Interfaces/{{selectedRowNumber}}/InterfaceLogs\" matTooltip=\"Log\" [matTooltipShowDelay]=\"500\"><mat-icon>message</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" routerLink=\"/Interfaces/{{selectedRowNumber}}/Devices\" matTooltip=\"Related Devices\" [matTooltipShowDelay]=\"500\"><mat-icon>extension</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Interfaces\">\r\n      <ng-container matColumnDef=\"InterfaceID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\">{{interface.InterfaceID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\">{{interface.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Script\">\r\n        <mat-header-cell *matHeaderCellDef>Python Script</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\">{{interface.Script}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Configuration\">\r\n        <mat-header-cell *matHeaderCellDef>Configuration</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\">{{interface.Configuration}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Notifiable\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Notifiable</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\" style=\"justify-content:center;\"><mat-icon>{interface.Notifiable, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Active\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Active</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let interface\" style=\"justify-content:center;\"><mat-icon>{interface.Active, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = null : selectedRow = row; selectedRowNumber = row.InterfaceID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
 
 /***/ }),
 
@@ -253,7 +253,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Interface Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n  <div>\r\n    <mat-form-field>\r\n      <mat-label>Name</mat-label>\r\n      <input matInput placeholder=\"Interface Name\" formControlName=\"Name\" />\r\n    </mat-form-field>\r\n  </div>\r\n  <div>\r\n    <mat-form-field style=\"min-width: 100%;\">\r\n      <mat-label>Configuration</mat-label>\r\n      <textarea matInput placeholder=\"Configuration\" formControlName=\"Configuration\"></textarea>\r\n    </mat-form-field>\r\n  </div>\r\n  <mat-checkbox formControlName=\"Notifiable\">Notifiable</mat-checkbox>\r\n  <mat-checkbox formControlName=\"Active\">Active</mat-checkbox>\r\n  <div><br/>\r\n    <ace fxFlex=\"auto\" [config]=\"config\" [disabled]=\"disabled\" [(value)]=\"content\">\r\n      Some example content\r\n    </ace>\r\n  </div>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Interface Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n  <div>\r\n    <mat-form-field>\r\n      <mat-label>Name</mat-label>\r\n      <input matInput placeholder=\"Interface Name\" formControlName=\"Name\" />\r\n    </mat-form-field>\r\n  </div>\r\n  <div>\r\n    <mat-form-field style=\"min-width: 100%;\">\r\n      <mat-label>Configuration</mat-label>\r\n      <textarea matInput placeholder=\"Configuration\" formControlName=\"Configuration\"></textarea>\r\n    </mat-form-field>\r\n  </div>\r\n  <mat-checkbox formControlName=\"Notifiable\">Notifiable</mat-checkbox>\r\n  <mat-checkbox formControlName=\"Active\">Active</mat-checkbox>\r\n  <div><br/>\r\n    <ace fxFlex=\"auto\" [config]=\"config\" [disabled]=\"disabled\" [(value)]=\"content\">\r\n      Some example content\r\n    </ace>\r\n  </div>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n");
 
 /***/ }),
 
@@ -266,7 +266,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Values</mat-card-title>\r\n    <mat-card-subtitle>Value maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/Values/{{selectedRowNumber}}/ValueLogs\" matTooltip=\"Log\" [matTooltipShowDelay]=\"500\"><mat-icon>message</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/Values/{{selectedRowNumber}}/ValueHistorys\" matTooltip=\"History\" [matTooltipShowDelay]=\"500\"><mat-icon>history</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Values\">\r\n      <ng-container matColumnDef=\"ValueID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\">{{value.ValueID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\">{{value.Name}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"DeviceID\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Device ID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\" style=\"justify-content:center;\">{{value.DeviceID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"UnitID\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Unit ID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\" style=\"justify-content:center;\">{{value.UnitID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Value\">\r\n        <mat-header-cell *matHeaderCellDef>Value</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\">{{value.Value}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RetentionDays\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Retention Days</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\" style=\"justify-content:center;\">{{value.RetentionDays}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RetentionInterval\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Retention Interval</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\" style=\"justify-content:center;\">{{value.RetentionInterval}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Timestamp\">\r\n        <mat-header-cell *matHeaderCellDef>Timestamp</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\">{{value.Timestamp}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = 0 : selectedRow = row; selectedRowNumber = row.ValueID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Values</mat-card-title>\r\n    <mat-card-subtitle>Value maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" routerLink=\"/Values/{{selectedRowNumber}}/ValueLogs\" matTooltip=\"Log\" [matTooltipShowDelay]=\"500\"><mat-icon>message</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" routerLink=\"/Values/{{selectedRowNumber}}/ValueHistorys\" matTooltip=\"History\" [matTooltipShowDelay]=\"500\"><mat-icon>history</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Values\">\r\n      <ng-container matColumnDef=\"ValueID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\">{{value.ValueID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\">{{value.Name}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"DeviceID\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Device ID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\" style=\"justify-content:center;\">{{value.DeviceID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"UnitID\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Unit ID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\" style=\"justify-content:center;\">{{value.UnitID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Value\">\r\n        <mat-header-cell *matHeaderCellDef>Value</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\">{{value.Value}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RetentionDays\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Retention Days</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\" style=\"justify-content:center;\">{{value.RetentionDays}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RetentionInterval\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Retention Interval</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\" style=\"justify-content:center;\">{{value.RetentionInterval}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Timestamp\">\r\n        <mat-header-cell *matHeaderCellDef>Timestamp</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let value\">{{value.Timestamp}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = null : selectedRow = row; selectedRowNumber = row.ValueID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
 
 /***/ }),
 
@@ -318,7 +318,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Roles</mat-card-title>\r\n    <mat-card-subtitle>Role maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/Roles/{{selectedRowNumber}}/Users\" matTooltip=\"Users in role\" [matTooltipShowDelay]=\"500\"><mat-icon>people</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/Roles/{{selectedRowNumber}}/TableAccesss\" matTooltip=\"Role table access\" [matTooltipShowDelay]=\"500\"><mat-icon>pageview</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Roles\">\r\n      <ng-container matColumnDef=\"RoleID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let role\">{{role.RoleID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let role\">{{role.Name}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RemoteAccess\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Remote Access</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let role\" style=\"justify-content:center;\"><mat-icon i18n>{role.RemoteAccess, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"InternalTTL\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Internal Session Lifespan</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let role\" style=\"justify-content:center;\">{{role.InternalTTL}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RemoteTTL\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Remote Session Lifespan</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let role\" style=\"justify-content:center;\">{{role.RemoteTTL}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = 0 : selectedRow = row; selectedRowNumber = row.RoleID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Roles</mat-card-title>\r\n    <mat-card-subtitle>Role maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" routerLink=\"/Roles/{{selectedRowNumber}}/Users\" matTooltip=\"Users in role\" [matTooltipShowDelay]=\"500\"><mat-icon>people</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" routerLink=\"/Roles/{{selectedRowNumber}}/TableAccesss\" matTooltip=\"Role table access\" [matTooltipShowDelay]=\"500\"><mat-icon>pageview</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Roles\">\r\n      <ng-container matColumnDef=\"RoleID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let role\">{{role.RoleID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let role\">{{role.Name}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RemoteAccess\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Remote Access</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let role\" style=\"justify-content:center;\"><mat-icon i18n>{role.RemoteAccess, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"InternalTTL\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Internal Session Lifespan</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let role\" style=\"justify-content:center;\">{{role.InternalTTL}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RemoteTTL\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Remote Session Lifespan</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let role\" style=\"justify-content:center;\">{{role.RemoteTTL}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = null : selectedRow = row; selectedRowNumber = row.RoleID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
 
 /***/ }),
 
@@ -331,7 +331,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Role Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n\r\n  <mat-form-field>\r\n    <mat-label>Name</mat-label>\r\n    <input matInput placeholder=\"Role Name\" formControlName=\"Name\" />\r\n  </mat-form-field>\r\n  <mat-form-field>\r\n    <mat-label>Internal Token Lifespan</mat-label>\r\n    <input matInput type=\"number\" placeholder=\"15\" formControlName=\"InternalTTL\" />\r\n  </mat-form-field>\r\n  <mat-form-field>\r\n    <mat-label>Remote Token Lifespan</mat-label>\r\n    <input matInput placeholder=\"5\" formControlName=\"RemoteTTL\" />\r\n  </mat-form-field>\r\n  <mat-checkbox formControlName=\"RemoteAccess\">Remote Access</mat-checkbox>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Role Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n\r\n  <mat-form-field>\r\n    <mat-label>Name</mat-label>\r\n    <input matInput placeholder=\"Role Name\" formControlName=\"Name\" />\r\n  </mat-form-field>\r\n  <mat-form-field>\r\n    <mat-label>Internal Token Lifespan</mat-label>\r\n    <input matInput type=\"number\" placeholder=\"15\" formControlName=\"InternalTTL\" />\r\n  </mat-form-field>\r\n  <mat-form-field>\r\n    <mat-label>Remote Token Lifespan</mat-label>\r\n    <input matInput placeholder=\"5\" formControlName=\"RemoteTTL\" />\r\n  </mat-form-field>\r\n  <mat-checkbox formControlName=\"RemoteAccess\">Remote Access</mat-checkbox>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n");
 
 /***/ }),
 
@@ -344,7 +344,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Table Access</mat-card-title>\r\n    <mat-card-subtitle>Table Access maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"TableAccess\">\r\n      <ng-container matColumnDef=\"TableAccessID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\">{{tableaccess.TableAccessID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\">{{tableaccess.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RoleID\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">RoleID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\">{{tableaccess.RoleID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"CanGET\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Can GET</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\"><mat-icon>{tableaccess.CanGET, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"CanPOST\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Can POST</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\"><mat-icon>{tableaccess.CanPOST, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"CanPUT\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Can PUT</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\"><mat-icon>{tableaccess.CanPUT, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"CanPATCH\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Can PATCH</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\"><mat-icon>{tableaccess.CanPATCH, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"CanDELETE\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Can DELETE</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\"><mat-icon>{tableaccess.CanDELETE, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"PUTFields\">\r\n        <mat-header-cell *matHeaderCellDef>PUT Fields</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\">{{tableaccess.PUTFields}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"PATCHFields\">\r\n        <mat-header-cell *matHeaderCellDef>PATCH Fields</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\">{{tableaccess.PATCHFields}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = 0 : selectedRow = row; selectedRowNumber = row.TableAccessID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Table Access</mat-card-title>\r\n    <mat-card-subtitle>Table Access maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"TableAccess\">\r\n      <ng-container matColumnDef=\"TableAccessID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\">{{tableaccess.TableAccessID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\">{{tableaccess.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RoleID\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">RoleID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\">{{tableaccess.RoleID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"CanGET\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Can GET</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\"><mat-icon>{tableaccess.CanGET, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"CanPOST\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Can POST</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\"><mat-icon>{tableaccess.CanPOST, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"CanPUT\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Can PUT</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\"><mat-icon>{tableaccess.CanPUT, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"CanPATCH\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Can PATCH</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\"><mat-icon>{tableaccess.CanPATCH, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"CanDELETE\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Can DELETE</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\" style=\"justify-content:center;\"><mat-icon>{tableaccess.CanDELETE, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"PUTFields\">\r\n        <mat-header-cell *matHeaderCellDef>PUT Fields</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\">{{tableaccess.PUTFields}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"PATCHFields\">\r\n        <mat-header-cell *matHeaderCellDef>PATCH Fields</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let tableaccess\">{{tableaccess.PATCHFields}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = null : selectedRow = row; selectedRowNumber = row.TableAccessID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
 
 /***/ }),
 
@@ -357,7 +357,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Table Access Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n  <div>\r\n    <mat-form-field>\r\n      <mat-label>Name</mat-label>\r\n      <input matInput placeholder=\"Role Name\" formControlName=\"Name\" />\r\n    </mat-form-field>\r\n\r\n    <mat-form-field>\r\n      <mat-label>Role</mat-label>\r\n      <mat-select #mode formControlName=\"RoleID\" placeholder=\"Role\" [compareWith]=\"compareRoleObjects\">\r\n        <mat-option *ngFor=\"let role of roles\" [value]=\"role\">{{role.Name}}</mat-option>\r\n      </mat-select>\r\n    </mat-form-field>\r\n  </div>\r\n  <mat-checkbox formControlName=\"CanGET\">Can GET</mat-checkbox>\r\n  <mat-checkbox formControlName=\"CanPOST\">Can POST</mat-checkbox>\r\n  <mat-checkbox formControlName=\"CanPUT\">Can PUT</mat-checkbox>\r\n  <mat-checkbox formControlName=\"CanPATCH\">Can PATCH</mat-checkbox>\r\n  <mat-checkbox formControlName=\"CanDELETE\">Can DELETE</mat-checkbox>\r\n  <div>\r\n    <mat-form-field>\r\n      <mat-label>PUT Fields</mat-label>\r\n      <input matInput placeholder=\"*\" formControlName=\"PUTFields\" />\r\n    </mat-form-field>\r\n\r\n    <mat-form-field>\r\n      <mat-label>Patch Fields</mat-label>\r\n      <input matInput placeholder=\"*\" formControlName=\"PATCHFields\" />\r\n    </mat-form-field>\r\n  </div>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Table Access Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n  <div>\r\n    <mat-form-field>\r\n      <mat-label>Name</mat-label>\r\n      <input matInput placeholder=\"Role Name\" formControlName=\"Name\" />\r\n    </mat-form-field>\r\n\r\n    <mat-form-field>\r\n      <mat-label>Role</mat-label>\r\n      <mat-select #mode formControlName=\"RoleID\" placeholder=\"Role\" [compareWith]=\"compareRoleObjects\">\r\n        <mat-option *ngFor=\"let role of roles\" [value]=\"role\">{{role.Name}}</mat-option>\r\n      </mat-select>\r\n    </mat-form-field>\r\n  </div>\r\n  <mat-checkbox formControlName=\"CanGET\">Can GET</mat-checkbox>\r\n  <mat-checkbox formControlName=\"CanPOST\">Can POST</mat-checkbox>\r\n  <mat-checkbox formControlName=\"CanPUT\">Can PUT</mat-checkbox>\r\n  <mat-checkbox formControlName=\"CanPATCH\">Can PATCH</mat-checkbox>\r\n  <mat-checkbox formControlName=\"CanDELETE\">Can DELETE</mat-checkbox>\r\n  <div>\r\n    <mat-form-field>\r\n      <mat-label>PUT Fields</mat-label>\r\n      <input matInput placeholder=\"*\" formControlName=\"PUTFields\" />\r\n    </mat-form-field>\r\n\r\n    <mat-form-field>\r\n      <mat-label>Patch Fields</mat-label>\r\n      <input matInput placeholder=\"*\" formControlName=\"PATCHFields\" />\r\n    </mat-form-field>\r\n  </div>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n");
 
 /***/ }),
 
@@ -370,7 +370,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Users</mat-card-title>\r\n    <mat-card-subtitle>User maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Users\">\r\n      <ng-container matColumnDef=\"UserID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.UserID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"UserName\">\r\n        <mat-header-cell *matHeaderCellDef>UserName</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.UserName}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.Name}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RoleID\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Role ID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\" style=\"justify-content:center;\">{{user.RoleID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Active\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Active</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\" style=\"justify-content:center;\"><mat-icon>{user.Active, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"ForceChange\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Force Change</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\" style=\"justify-content:center;\"><mat-icon>{user.ForceChange, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"FailedAttempts\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Failed Attempts</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\" style=\"justify-content:center;\">{{user.FailedAttempts}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"EmailAddress\">\r\n        <mat-header-cell *matHeaderCellDef>Email Address</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.EmailAddress}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"MobileNumber\">\r\n        <mat-header-cell *matHeaderCellDef>Mobile Number</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.MobileNumber}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Theme\">\r\n        <mat-header-cell *matHeaderCellDef>Theme</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.Theme}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Timestamp\">\r\n        <mat-header-cell *matHeaderCellDef>Timestamp</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.Timestamp}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = 0 : selectedRow = row; selectedRowNumber = row.UserID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Users</mat-card-title>\r\n    <mat-card-subtitle>User maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Users\">\r\n      <ng-container matColumnDef=\"UserID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.UserID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"UserName\">\r\n        <mat-header-cell *matHeaderCellDef>UserName</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.UserName}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.Name}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"RoleID\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Role ID</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\" style=\"justify-content:center;\">{{user.RoleID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Active\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Active</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\" style=\"justify-content:center;\"><mat-icon>{user.Active, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"ForceChange\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Force Change</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\" style=\"justify-content:center;\"><mat-icon>{user.ForceChange, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"FailedAttempts\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Failed Attempts</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\" style=\"justify-content:center;\">{{user.FailedAttempts}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"EmailAddress\">\r\n        <mat-header-cell *matHeaderCellDef>Email Address</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.EmailAddress}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"MobileNumber\">\r\n        <mat-header-cell *matHeaderCellDef>Mobile Number</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.MobileNumber}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Theme\">\r\n        <mat-header-cell *matHeaderCellDef>Theme</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.Theme}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Timestamp\">\r\n        <mat-header-cell *matHeaderCellDef>Timestamp</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let user\">{{user.Timestamp}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = null : selectedRow = row; selectedRowNumber = row.UserID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
 
 /***/ }),
 
@@ -409,7 +409,20 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("  <h2 mat-dialog-title>User Maintenance</h2>\r\n\r\n  <form [formGroup]=\"form\">\r\n    <div>\r\n      <mat-form-field>\r\n        <input matInput placeholder=\"Username\" formControlName=\"UserName\" />\r\n      </mat-form-field>\r\n      <mat-form-field>\r\n        <mat-label>Role</mat-label>\r\n        <mat-select #mode formControlName=\"RoleID\" placeholder=\"Role\" [compareWith]=\"compareRoleObjects\">\r\n          <mat-option *ngFor=\"let role of roles\" [value]=\"role\">{{role.Name}}</mat-option>\r\n        </mat-select>\r\n      </mat-form-field>\r\n    </div>\r\n\r\n    <div>\r\n      <mat-form-field>\r\n        <input matInput type=\"password\" placeholder=\"Password\" formControlName=\"Password\" />\r\n      </mat-form-field>\r\n      <mat-form-field>\r\n        <input matInput type=\"password\" placeholder=\"Confirm Password\" formControlName=\"Password2\" />\r\n      </mat-form-field>\r\n    </div>\r\n\r\n    <mat-form-field>\r\n      <mat-label>Name</mat-label>\r\n      <input matInput placeholder=\"First Last\" formControlName=\"Name\" />\r\n    </mat-form-field>\r\n    <mat-form-field>\r\n      <mat-label>Email Address</mat-label>\r\n      <input matInput type=\"email\" placeholder=\"first.last@example.com\" formControlName=\"EmailAddress\" />\r\n    </mat-form-field>\r\n    <mat-form-field>\r\n      <mat-label>Mobile Number</mat-label>\r\n      <input matInput placeholder=\"0412 345 678\" formControlName=\"MobileNumber\" ng-pattern=\"[0-9]{3}-[0-9]{3}-[0-9]{4}\" />\r\n    </mat-form-field>\r\n\r\n    <div>\r\n      <mat-checkbox formControlName=\"Active\">Active</mat-checkbox>\r\n      <mat-checkbox formControlName=\"ForceChange\">Force Password Change</mat-checkbox>\r\n    </div>\r\n\r\n    <mat-dialog-actions align=\"end\">\r\n      <button mat-raised-button color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n      <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n    </mat-dialog-actions>\r\n\r\n</form>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("  <h2 mat-dialog-title>User Maintenance</h2>\r\n\r\n  <form [formGroup]=\"form\">\r\n    <div>\r\n      <mat-form-field>\r\n        <input matInput placeholder=\"Username\" formControlName=\"UserName\" />\r\n      </mat-form-field>\r\n      <mat-form-field>\r\n        <mat-label>Role</mat-label>\r\n        <mat-select #mode formControlName=\"RoleID\" placeholder=\"Role\" [compareWith]=\"compareRoleObjects\">\r\n          <mat-option *ngFor=\"let role of roles\" [value]=\"role\">{{role.Name}}</mat-option>\r\n        </mat-select>\r\n      </mat-form-field>\r\n    </div>\r\n\r\n    <div>\r\n      <mat-form-field>\r\n        <input matInput type=\"password\" placeholder=\"Password\" formControlName=\"Password\" />\r\n      </mat-form-field>\r\n      <mat-form-field>\r\n        <input matInput type=\"password\" placeholder=\"Confirm Password\" formControlName=\"Password2\" />\r\n      </mat-form-field>\r\n    </div>\r\n\r\n    <mat-form-field>\r\n      <mat-label>Name</mat-label>\r\n      <input matInput placeholder=\"First Last\" formControlName=\"Name\" />\r\n    </mat-form-field>\r\n    <mat-form-field>\r\n      <mat-label>Email Address</mat-label>\r\n      <input matInput type=\"email\" placeholder=\"first.last@example.com\" formControlName=\"EmailAddress\" />\r\n    </mat-form-field>\r\n    <mat-form-field>\r\n      <mat-label>Mobile Number</mat-label>\r\n      <input matInput placeholder=\"0412 345 678\" formControlName=\"MobileNumber\" ng-pattern=\"[0-9]{3}-[0-9]{3}-[0-9]{4}\" />\r\n    </mat-form-field>\r\n\r\n    <div>\r\n      <mat-checkbox formControlName=\"Active\">Active</mat-checkbox>\r\n      <mat-checkbox formControlName=\"ForceChange\">Force Password Change</mat-checkbox>\r\n    </div>\r\n\r\n    <mat-dialog-actions align=\"end\">\r\n      <button mat-raised-button color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n      <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n    </mat-dialog-actions>\r\n\r\n</form>\r\n");
+
+/***/ }),
+
+/***/ "./node_modules/raw-loader/dist/cjs.js!./src/app/system/confirmation-dialog/confirmation-dialog.component.html":
+/*!*********************************************************************************************************************!*\
+  !*** ./node_modules/raw-loader/dist/cjs.js!./src/app/system/confirmation-dialog/confirmation-dialog.component.html ***!
+  \*********************************************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = ("<div mat-dialog-content>\r\n  {{message}}\r\n</div>\r\n<mat-dialog-actions align=\"end\">\r\n  <button mat-raised-button color=\"primary\" [mat-dialog-close]=\"true\" cdkFocusInitial matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n  <button style=\"margin-left:6px;\" (click)=\"onNoClick()\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n</mat-dialog-actions>\r\n");
 
 /***/ }),
 
@@ -422,7 +435,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Preferences</mat-card-title>\r\n    <mat-card-subtitle>Preference maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n    <mat-card-content>\r\n      <mat-table [dataSource]=\"Preferences\">\r\n        <ng-container matColumnDef=\"PreferenceID\">\r\n          <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n          <mat-cell *matCellDef=\"let preference\">{{preference.PreferenceID}}</mat-cell>\r\n        </ng-container>\r\n\r\n        <ng-container matColumnDef=\"Name\">\r\n          <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n          <mat-cell *matCellDef=\"let preference\">{{preference.Name}}</mat-cell>\r\n\r\n        </ng-container>\r\n\r\n        <ng-container matColumnDef=\"Value\">\r\n          <mat-header-cell *matHeaderCellDef>Value</mat-header-cell>\r\n          <mat-cell *matCellDef=\"let preference\">{{preference.Value}}</mat-cell>\r\n        </ng-container>\r\n\r\n        <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n        <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = 0 : selectedRow = row; selectedRowNumber = row.PreferenceID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n        </mat-row>\r\n      </mat-table>\r\n    </mat-card-content>\r\n</mat-card>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Preferences</mat-card-title>\r\n    <mat-card-subtitle>Preference maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n    <mat-card-content>\r\n      <mat-table [dataSource]=\"Preferences\">\r\n        <ng-container matColumnDef=\"PreferenceID\">\r\n          <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n          <mat-cell *matCellDef=\"let preference\">{{preference.PreferenceID}}</mat-cell>\r\n        </ng-container>\r\n\r\n        <ng-container matColumnDef=\"Name\">\r\n          <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n          <mat-cell *matCellDef=\"let preference\">{{preference.Name}}</mat-cell>\r\n\r\n        </ng-container>\r\n\r\n        <ng-container matColumnDef=\"Value\">\r\n          <mat-header-cell *matHeaderCellDef>Value</mat-header-cell>\r\n          <mat-cell *matCellDef=\"let preference\">{{preference.Value}}</mat-cell>\r\n        </ng-container>\r\n\r\n        <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n        <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = null : selectedRow = row; selectedRowNumber = row.PreferenceID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n        </mat-row>\r\n      </mat-table>\r\n    </mat-card-content>\r\n</mat-card>\r\n");
 
 /***/ }),
 
@@ -448,7 +461,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Scenes</mat-card-title>\r\n    <mat-card-subtitle>Scene maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/Scenes/{{selectedRowNumber}}/ValueTimer\" matTooltip=\"Related Timer Values\" [matTooltipShowDelay]=\"500\"><mat-icon>pageview</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" routerLink=\"/Scenes/{{selectedRowNumber}}\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/Scenes/{{selectedRow}}\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/Scenes/{{selectedRow}}\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Scenes\">\r\n      <ng-container matColumnDef=\"SceneID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let scene\">{{scene.SceneID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let scene\">{{scene.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Active\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Active</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let scene\" style=\"justify-content:center;\"><mat-icon>{scene.Active, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = 0 : selectedRow = row; selectedRowNumber = row.SceneID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Scenes</mat-card-title>\r\n    <mat-card-subtitle>Scene maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" routerLink=\"/Scenes/{{selectedRowNumber}}/ValueTimer\" matTooltip=\"Related Timer Values\" [matTooltipShowDelay]=\"500\"><mat-icon>pageview</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Scenes\">\r\n      <ng-container matColumnDef=\"SceneID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let scene\">{{scene.SceneID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let scene\">{{scene.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Active\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Active</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let scene\" style=\"justify-content:center;\"><mat-icon>{scene.Active, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRowNumber = 0 : selectedRow = row; selectedRowNumber = row.SceneID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
 
 /***/ }),
 
@@ -526,7 +539,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Timer Plans</mat-card-title>\r\n    <mat-card-subtitle>Timer Plan maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/TimerPlans/{{selectedRowNumber}}/ValueTimer\" matTooltip=\"Related Scene details\" [matTooltipShowDelay]=\"500\"><mat-icon>pageview</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" routerLink=\"/TimerPlans/{{selectedRowNumber}}\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/TimerPlans/{{selectedRow}}\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" routerLink=\"/TimerPlans/{{selectedRow}}\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"TimerPlans\">\r\n      <ng-container matColumnDef=\"TimerPlanID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let timer\">{{timer.TimerPlanID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let timer\">{{timer.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Active\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Active</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let timer\" style=\"justify-content:center;\"><mat-icon>{timer.Active, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = 0 : selectedRow = row; selectedRowNumber = row.TimerPlanID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Timer Plans</mat-card-title>\r\n    <mat-card-subtitle>Timer Plan maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" routerLink=\"/TimerPlans/{{selectedRowNumber}}/ValueTimer\" matTooltip=\"Related Scene details\" [matTooltipShowDelay]=\"500\"><mat-icon>pageview</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" routerLink=\"/TimerPlans/{{selectedRowNumber}}\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" routerLink=\"/TimerPlans/{{selectedRow}}\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" routerLink=\"/TimerPlans/{{selectedRow}}\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"TimerPlans\">\r\n      <ng-container matColumnDef=\"TimerPlanID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let timer\">{{timer.TimerPlanID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let timer\">{{timer.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Active\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Active</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let timer\" style=\"justify-content:center;\"><mat-icon>{timer.Active, plural, =1 {check_circle} other {highlight_off}}</mat-icon></mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = null : selectedRow = row; selectedRowNumber = row.TimerPlanID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
 
 /***/ }),
 
@@ -552,7 +565,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Units</mat-card-title>\r\n    <mat-card-subtitle>Unit maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == 0)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Units\">\r\n      <ng-container matColumnDef=\"UnitID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\">{{unit.UnitID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\">{{unit.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Minimum\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Minimum</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\" style=\"justify-content:center;\">{{unit.Minimum}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Maximum\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Maximum</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\" style=\"justify-content:center;\">{{unit.Maximum}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"IconList\">\r\n        <mat-header-cell *matHeaderCellDef>Icon List</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\">{{unit.IconList}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"TextLabels\">\r\n        <mat-header-cell *matHeaderCellDef>Text Labels</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\">{{unit.TextLabels}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = 0 : selectedRow = row; selectedRowNumber = row.UnitID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<mat-card>\r\n  <mat-card-header>\r\n    <img mat-card-avatar src=\"https://source.unsplash.com/random/200x200\">\r\n    <mat-card-title>Units</mat-card-title>\r\n    <mat-card-subtitle>Unit maintenance</mat-card-subtitle>\r\n    <div align=\"right\" style=\"width: 100%; margin: auto;\">\r\n      <button mat-mini-fab color=\"primary\" (click)=\"goBack();\" matTooltip=\"Previous\" [matTooltipShowDelay]=\"500\"><mat-icon>arrow_back</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" (click)=\"onNew();\" matTooltip=\"New\" [matTooltipShowDelay]=\"500\"><mat-icon>add</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onEdit();\" matTooltip=\"Edit\" [matTooltipShowDelay]=\"500\"><mat-icon>edit</mat-icon></button>\r\n      <button mat-mini-fab color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onDelete();\" matTooltip=\"Delete\" [matTooltipShowDelay]=\"500\"><mat-icon>delete</mat-icon></button>\r\n    </div>\r\n  </mat-card-header>\r\n  <mat-card-content>\r\n    <mat-table [dataSource]=\"Units\">\r\n      <ng-container matColumnDef=\"UnitID\">\r\n        <mat-header-cell *matHeaderCellDef>#</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\">{{unit.UnitID}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Name\">\r\n        <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\">{{unit.Name}}</mat-cell>\r\n\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Minimum\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Minimum</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\" style=\"justify-content:center;\">{{unit.Minimum}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"Maximum\">\r\n        <mat-header-cell *matHeaderCellDef style=\"justify-content:center;\">Maximum</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\" style=\"justify-content:center;\">{{unit.Maximum}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"IconList\">\r\n        <mat-header-cell *matHeaderCellDef>Icon List</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\">{{unit.IconList}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <ng-container matColumnDef=\"TextLabels\">\r\n        <mat-header-cell *matHeaderCellDef>Text Labels</mat-header-cell>\r\n        <mat-cell *matCellDef=\"let unit\">{{unit.TextLabels}}</mat-cell>\r\n      </ng-container>\r\n\r\n      <mat-header-row *matHeaderRowDef=\"tableColumns\"></mat-header-row>\r\n\r\n      <mat-row *matRowDef=\"let row; columns: tableColumns; \"\r\n               (click)=\"(selectedRow == row) ? selectedRow = null : selectedRow = row; selectedRowNumber = row.UnitID;\"\r\n               [style.background]=\"selectedRow == row ? 'lightblue' : ''\">\r\n      </mat-row>\r\n    </mat-table>\r\n  </mat-card-content>\r\n</mat-card>\r\n");
 
 /***/ }),
 
@@ -1769,17 +1782,16 @@ let ValueHistoryListComponent = class ValueHistoryListComponent {
     }
     ngOnInit() {
         this.valueService.getValueHistorys(this.route.snapshot.params['id']).subscribe((ValueHistorysMsg) => {
-            this.ValueHistorys = ValueHistorysMsg.ValueHistorys;
-            this.snackBar.open(ValueHistorysMsg.Count + ' Value History entries loaded. ', '', { duration: 3000 });
-            console.log(this.ValueHistorys);
+            if (ValueHistorysMsg != null) {
+                this.ValueHistorys = ValueHistorysMsg.ValueHistorys;
+                this.snackBar.open(ValueHistorysMsg.Count + ' Value History entries loaded. ', '', { duration: 3000 });
+                console.log(this.ValueHistorys);
+            }
+            else
+                this.snackBar.open('No Value History entries returned. ', '', { duration: 5000 });
             return this.ValueHistorys;
         }, (error) => {
-            if (error.status == 404) {
-                this.snackBar.open('No Value History entries found. ', '', { duration: 5000 });
-            }
-            else {
-                this.snackBar.open(error.statusText, '', { duration: 10000 });
-            }
+            this.snackBar.open(error.statusText, '', { duration: 10000 });
         });
     }
 };
@@ -1942,17 +1954,16 @@ let ValueLogListComponent = class ValueLogListComponent {
     }
     ngOnInit() {
         this.valueService.getValueLogs(this.route.snapshot.params['id']).subscribe((ValueLogsMsg) => {
-            this.ValueLogs = ValueLogsMsg.ValueLogs;
-            this.snackBar.open(ValueLogsMsg.Count + ' Value Log entries loaded. ', '', { duration: 3000 });
-            console.log(this.ValueLogs);
+            if (ValueLogsMsg != null) {
+                this.ValueLogs = ValueLogsMsg.ValueLogs;
+                this.snackBar.open(ValueLogsMsg.Count + ' Value Log entries loaded. ', '', { duration: 3000 });
+                console.log(this.ValueLogs);
+            }
+            else
+                this.snackBar.open('No Value Log entries returned. ', '', { duration: 5000 });
             return this.ValueLogs;
         }, (error) => {
-            if (error.status == 404) {
-                this.snackBar.open('No Value Log entries found. ', '', { duration: 5000 });
-            }
-            else {
-                this.snackBar.open(error.statusText, '', { duration: 10000 });
-            }
+            this.snackBar.open(error.statusText, '', { duration: 10000 });
         });
     }
 };
@@ -2098,6 +2109,48 @@ let ValueService = class ValueService {
     getValue(ValueID) {
         return this.httpClient.get(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Values'}/${ValueID}`);
     }
+    createValue(Value, callback = null) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Values'}`, JSON.stringify(Value))
+            .subscribe((val) => {
+            console.log("POST call successful value: ", val);
+        }, response => {
+            console.log("POST call in error", response);
+            if (callback != null)
+                callback.loadData();
+        }, () => {
+            console.log("The POST observable is now completed.");
+            if (callback != null)
+                callback.loadData();
+        });
+    }
+    updateValue(ValueId, Value, callback = null) {
+        return this.httpClient.put(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Values'}/${ValueId}`, JSON.stringify(Value))
+            .subscribe((val) => {
+            console.log("PUT call successful value: ", val);
+        }, response => {
+            console.log("PUT call in error", response);
+            if (callback != null)
+                callback.loadData();
+        }, () => {
+            console.log("The PUT observable is now completed.");
+            if (callback != null)
+                callback.loadData();
+        });
+    }
+    deleteValue(ValueId, callback = null) {
+        return this.httpClient.delete(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Values'}/${ValueId}`)
+            .subscribe((val) => {
+            console.log("DELETE call successful value: ", val);
+        }, response => {
+            console.log("DELETE call in error", response);
+            if (callback != null)
+                callback.loadData();
+        }, () => {
+            console.log("The DELETE observable is now completed.");
+            if (callback != null)
+                callback.loadData();
+        });
+    }
 };
 ValueService.ctorParameters = () => [
     { type: _angular_common_http__WEBPACK_IMPORTED_MODULE_2__["HttpClient"] }
@@ -2175,7 +2228,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_forms__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/forms */ "./node_modules/@angular/forms/fesm2015/forms.js");
 /* harmony import */ var _value__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../value */ "./src/app/detail/value.ts");
 /* harmony import */ var _value_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../value.service */ "./src/app/detail/value.service.ts");
-/* harmony import */ var src_app_system_unit_service__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! src/app/system/unit.service */ "./src/app/system/unit.service.ts");
+/* harmony import */ var src_app_hardware_device_service__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! src/app/hardware/device.service */ "./src/app/hardware/device.service.ts");
+/* harmony import */ var src_app_system_unit_service__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! src/app/system/unit.service */ "./src/app/system/unit.service.ts");
+
 
 
 
@@ -2185,9 +2240,10 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let ValueComponent = class ValueComponent {
-    constructor(valueService, unitService, snackBar, fb, dialogRef, data) {
+    constructor(valueService, unitService, deviceService, snackBar, fb, dialogRef, data) {
         this.valueService = valueService;
         this.unitService = unitService;
+        this.deviceService = deviceService;
         this.snackBar = snackBar;
         this.fb = fb;
         this.dialogRef = dialogRef;
@@ -2200,43 +2256,47 @@ let ValueComponent = class ValueComponent {
         this.form = fb.group({
             ValueID: [data.ValueID],
             Name: [data.Name, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].compose([_angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].required, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].minLength(8)])],
-            DeviceID: [data.DeviceID, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].required],
-            UnitID: [data.UnitID, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].required],
+            DeviceID: [data.DeviceID, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].compose([_angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].required, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].min(1)])],
+            UnitID: [data.UnitID, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].compose([_angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].required, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].min(1)])],
             Value: [data.Value],
             RetentionDays: [data.RetentionDays],
             RetentionInterval: [data.RetentionInterval],
             Timestamp: [data.Timestamp],
         });
         this.unitService.getUnits().subscribe((UnitsMsg) => {
-            // This sets the Options in the Select control
             this.units = UnitsMsg.Units;
+        });
+        this.deviceService.getDevice(data.DeviceID).subscribe((DeviceMsg) => {
+            this.deviceService.getDevices(DeviceMsg.Device.InterfaceID).subscribe((DevicesMsg) => {
+                this.devices = DevicesMsg.Devices;
+            });
         });
     }
     ngOnInit() {
     }
     onSubmit() {
         if (this.form.valid) {
-            if (this.form.value.UserID == -1) {
-                console.log('Create: ');
-            }
-            else {
-                console.log('Update: ');
-            }
-            console.log(this.form.value);
-            this.dialogRef.close();
+            this.dialogRef.close(this.form.value);
         }
         else {
             this.snackBar.open('Data is not valid. ', '', { duration: 5000 });
         }
     }
+    formIsValid() {
+        return this.form.valid;
+    }
     // Required to make the Select control work
     compareUnitObjects(unit, index) {
         return unit && index && (unit.UnitID == index);
     }
+    compareDeviceObjects(device, index) {
+        return device && index && (device.DeviceID == index);
+    }
 };
 ValueComponent.ctorParameters = () => [
     { type: _value_service__WEBPACK_IMPORTED_MODULE_5__["ValueService"] },
-    { type: src_app_system_unit_service__WEBPACK_IMPORTED_MODULE_6__["UnitService"] },
+    { type: src_app_system_unit_service__WEBPACK_IMPORTED_MODULE_7__["UnitService"] },
+    { type: src_app_hardware_device_service__WEBPACK_IMPORTED_MODULE_6__["DeviceService"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_2__["MatSnackBar"] },
     { type: _angular_forms__WEBPACK_IMPORTED_MODULE_3__["FormBuilder"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_2__["MatDialogRef"] },
@@ -2248,7 +2308,7 @@ ValueComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
         template: tslib__WEBPACK_IMPORTED_MODULE_0__["__importDefault"](__webpack_require__(/*! raw-loader!./value.component.html */ "./node_modules/raw-loader/dist/cjs.js!./src/app/detail/value/value.component.html")).default,
         styles: [tslib__WEBPACK_IMPORTED_MODULE_0__["__importDefault"](__webpack_require__(/*! ./value.component.css */ "./src/app/detail/value/value.component.css")).default]
     }),
-    tslib__WEBPACK_IMPORTED_MODULE_0__["__param"](5, Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"])()), tslib__WEBPACK_IMPORTED_MODULE_0__["__param"](5, Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"])(_angular_material__WEBPACK_IMPORTED_MODULE_2__["MAT_DIALOG_DATA"]))
+    tslib__WEBPACK_IMPORTED_MODULE_0__["__param"](6, Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Optional"])()), tslib__WEBPACK_IMPORTED_MODULE_0__["__param"](6, Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"])(_angular_material__WEBPACK_IMPORTED_MODULE_2__["MAT_DIALOG_DATA"]))
 ], ValueComponent);
 
 
@@ -2284,7 +2344,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm2015/router.js");
 /* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm2015/material.js");
 /* harmony import */ var _device_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../device.service */ "./src/app/hardware/device.service.ts");
-/* harmony import */ var _device_device_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../device/device.component */ "./src/app/hardware/device/device.component.ts");
+/* harmony import */ var _device__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../device */ "./src/app/hardware/device.ts");
+/* harmony import */ var _device_device_component__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../device/device.component */ "./src/app/hardware/device/device.component.ts");
+/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+
+
 
 
 
@@ -2294,15 +2358,15 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let DeviceListComponent = class DeviceListComponent {
-    constructor(deviceService, snackBar, location, route, dialog) {
+    constructor(deviceService, snackBar, location, route, dialog, deleteDialog) {
         this.deviceService = deviceService;
         this.snackBar = snackBar;
         this.location = location;
         this.route = route;
         this.dialog = dialog;
+        this.deleteDialog = deleteDialog;
         this.Devices = [];
         this.tableColumns = ['DeviceID', 'InterfaceID', 'Name', 'ExternalID', 'Timestamp'];
-        this.selectedRow = 0;
         this.selectedRowNumber = 0;
         this.dialogConfig = new _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialogConfig"]();
     }
@@ -2311,33 +2375,62 @@ let DeviceListComponent = class DeviceListComponent {
         console.log('goBack()...');
     }
     ngOnInit() {
+        this.loadData();
         this.dialogConfig.autoFocus = true;
         this.dialogConfig.width = "75%";
+    }
+    loadData() {
         this.deviceService.getDevices(this.route.snapshot.params['id']).subscribe((DevicesMsg) => {
-            this.Devices = DevicesMsg.Devices;
-            this.snackBar.open(DevicesMsg.Count + ' Devices loaded. ', '', { duration: 3000 });
-            console.log(this.Devices);
-            return this.Devices;
-        }, (error) => {
-            if (error.status == 404) {
-                this.snackBar.open('No Devices found. ', '', { duration: 5000 });
+            if (DevicesMsg != null) {
+                this.Devices = DevicesMsg.Devices;
+                this.snackBar.open(DevicesMsg.Count + ' Device' + (this.Devices.length > 1 ? 's' : '') + ' loaded. ', '', { duration: 3000 });
+                console.log(this.Devices);
             }
             else {
-                this.snackBar.open(error.statusText, '', { duration: 10000 });
+                this.snackBar.open('No Devices returned. ', '', { duration: 5000 });
+                this.Devices = [];
             }
+            return this.Devices;
+        }, (error) => {
+            this.snackBar.open(error.statusText, '', { duration: 10000 });
         });
     }
     onNew() {
-        this.dialogConfig.data = undefined;
-        this.dialog.open(_device_device_component__WEBPACK_IMPORTED_MODULE_6__["DeviceComponent"], this.dialogConfig);
+        // Default dropdown to parent
+        this.dialogConfig.data = new _device__WEBPACK_IMPORTED_MODULE_6__["Device"]();
+        this.dialogConfig.data.InterfaceID = this.route.snapshot.params['id'];
+        const dialogRef = this.dialog.open(_device_device_component__WEBPACK_IMPORTED_MODULE_7__["DeviceComponent"], this.dialogConfig);
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                if (typeof (result.DeviceID) == "object") {
+                    result.DeviceID = result.DeviceID.DeviceID;
+                }
+                this.deviceService.createDevice(result, this);
+            }
+        });
     }
     onEdit() {
         this.dialogConfig.data = this.selectedRow;
-        this.dialog.open(_device_device_component__WEBPACK_IMPORTED_MODULE_6__["DeviceComponent"], this.dialogConfig);
+        const dialogRef = this.dialog.open(_device_device_component__WEBPACK_IMPORTED_MODULE_7__["DeviceComponent"], this.dialogConfig);
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                if (typeof (result.InterfaceID) == "object") {
+                    result.InterfaceID = result.InterfaceID.InterfaceID;
+                }
+                this.deviceService.updateDevice(this.selectedRow.DeviceID, result, this);
+            }
+        });
     }
     onDelete() {
-        this.dialogConfig.data = this.selectedRow;
-        this.dialog.open(_device_device_component__WEBPACK_IMPORTED_MODULE_6__["DeviceComponent"], this.dialogConfig);
+        const dialogRef = this.deleteDialog.open(src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_8__["ConfirmationDialogComponent"], {
+            width: '75%',
+            data: "Please confirm deletion of device '" + this.selectedRow.Name + "' and associated Values and History?"
+        });
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                this.deviceService.deleteDevice(this.selectedRow.DeviceID, this);
+            }
+        });
     }
 };
 DeviceListComponent.ctorParameters = () => [
@@ -2345,6 +2438,7 @@ DeviceListComponent.ctorParameters = () => [
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatSnackBar"] },
     { type: _angular_common__WEBPACK_IMPORTED_MODULE_2__["Location"] },
     { type: _angular_router__WEBPACK_IMPORTED_MODULE_3__["ActivatedRoute"] },
+    { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialog"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialog"] }
 ];
 DeviceListComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
@@ -2391,6 +2485,51 @@ let DeviceService = class DeviceService {
     }
     getDevice(DeviceID) {
         return this.httpClient.get(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Devices'}/${DeviceID}`);
+    }
+    // Optional callback object allows a dialog 'loadData' function to be called post operation
+    createDevice(Device, callback = null) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Devices'}`, JSON.stringify(Device))
+            .subscribe((val) => {
+            console.log("POST call successful value: ", val);
+        }, response => {
+            console.log("POST call in error", response);
+            if (callback != null)
+                callback.loadData();
+        }, () => {
+            console.log("The POST observable is now completed.");
+            if (callback != null)
+                callback.loadData();
+        });
+    }
+    // Optional callback object allows a dialog 'loadData' function to be called post operation
+    updateDevice(DeviceId, Device, callback = null) {
+        return this.httpClient.put(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Devices'}/${DeviceId}`, JSON.stringify(Device))
+            .subscribe((val) => {
+            console.log("PUT call successful value: ", val);
+        }, response => {
+            console.log("PUT call in error", response);
+            if (callback != null)
+                callback.loadData();
+        }, () => {
+            console.log("The PUT observable is now completed.");
+            if (callback != null)
+                callback.loadData();
+        });
+    }
+    // Optional callback object allows a dialog 'loadData' function to be called post operation
+    deleteDevice(DeviceId, callback = null) {
+        return this.httpClient.delete(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Devices'}/${DeviceId}`)
+            .subscribe((val) => {
+            console.log("DELETE call successful value: ", val);
+        }, response => {
+            console.log("DELETE call in error", response);
+            if (callback != null)
+                callback.loadData();
+        }, () => {
+            console.log("The DELETE observable is now completed.");
+            if (callback != null)
+                callback.loadData();
+        });
     }
 };
 DeviceService.ctorParameters = () => [
@@ -2490,13 +2629,12 @@ let DeviceComponent = class DeviceComponent {
         // Initialise the form
         this.form = fb.group({
             DeviceID: [data.DeviceID],
-            InterfaceID: [data.InterfaceID, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].required],
+            InterfaceID: [data.InterfaceID, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].compose([_angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].required, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].min(1)])],
             Name: [data.Name, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].compose([_angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].required, _angular_forms__WEBPACK_IMPORTED_MODULE_3__["Validators"].minLength(8)])],
             ExternalID: [data.ExternalID],
             Timestamp: [data.Timestamp],
         });
         this.interfaceService.getInterfaces().subscribe((InterfacesMsg) => {
-            // This sets the Options in the Select control
             this.interfaces = InterfacesMsg.Interfaces;
         });
     }
@@ -2504,18 +2642,14 @@ let DeviceComponent = class DeviceComponent {
     }
     onSubmit() {
         if (this.form.valid) {
-            if (this.form.value.UserID == -1) {
-                console.log('Create: ');
-            }
-            else {
-                console.log('Update: ');
-            }
-            console.log(this.form.value);
-            this.dialogRef.close();
+            this.dialogRef.close(this.form.value);
         }
         else {
             this.snackBar.open('Data is not valid. ', '', { duration: 5000 });
         }
+    }
+    formIsValid() {
+        return this.form.valid;
     }
     // Required to make the Select control work
     compareInterfaceObjects(iface, index) {
@@ -2810,6 +2944,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm2015/material.js");
 /* harmony import */ var _interface_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../interface.service */ "./src/app/hardware/interface.service.ts");
 /* harmony import */ var _interface_interface_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../interface/interface.component */ "./src/app/hardware/interface/interface.component.ts");
+/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+
 
 
 
@@ -2818,14 +2954,14 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let InterfaceListComponent = class InterfaceListComponent {
-    constructor(interfaceService, snackBar, location, dialog) {
+    constructor(interfaceService, snackBar, location, dialog, deleteDialog) {
         this.interfaceService = interfaceService;
         this.snackBar = snackBar;
         this.location = location;
         this.dialog = dialog;
+        this.deleteDialog = deleteDialog;
         this.Interfaces = [];
         this.tableColumns = ['InterfaceID', 'Name', 'Script', 'Configuration', 'Notifiable', 'Active'];
-        this.selectedRow = 0;
         this.selectedRowNumber = 0;
         this.dialogConfig = new _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialogConfig"]();
     }
@@ -2837,17 +2973,16 @@ let InterfaceListComponent = class InterfaceListComponent {
         this.dialogConfig.autoFocus = true;
         this.dialogConfig.width = "90%";
         this.interfaceService.getInterfaces().subscribe((InterfacesMsg) => {
-            this.Interfaces = InterfacesMsg.Interfaces;
-            this.snackBar.open(InterfacesMsg.Count + ' Interface' + (this.Interfaces.length > 1 ? 's' : '') + ' loaded. ', '', { duration: 3000 });
-            console.log(this.Interfaces);
+            if (InterfacesMsg != null) {
+                this.Interfaces = InterfacesMsg.Interfaces;
+                this.snackBar.open(InterfacesMsg.Count + ' Interface' + (this.Interfaces.length > 1 ? 's' : '') + ' loaded. ', '', { duration: 3000 });
+                console.log(this.Interfaces);
+            }
+            else
+                this.snackBar.open('No Interfaces returned. ', '', { duration: 5000 });
             return this.Interfaces;
         }, (error) => {
-            if (error.status == 404) {
-                this.snackBar.open('No Interfaces found. ', '', { duration: 5000 });
-            }
-            else {
-                this.snackBar.open(error.statusText, '', { duration: 10000 });
-            }
+            this.snackBar.open(error.statusText, '', { duration: 10000 });
         });
     }
     onNew() {
@@ -2859,14 +2994,23 @@ let InterfaceListComponent = class InterfaceListComponent {
         this.dialog.open(_interface_interface_component__WEBPACK_IMPORTED_MODULE_5__["InterfaceComponent"], this.dialogConfig);
     }
     onDelete() {
-        this.dialogConfig.data = this.selectedRow;
-        this.dialog.open(_interface_interface_component__WEBPACK_IMPORTED_MODULE_5__["InterfaceComponent"], this.dialogConfig);
+        const dialogRef = this.deleteDialog.open(src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__["ConfirmationDialogComponent"], {
+            width: '75%',
+            data: "Please confirm deletion of interface '" + this.selectedRow.Name + "'?"
+        });
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                debugger;
+                this.interfaceService.deleteInterface(this.selectedRow.InterfaceID);
+            }
+        });
     }
 };
 InterfaceListComponent.ctorParameters = () => [
     { type: _interface_service__WEBPACK_IMPORTED_MODULE_4__["InterfaceService"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatSnackBar"] },
     { type: _angular_common__WEBPACK_IMPORTED_MODULE_2__["Location"] },
+    { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"] }
 ];
 InterfaceListComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
@@ -2931,17 +3075,16 @@ let InterfaceLogListComponent = class InterfaceLogListComponent {
     }
     ngOnInit() {
         this.interfaceService.getInterfaceLogs(this.route.snapshot.params['id']).subscribe((InterfaceLogsMsg) => {
-            this.InterfaceLogs = InterfaceLogsMsg.InterfaceLogs;
-            this.snackBar.open(InterfaceLogsMsg.Count + ' Interface Log entries loaded. ', '', { duration: 3000 });
-            console.log(this.InterfaceLogs);
+            if (InterfaceLogsMsg != null) {
+                this.InterfaceLogs = InterfaceLogsMsg.InterfaceLogs;
+                this.snackBar.open(InterfaceLogsMsg.Count + ' Interface Log entr' + (this.InterfaceLogs.length > 1 ? 'ies' : 'y') + ' loaded. ', '', { duration: 3000 });
+                console.log(this.InterfaceLogs);
+            }
+            else
+                this.snackBar.open('No Interface Logs returned. ', '', { duration: 5000 });
             return this.InterfaceLogs;
         }, (error) => {
-            if (error.status == 404) {
-                this.snackBar.open('No Interface Log entries found. ', '', { duration: 5000 });
-            }
-            else {
-                this.snackBar.open(error.statusText, '', { duration: 10000 });
-            }
+            this.snackBar.open(error.statusText, '', { duration: 10000 });
         });
     }
 };
@@ -3082,6 +3225,15 @@ let InterfaceService = class InterfaceService {
     getInterface(InterfaceId) {
         return this.httpClient.get(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Interfaces'}/${InterfaceId}`);
     }
+    createInterface(Interface) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Interfaces'}`, `${Interface}`);
+    }
+    updateInterface(InterfaceId, Interface) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Interfaces'}/${InterfaceId}`, `${Interface}`);
+    }
+    deleteInterface(InterfaceId) {
+        return this.httpClient.delete(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Interfaces'}/${InterfaceId}`);
+    }
 };
 InterfaceService.ctorParameters = () => [
     { type: _angular_common_http__WEBPACK_IMPORTED_MODULE_2__["HttpClient"] }
@@ -3190,8 +3342,7 @@ let InterfaceComponent = class InterfaceComponent {
         this.dialogRef = dialogRef;
         this.data = data;
         this.show = true;
-        this.type = 'component';
-        this.content = 'Some example content';
+        this.content = '';
         this.config = {
             mode: 'python',
             theme: 'xcode',
@@ -3289,7 +3440,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm2015/router.js");
 /* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm2015/material.js");
 /* harmony import */ var src_app_detail_value_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! src/app/detail/value.service */ "./src/app/detail/value.service.ts");
-/* harmony import */ var src_app_detail_value_value_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! src/app/detail/value/value.component */ "./src/app/detail/value/value.component.ts");
+/* harmony import */ var src_app_detail_value__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! src/app/detail/value */ "./src/app/detail/value.ts");
+/* harmony import */ var src_app_detail_value_value_component__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! src/app/detail/value/value.component */ "./src/app/detail/value/value.component.ts");
+/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+
+
 
 
 
@@ -3299,15 +3454,15 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let ValueListComponent = class ValueListComponent {
-    constructor(valueService, snackBar, location, route, dialog) {
+    constructor(valueService, snackBar, location, route, dialog, deleteDialog) {
         this.valueService = valueService;
         this.snackBar = snackBar;
         this.location = location;
         this.route = route;
         this.dialog = dialog;
+        this.deleteDialog = deleteDialog;
         this.Values = [];
         this.tableColumns = ['ValueID', 'Name', 'DeviceID', 'UnitID', 'Value', 'RetentionDays', 'RetentionInterval', 'Timestamp'];
-        this.selectedRow = 0;
         this.selectedRowNumber = 0;
         this.dialogConfig = new _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialogConfig"]();
     }
@@ -3316,33 +3471,68 @@ let ValueListComponent = class ValueListComponent {
         console.log('goBack()...');
     }
     ngOnInit() {
+        this.loadData();
         this.dialogConfig.autoFocus = true;
         this.dialogConfig.width = "75%";
+    }
+    loadData() {
         this.valueService.getValues(this.route.snapshot.params['id']).subscribe((ValuesMsg) => {
-            this.Values = ValuesMsg.Values;
-            this.snackBar.open(ValuesMsg.Count + ' Values loaded. ', '', { duration: 3000 });
-            console.log(this.Values);
-            return this.Values;
-        }, (error) => {
-            if (error.status == 404) {
-                this.snackBar.open('No Values found. ', '', { duration: 5000 });
+            if (ValuesMsg != null) {
+                this.Values = ValuesMsg.Values;
+                this.snackBar.open(ValuesMsg.Count + ' Value' + (this.Values.length > 1 ? 's' : '') + ' loaded. ', '', { duration: 3000 });
+                console.log(this.Values);
             }
             else {
-                this.snackBar.open(error.statusText, '', { duration: 10000 });
+                this.snackBar.open('No Values returned. ', '', { duration: 5000 });
+                this.Values = [];
             }
+            return this.Values;
+        }, (error) => {
+            this.snackBar.open(error.statusText, '', { duration: 10000 });
         });
     }
     onNew() {
-        this.dialogConfig.data = undefined;
-        this.dialog.open(src_app_detail_value_value_component__WEBPACK_IMPORTED_MODULE_6__["ValueComponent"], this.dialogConfig);
+        // Default dropdown to parent
+        this.dialogConfig.data = new src_app_detail_value__WEBPACK_IMPORTED_MODULE_6__["Value"]();
+        this.dialogConfig.data.DeviceID = this.route.snapshot.params['id'];
+        const dialogRef = this.dialog.open(src_app_detail_value_value_component__WEBPACK_IMPORTED_MODULE_7__["ValueComponent"], this.dialogConfig);
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                if (typeof (result.DeviceID) == "object") {
+                    result.DeviceID = result.DeviceID.DeviceID;
+                }
+                if (typeof (result.UnitID) == "object") {
+                    result.UnitID = result.UnitID.UnitID;
+                }
+                this.valueService.createValue(result, this);
+            }
+        });
     }
     onEdit() {
         this.dialogConfig.data = this.selectedRow;
-        this.dialog.open(src_app_detail_value_value_component__WEBPACK_IMPORTED_MODULE_6__["ValueComponent"], this.dialogConfig);
+        const dialogRef = this.dialog.open(src_app_detail_value_value_component__WEBPACK_IMPORTED_MODULE_7__["ValueComponent"], this.dialogConfig);
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                if (typeof (result.DeviceID) == "object") {
+                    result.DeviceID = result.DeviceID.DeviceID;
+                }
+                if (typeof (result.UnitID) == "object") {
+                    result.UnitID = result.UnitID.UnitID;
+                }
+                this.valueService.updateValue(this.selectedRow.ValueID, result, this);
+            }
+        });
     }
     onDelete() {
-        this.dialogConfig.data = this.selectedRow;
-        this.dialog.open(src_app_detail_value_value_component__WEBPACK_IMPORTED_MODULE_6__["ValueComponent"], this.dialogConfig);
+        const dialogRef = this.deleteDialog.open(src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_8__["ConfirmationDialogComponent"], {
+            width: '75%',
+            data: "Please confirm deletion of value '" + this.selectedRow.Name + "'?"
+        });
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                this.valueService.deleteValue(this.selectedRow.ValueID, this);
+            }
+        });
     }
 };
 ValueListComponent.ctorParameters = () => [
@@ -3350,6 +3540,7 @@ ValueListComponent.ctorParameters = () => [
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatSnackBar"] },
     { type: _angular_common__WEBPACK_IMPORTED_MODULE_2__["Location"] },
     { type: _angular_router__WEBPACK_IMPORTED_MODULE_3__["ActivatedRoute"] },
+    { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialog"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialog"] }
 ];
 ValueListComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
@@ -3939,6 +4130,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm2015/material.js");
 /* harmony import */ var _role_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../role.service */ "./src/app/identity/role.service.ts");
 /* harmony import */ var _role_role_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../role/role.component */ "./src/app/identity/role/role.component.ts");
+/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+
 
 
 
@@ -3947,14 +4140,14 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let RoleListComponent = class RoleListComponent {
-    constructor(roleService, snackBar, location, dialog) {
+    constructor(roleService, snackBar, location, dialog, deleteDialog) {
         this.roleService = roleService;
         this.snackBar = snackBar;
         this.location = location;
         this.dialog = dialog;
+        this.deleteDialog = deleteDialog;
         this.Roles = [];
         this.tableColumns = ['RoleID', 'Name', 'RemoteAccess', 'InternalTTL', 'RemoteTTL'];
-        this.selectedRow = 0;
         this.selectedRowNumber = 0;
         this.dialogConfig = new _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialogConfig"]();
     }
@@ -3966,17 +4159,16 @@ let RoleListComponent = class RoleListComponent {
         this.dialogConfig.autoFocus = true;
         this.dialogConfig.width = "75%";
         this.roleService.getRoles().subscribe((RolesMsg) => {
-            this.Roles = RolesMsg.Roles;
-            this.snackBar.open(RolesMsg.Count + ' Roles loaded. ', '', { duration: 3000 });
-            console.log(this.Roles);
+            if (RolesMsg != null) {
+                this.Roles = RolesMsg.Roles;
+                this.snackBar.open(RolesMsg.Count + ' Role' + (this.Roles.length > 1 ? 's' : '') + ' loaded. ', '', { duration: 3000 });
+                console.log(this.Roles);
+            }
+            else
+                this.snackBar.open('No Roles returned. ', '', { duration: 5000 });
             return this.Roles;
         }, (error) => {
-            if (error.status == 404) {
-                this.snackBar.open('No Roles found. ', '', { duration: 5000 });
-            }
-            else {
-                this.snackBar.open(error.statusText, '', { duration: 10000 });
-            }
+            this.snackBar.open(error.statusText, '', { duration: 10000 });
         });
     }
     onNew() {
@@ -3988,14 +4180,23 @@ let RoleListComponent = class RoleListComponent {
         this.dialog.open(_role_role_component__WEBPACK_IMPORTED_MODULE_5__["RoleComponent"], this.dialogConfig);
     }
     onDelete() {
-        this.dialogConfig.data = this.selectedRow;
-        this.dialog.open(_role_role_component__WEBPACK_IMPORTED_MODULE_5__["RoleComponent"], this.dialogConfig);
+        const dialogRef = this.deleteDialog.open(src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__["ConfirmationDialogComponent"], {
+            width: '75%',
+            data: "Please confirm deletion of role '" + this.selectedRow.Name + "'?"
+        });
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                debugger;
+                this.roleService.deleteRole(this.selectedRow.RoleID);
+            }
+        });
     }
 };
 RoleListComponent.ctorParameters = () => [
     { type: _role_service__WEBPACK_IMPORTED_MODULE_4__["RoleService"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatSnackBar"] },
     { type: _angular_common__WEBPACK_IMPORTED_MODULE_2__["Location"] },
+    { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"] }
 ];
 RoleListComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
@@ -4037,6 +4238,15 @@ let RoleService = class RoleService {
     }
     getRole(RoleId) {
         return this.httpClient.get(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Roles'}/${RoleId}`);
+    }
+    createRole(Role) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Roles'}`, `${Role}`);
+    }
+    updateRole(RoleId, Role) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Roles'}/${RoleId}`, `${Role}`);
+    }
+    deleteRole(RoleId) {
+        return this.httpClient.delete(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Roles'}/${RoleId}`);
     }
 };
 RoleService.ctorParameters = () => [
@@ -4211,6 +4421,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm2015/material.js");
 /* harmony import */ var _table_access_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../table-access.service */ "./src/app/identity/table-access.service.ts");
 /* harmony import */ var _table_access_table_access_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../table-access/table-access.component */ "./src/app/identity/table-access/table-access.component.ts");
+/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+
 
 
 
@@ -4220,15 +4432,15 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let TableAccessListComponent = class TableAccessListComponent {
-    constructor(tableAccessService, snackBar, location, route, dialog) {
+    constructor(tableAccessService, snackBar, location, route, dialog, deleteDialog) {
         this.tableAccessService = tableAccessService;
         this.snackBar = snackBar;
         this.location = location;
         this.route = route;
         this.dialog = dialog;
+        this.deleteDialog = deleteDialog;
         this.TableAccess = [];
         this.tableColumns = ['TableAccessID', 'Name', 'RoleID', 'CanGET', 'CanPOST', 'CanPUT', 'CanPATCH', 'CanDELETE', 'PUTFields', 'PATCHFields'];
-        this.selectedRow = 0;
         this.selectedRowNumber = 0;
         this.dialogConfig = new _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialogConfig"]();
     }
@@ -4262,8 +4474,16 @@ let TableAccessListComponent = class TableAccessListComponent {
         this.dialog.open(_table_access_table_access_component__WEBPACK_IMPORTED_MODULE_6__["TableAccessComponent"], this.dialogConfig);
     }
     onDelete() {
-        this.dialogConfig.data = this.selectedRow;
-        this.dialog.open(_table_access_table_access_component__WEBPACK_IMPORTED_MODULE_6__["TableAccessComponent"], this.dialogConfig);
+        const dialogRef = this.deleteDialog.open(src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_7__["ConfirmationDialogComponent"], {
+            width: '75%',
+            data: "Please confirm deletion of table access for '" + this.selectedRow.Name + "'?"
+        });
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                debugger;
+                this.tableAccessService.deleteTableAccess(this.selectedRow.TableAccessID);
+            }
+        });
     }
 };
 TableAccessListComponent.ctorParameters = () => [
@@ -4271,6 +4491,7 @@ TableAccessListComponent.ctorParameters = () => [
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatSnackBar"] },
     { type: _angular_common__WEBPACK_IMPORTED_MODULE_2__["Location"] },
     { type: _angular_router__WEBPACK_IMPORTED_MODULE_3__["ActivatedRoute"] },
+    { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialog"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialog"] }
 ];
 TableAccessListComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
@@ -4317,6 +4538,15 @@ let TableAccessService = class TableAccessService {
     }
     getTableAccess(TableAccessId) {
         return this.httpClient.get(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'TableAccess'}/${TableAccessId}`);
+    }
+    createTableAccess(TableAccess) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'TableAccesss'}`, `${TableAccess}`);
+    }
+    updateTableAccess(TableAccessId, TableAccess) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'TableAccesss'}/${TableAccessId}`, `${TableAccess}`);
+    }
+    deleteTableAccess(TableAccessId) {
+        return this.httpClient.delete(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'TableAccesss'}/${TableAccessId}`);
     }
 };
 TableAccessService.ctorParameters = () => [
@@ -4509,6 +4739,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm2015/material.js");
 /* harmony import */ var _user_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../user.service */ "./src/app/identity/user.service.ts");
 /* harmony import */ var _user_user_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../user/user.component */ "./src/app/identity/user/user.component.ts");
+/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+
 
 
 
@@ -4518,15 +4750,15 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let UserListComponent = class UserListComponent {
-    constructor(userService, snackBar, location, route, dialog) {
+    constructor(userService, snackBar, location, route, dialog, deleteDialog) {
         this.userService = userService;
         this.snackBar = snackBar;
         this.location = location;
         this.route = route;
         this.dialog = dialog;
+        this.deleteDialog = deleteDialog;
         this.Users = [];
         this.tableColumns = ['UserID', 'UserName', 'Name', 'RoleID', 'Active', 'ForceChange', 'FailedAttempts', 'EmailAddress', 'MobileNumber', 'Theme', 'Timestamp'];
-        this.selectedRow = 0;
         this.selectedRowNumber = 0;
         this.dialogConfig = new _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialogConfig"]();
     }
@@ -4560,8 +4792,15 @@ let UserListComponent = class UserListComponent {
         this.dialog.open(_user_user_component__WEBPACK_IMPORTED_MODULE_6__["UserComponent"], this.dialogConfig);
     }
     onDelete() {
-        this.dialogConfig.data = this.selectedRow;
-        this.dialog.open(_user_user_component__WEBPACK_IMPORTED_MODULE_6__["UserComponent"], this.dialogConfig);
+        const dialogRef = this.deleteDialog.open(src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_7__["ConfirmationDialogComponent"], {
+            width: '75%',
+            data: "Please confirm deletion of user '" + this.selectedRow.Name + "'?"
+        });
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                this.userService.deleteUser(this.selectedRow.UserID);
+            }
+        });
     }
 };
 UserListComponent.ctorParameters = () => [
@@ -4569,6 +4808,7 @@ UserListComponent.ctorParameters = () => [
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatSnackBar"] },
     { type: _angular_common__WEBPACK_IMPORTED_MODULE_2__["Location"] },
     { type: _angular_router__WEBPACK_IMPORTED_MODULE_3__["ActivatedRoute"] },
+    { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialog"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_4__["MatDialog"] }
 ];
 UserListComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
@@ -4701,8 +4941,17 @@ let UserService = class UserService {
             return this.httpClient.get(_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Roles/' + RoleID + '/Users');
         }
     }
+    createUser(User) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Users'}`, `${User}`);
+    }
     getUser(UserId) {
         return this.httpClient.get(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Users'}/${UserId}`);
+    }
+    updateUser(UserId, User) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Users'}/${UserId}`, `${User}`);
+    }
+    deleteUser(UserId) {
+        return this.httpClient.delete(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Users'}/${UserId}`);
     }
 };
 UserService.ctorParameters = () => [
@@ -4873,6 +5122,61 @@ UserComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
 
 /***/ }),
 
+/***/ "./src/app/system/confirmation-dialog/confirmation-dialog.component.css":
+/*!******************************************************************************!*\
+  !*** ./src/app/system/confirmation-dialog/confirmation-dialog.component.css ***!
+  \******************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = ("\n/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IiIsImZpbGUiOiJzcmMvYXBwL3N5c3RlbS9jb25maXJtYXRpb24tZGlhbG9nL2NvbmZpcm1hdGlvbi1kaWFsb2cuY29tcG9uZW50LmNzcyJ9 */");
+
+/***/ }),
+
+/***/ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts":
+/*!*****************************************************************************!*\
+  !*** ./src/app/system/confirmation-dialog/confirmation-dialog.component.ts ***!
+  \*****************************************************************************/
+/*! exports provided: ConfirmationDialogComponent */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ConfirmationDialogComponent", function() { return ConfirmationDialogComponent; });
+/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm2015/core.js");
+/* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm2015/material.js");
+
+
+
+let ConfirmationDialogComponent = class ConfirmationDialogComponent {
+    constructor(dialogRef, message) {
+        this.dialogRef = dialogRef;
+        this.message = message;
+    }
+    onNoClick() {
+        this.dialogRef.close();
+    }
+};
+ConfirmationDialogComponent.ctorParameters = () => [
+    { type: _angular_material__WEBPACK_IMPORTED_MODULE_2__["MatDialogRef"] },
+    { type: String, decorators: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"], args: [_angular_material__WEBPACK_IMPORTED_MODULE_2__["MAT_DIALOG_DATA"],] }] }
+];
+ConfirmationDialogComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
+    Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Component"])({
+        selector: 'app-confirmation-dialog',
+        template: tslib__WEBPACK_IMPORTED_MODULE_0__["__importDefault"](__webpack_require__(/*! raw-loader!./confirmation-dialog.component.html */ "./node_modules/raw-loader/dist/cjs.js!./src/app/system/confirmation-dialog/confirmation-dialog.component.html")).default,
+        styles: [tslib__WEBPACK_IMPORTED_MODULE_0__["__importDefault"](__webpack_require__(/*! ./confirmation-dialog.component.css */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.css")).default]
+    }),
+    tslib__WEBPACK_IMPORTED_MODULE_0__["__param"](1, Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Inject"])(_angular_material__WEBPACK_IMPORTED_MODULE_2__["MAT_DIALOG_DATA"]))
+], ConfirmationDialogComponent);
+
+
+
+/***/ }),
+
 /***/ "./src/app/system/preference-list/preference-list.component.css":
 /*!**********************************************************************!*\
   !*** ./src/app/system/preference-list/preference-list.component.css ***!
@@ -4902,6 +5206,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm2015/material.js");
 /* harmony import */ var _preference_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../preference.service */ "./src/app/system/preference.service.ts");
 /* harmony import */ var _preference_preference_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../preference/preference.component */ "./src/app/system/preference/preference.component.ts");
+/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+
 
 
 
@@ -4910,14 +5216,14 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let PreferenceListComponent = class PreferenceListComponent {
-    constructor(PreferenceService, snackBar, location, dialog) {
-        this.PreferenceService = PreferenceService;
+    constructor(preferenceService, snackBar, location, dialog, deleteDialog) {
+        this.preferenceService = preferenceService;
         this.snackBar = snackBar;
         this.location = location;
         this.dialog = dialog;
+        this.deleteDialog = deleteDialog;
         this.Preferences = [];
         this.tableColumns = ['PreferenceID', 'Name', 'Value'];
-        this.selectedRow = 0;
         this.selectedRowNumber = 0;
         this.dialogConfig = new _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialogConfig"]();
     }
@@ -4926,7 +5232,7 @@ let PreferenceListComponent = class PreferenceListComponent {
         console.log('goBack()...');
     }
     ngOnInit() {
-        this.PreferenceService.getPreferences().subscribe((PreferencesMsg) => {
+        this.preferenceService.getPreferences().subscribe((PreferencesMsg) => {
             this.Preferences = PreferencesMsg.Preferences;
             console.log(this.Preferences);
             this.snackBar.open(PreferencesMsg.Count + ' Preference' + (this.Preferences.length > 1 ? 's' : '') + ' loaded. ', '', { duration: 3000 });
@@ -4949,14 +5255,23 @@ let PreferenceListComponent = class PreferenceListComponent {
         this.dialog.open(_preference_preference_component__WEBPACK_IMPORTED_MODULE_5__["PreferenceComponent"], this.dialogConfig);
     }
     onDelete() {
-        this.dialogConfig.data = this.selectedRow;
-        this.dialog.open(_preference_preference_component__WEBPACK_IMPORTED_MODULE_5__["PreferenceComponent"], this.dialogConfig);
+        const dialogRef = this.deleteDialog.open(src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__["ConfirmationDialogComponent"], {
+            width: '75%',
+            data: "Please confirm deletion of preference '" + this.selectedRow.Name + "'?"
+        });
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                debugger;
+                this.preferenceService.deletePreference(this.selectedRow.PreferenceID);
+            }
+        });
     }
 };
 PreferenceListComponent.ctorParameters = () => [
     { type: _preference_service__WEBPACK_IMPORTED_MODULE_4__["PreferenceService"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatSnackBar"] },
     { type: _angular_common__WEBPACK_IMPORTED_MODULE_2__["Location"] },
+    { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"] }
 ];
 PreferenceListComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
@@ -4998,6 +5313,15 @@ let PreferenceService = class PreferenceService {
     }
     getPreference(PreferenceId) {
         return this.httpClient.get(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Preferences'}/${PreferenceId}`);
+    }
+    createPreference(Preference) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Preferences'}`, `${Preference}`);
+    }
+    updatePreference(PreferenceId, Preference) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Preferences'}/${PreferenceId}`, `${Preference}`);
+    }
+    deletePreference(PreferenceId) {
+        return this.httpClient.delete(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Preferences'}/${PreferenceId}`);
     }
 };
 PreferenceService.ctorParameters = () => [
@@ -5162,20 +5486,27 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm2015/common.js");
 /* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm2015/material.js");
 /* harmony import */ var _scene_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../scene.service */ "./src/app/system/scene.service.ts");
+/* harmony import */ var _scene_scene_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../scene/scene.component */ "./src/app/system/scene/scene.component.ts");
+/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+
+
+
 
 
 
 
 
 let SceneListComponent = class SceneListComponent {
-    constructor(sceneService, snackBar, location) {
+    constructor(sceneService, snackBar, location, dialog, deleteDialog) {
         this.sceneService = sceneService;
         this.snackBar = snackBar;
         this.location = location;
+        this.dialog = dialog;
+        this.deleteDialog = deleteDialog;
         this.Scenes = [];
         this.tableColumns = ['SceneID', 'Name', 'Active'];
-        this.selectedRow = 0;
         this.selectedRowNumber = 0;
+        this.dialogConfig = new _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialogConfig"]();
     }
     goBack() {
         this.location.back();
@@ -5183,16 +5514,35 @@ let SceneListComponent = class SceneListComponent {
     }
     ngOnInit() {
         this.sceneService.getScenes().subscribe((ScenesMsg) => {
-            this.Scenes = ScenesMsg.Scenes;
-            this.snackBar.open(ScenesMsg.Count + ' Scene' + (this.Scenes.length > 1 ? 's' : '') + ' loaded. ', '', { duration: 3000 });
-            console.log(this.Scenes);
+            if (ScenesMsg != null) {
+                this.Scenes = ScenesMsg.Scenes;
+                this.snackBar.open(ScenesMsg.Count + ' Scene' + (this.Scenes.length > 1 ? 's' : '') + ' loaded. ', '', { duration: 3000 });
+                console.log(this.Scenes);
+            }
+            else
+                this.snackBar.open('No Scenes returned. ', '', { duration: 5000 });
             return this.Scenes;
         }, (error) => {
-            if (error.status == 404) {
-                this.snackBar.open('No Scenes found. ', '', { duration: 5000 });
-            }
-            else {
-                this.snackBar.open(error.statusText, '', { duration: 10000 });
+            this.snackBar.open(error.statusText, '', { duration: 10000 });
+        });
+    }
+    onNew() {
+        this.dialogConfig.data = undefined;
+        this.dialog.open(_scene_scene_component__WEBPACK_IMPORTED_MODULE_5__["SceneComponent"], this.dialogConfig);
+    }
+    onEdit() {
+        this.dialogConfig.data = this.selectedRow;
+        this.dialog.open(_scene_scene_component__WEBPACK_IMPORTED_MODULE_5__["SceneComponent"], this.dialogConfig);
+    }
+    onDelete() {
+        const dialogRef = this.deleteDialog.open(src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__["ConfirmationDialogComponent"], {
+            width: '75%',
+            data: "Please confirm deletion of scene '" + this.selectedRow.Name + "'?"
+        });
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                debugger;
+                this.sceneService.deleteScene(this.selectedRow.SceneID);
             }
         });
     }
@@ -5200,7 +5550,9 @@ let SceneListComponent = class SceneListComponent {
 SceneListComponent.ctorParameters = () => [
     { type: _scene_service__WEBPACK_IMPORTED_MODULE_4__["SceneService"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatSnackBar"] },
-    { type: _angular_common__WEBPACK_IMPORTED_MODULE_2__["Location"] }
+    { type: _angular_common__WEBPACK_IMPORTED_MODULE_2__["Location"] },
+    { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"] },
+    { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"] }
 ];
 SceneListComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
     Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Component"])({
@@ -5329,6 +5681,15 @@ let SceneService = class SceneService {
     }
     getScene(SceneId) {
         return this.httpClient.get(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Scenes'}/${SceneId}`);
+    }
+    createScene(Scene) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Scenes'}`, `${Scene}`);
+    }
+    updateScene(SceneId, Scene) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Scenes'}/${SceneId}`, `${Scene}`);
+    }
+    deleteScene(SceneId) {
+        return this.httpClient.delete(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Scenes'}/${SceneId}`);
     }
 };
 SceneService.ctorParameters = () => [
@@ -5596,7 +5957,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var src_app_system_scene_list_scene_list_component__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! src/app/system/scene-list/scene-list.component */ "./src/app/system/scene-list/scene-list.component.ts");
 /* harmony import */ var src_app_system_scene_value_scene_value_component__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! src/app/system/scene-value/scene-value.component */ "./src/app/system/scene-value/scene-value.component.ts");
 /* harmony import */ var src_app_system_scene_value_list_scene_value_list_component__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! src/app/system/scene-value-list/scene-value-list.component */ "./src/app/system/scene-value-list/scene-value-list.component.ts");
-/* harmony import */ var src_app_system_system_routing_module__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! src/app/system/system-routing.module */ "./src/app/system/system-routing.module.ts");
+/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+/* harmony import */ var src_app_system_system_routing_module__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! src/app/system/system-routing.module */ "./src/app/system/system-routing.module.ts");
 
 
 
@@ -5652,6 +6014,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
 let SystemModule = class SystemModule {
 };
 SystemModule = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
@@ -5669,6 +6032,7 @@ SystemModule = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
             src_app_system_timer_plan_list_timer_plan_list_component__WEBPACK_IMPORTED_MODULE_47__["TimerPlanListComponent"],
             src_app_system_unit_unit_component__WEBPACK_IMPORTED_MODULE_42__["UnitComponent"],
             src_app_system_unit_list_unit_list_component__WEBPACK_IMPORTED_MODULE_43__["UnitListComponent"],
+            src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_53__["ConfirmationDialogComponent"],
             src_app_system_value_timer_value_timer_component__WEBPACK_IMPORTED_MODULE_48__["ValueTimerComponent"]
         ],
         imports: [
@@ -5712,8 +6076,9 @@ SystemModule = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
             _angular_material_toolbar__WEBPACK_IMPORTED_MODULE_37__["MatToolbarModule"],
             _angular_material_tooltip__WEBPACK_IMPORTED_MODULE_38__["MatTooltipModule"],
             _angular_material_tree__WEBPACK_IMPORTED_MODULE_39__["MatTreeModule"],
-            src_app_system_system_routing_module__WEBPACK_IMPORTED_MODULE_53__["SystemRoutingModule"]
-        ]
+            src_app_system_system_routing_module__WEBPACK_IMPORTED_MODULE_54__["SystemRoutingModule"]
+        ],
+        entryComponents: [src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_53__["ConfirmationDialogComponent"]]
     })
 ], SystemModule);
 
@@ -5916,6 +6281,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm2015/material.js");
 /* harmony import */ var _unit_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../unit.service */ "./src/app/system/unit.service.ts");
 /* harmony import */ var _unit_unit_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../unit/unit.component */ "./src/app/system/unit/unit.component.ts");
+/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+
 
 
 
@@ -5924,14 +6291,14 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let UnitListComponent = class UnitListComponent {
-    constructor(UnitService, snackBar, location, dialog) {
-        this.UnitService = UnitService;
+    constructor(unitService, snackBar, location, dialog, deleteDialog) {
+        this.unitService = unitService;
         this.snackBar = snackBar;
         this.location = location;
         this.dialog = dialog;
+        this.deleteDialog = deleteDialog;
         this.Units = [];
         this.tableColumns = ['UnitID', 'Name', 'Minimum', 'Maximum', 'IconList', 'TextLabels'];
-        this.selectedRow = 0;
         this.selectedRowNumber = 0;
         this.dialogConfig = new _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialogConfig"]();
     }
@@ -5942,18 +6309,17 @@ let UnitListComponent = class UnitListComponent {
     ngOnInit() {
         this.dialogConfig.autoFocus = true;
         this.dialogConfig.width = "80%";
-        this.UnitService.getUnits().subscribe((UnitsMsg) => {
-            this.Units = UnitsMsg.Units;
-            console.log(this.Units);
-            this.snackBar.open(UnitsMsg.Count + ' Unit' + (this.Units.length > 1 ? 's' : '') + ' loaded. ', '', { duration: 3000 });
+        this.unitService.getUnits().subscribe((UnitsMsg) => {
+            if (UnitsMsg != null) {
+                this.Units = UnitsMsg.Units;
+                this.snackBar.open(UnitsMsg.Count + ' Unit' + (this.Units.length > 1 ? 's' : '') + ' loaded. ', '', { duration: 3000 });
+                console.log(this.Units);
+            }
+            else
+                this.snackBar.open('No Units returned. ', '', { duration: 5000 });
             return this.Units;
         }, (error) => {
-            if (error.status == 404) {
-                this.snackBar.open('No Units found. ', '', { duration: 5000 });
-            }
-            else {
-                this.snackBar.open(error.statusText, '', { duration: 10000 });
-            }
+            this.snackBar.open(error.statusText, '', { duration: 10000 });
         });
     }
     onNew() {
@@ -5965,14 +6331,23 @@ let UnitListComponent = class UnitListComponent {
         this.dialog.open(_unit_unit_component__WEBPACK_IMPORTED_MODULE_5__["UnitComponent"], this.dialogConfig);
     }
     onDelete() {
-        this.dialogConfig.data = this.selectedRow;
-        this.dialog.open(_unit_unit_component__WEBPACK_IMPORTED_MODULE_5__["UnitComponent"], this.dialogConfig);
+        const dialogRef = this.deleteDialog.open(src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__["ConfirmationDialogComponent"], {
+            width: '75%',
+            data: "Please confirm deletion of unit '" + this.selectedRow.Name + "'?"
+        });
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                debugger;
+                this.unitService.deleteUnit(this.selectedRow.UnitID);
+            }
+        });
     }
 };
 UnitListComponent.ctorParameters = () => [
     { type: _unit_service__WEBPACK_IMPORTED_MODULE_4__["UnitService"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatSnackBar"] },
     { type: _angular_common__WEBPACK_IMPORTED_MODULE_2__["Location"] },
+    { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"] },
     { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"] }
 ];
 UnitListComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
@@ -6014,6 +6389,15 @@ let UnitService = class UnitService {
     }
     getUnit(UnitId) {
         return this.httpClient.get(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Units'}/${UnitId}`);
+    }
+    createUnit(Unit) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Units'}`, `${Unit}`);
+    }
+    updateUnit(UnitId, Unit) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Units'}/${UnitId}`, `${Unit}`);
+    }
+    deleteUnit(UnitId) {
+        return this.httpClient.delete(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Units'}/${UnitId}`);
     }
 };
 UnitService.ctorParameters = () => [

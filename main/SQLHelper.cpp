@@ -50,7 +50,7 @@ const char* sqlCreateInterface =
 
 const char* sqlCreateInterfaceLog =
 		"CREATE TABLE IF NOT EXISTS [InterfaceLog] ("
-			"[InterfaceID] INTEGER, "
+			"[InterfaceID] INTEGER NOT NULL, "
 			"[Message] TEXT DEFAULT \"\","
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP,"
 		"FOREIGN KEY(InterfaceID) REFERENCES Interface(InterfaceID) ON DELETE CASCADE);";
@@ -58,7 +58,7 @@ const char* sqlCreateInterfaceLog =
 const char* sqlCreateDevice =
 		"CREATE TABLE IF NOT EXISTS [Device] ("
 			"[DeviceID] INTEGER PRIMARY KEY AUTOINCREMENT, "
-			"[InterfaceID] INTEGER, "
+			"[InterfaceID] INTEGER NOT NULL, "
 			"[Name] TEXT DEFAULT Unknown, "
 			"[ExternalID] TEXT DEFAULT \"\", "
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP,"
@@ -77,8 +77,8 @@ const char* sqlCreateValue =
 	"CREATE TABLE IF NOT EXISTS [Value] ("
 			"[ValueID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Name] TEXT DEFAULT \"\", "
-			"[DeviceID] INTEGER, "
-			"[UnitID] INTEGER, "
+			"[DeviceID] INTEGER NOT NULL, "
+			"[UnitID] INTEGER NOT NULL, "
 			"[Value] TEXT DEFAULT \"\", "
 			"[RetentionDays] INTEGER DEFAULT -1, "
 			"[RetentionInterval] INTEGER DEFAULT 900, "
@@ -88,21 +88,22 @@ const char* sqlCreateValue =
 
 const char* sqlCreateValueLog =
 	"CREATE TABLE IF NOT EXISTS [ValueLog] ("
-			"[ValueID] INTEGER, "
+			"[ValueID] INTEGER NOT NULL, "
 			"[Message] TEXT DEFAULT \"\","
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
 		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
 
 const char* sqlCreateValueHistory =
 	"CREATE TABLE IF NOT EXISTS [ValueHistory] ("
-			"[ValueID] INTEGER, "
+			"[ValueID] INTEGER NOT NULL, "
 			"[Value] TEXT DEFAULT \"\", "
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
 		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
 
 const char* sqlCreateValueScript =
 	"CREATE TABLE IF NOT EXISTS [ValueScript] ("
-			"[ValueID] INTEGER, "
+			"[ValueScriptID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[ValueID] INTEGER NOT NULL, "
 			"[Update] TEXT DEFAULT NULL, "
 			"[Periodic] TEXT DEFAULT NULL, "
 		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
@@ -125,8 +126,8 @@ const char* sqlCreateTimerPlan =
 const char* sqlCreateValueTimer =
 	"CREATE TABLE IF NOT EXISTS [ValueTimer] ("
 			"[ValueTimerID] INTEGER PRIMARY KEY AUTOINCREMENT, "
-			"[TimerPlanID] INTEGER, "
-			"[ValueID] INTEGER, "
+			"[TimerPlanID] INTEGER NOT NULL, "
+			"[ValueID] INTEGER NOT NULL, "
 			"[DayMask] TEXT DEFAULT \"Mon,Tue,Wed,Thu,Fri,Sat,Sun\", "
 			"[Time] TEXT DEFAULT \"00:00:00\", "
 			"[Sunrise] INTEGER DEFAULT 0, "
@@ -144,8 +145,8 @@ const char* sqlCreateScene =
 const char* sqlCreateSceneValue =
 "CREATE TABLE IF NOT EXISTS [SceneValue] ("
 			"[SceneValueID] INTEGER PRIMARY KEY AUTOINCREMENT, "
-			"[SceneID] INTEGER, "
-			"[ValueID] INTEGER, "
+			"[SceneID] INTEGER NOT NULL, "
+			"[ValueID] INTEGER NOT NULL, "
 			"[Value] TEXT NOT NULL, "
 			"[Order] INTEGER DEFAULT 0, "
 			"[Delay] INTEGER DEFAULT 0, "
@@ -177,7 +178,7 @@ const char* sqlCreateUser =
 		"FOREIGN KEY(RoleID) REFERENCES Role(RoleID) ON DELETE CASCADE);";
 
 const char* sqlCreateUserSession =
-	"CREATE TABLE IF NOT EXISTS [UserSession] ("
+	"CREATE TABLE IF NOT EXISTS [Session] ("
 			"[SessionID] TEXT NOT NULL, "
 			"[AuthToken] TEXT NOT NULL, "
 			"[UserID] INTEGER NOT NULL, "

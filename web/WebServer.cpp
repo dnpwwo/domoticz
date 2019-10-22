@@ -283,7 +283,7 @@ namespace http {
 			m_sql.safe_query("DELETE FROM UserSession US, User U WHERE (U.Username =='%q') AND (U.UserID = US.UserID) AND (SessionID!='%q')", username.c_str(), exceptSession.id.c_str());
 		}
 
-		void CWebServer::HandleREST(WebEmSession& session, const request& req, reply& rep)
+		void CWebServer::HandleREST(const WebEmSession& session, const request& req, reply& rep)
 		{
 			CRESTBase* pREST = CRESTBase::Create(session,  req, rep);
 			// If a REST Object was not created then bail out
@@ -296,7 +296,7 @@ namespace http {
 			// Do some security
 			if (!pREST->UserHasAccess())
 			{
-				rep = reply::stock_reply(reply::not_allowed);
+				rep = reply::stock_reply(reply::forbidden);
 				return;
 			}
 

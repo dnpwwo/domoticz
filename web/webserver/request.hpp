@@ -35,6 +35,7 @@ public:
 	/// store map between pages and application functions (wide char)
 	std::multimap<std::string, std::string> parameters;
 
+	request() : http_version_major(0), http_version_minor(0), content_length(0), keep_alive(false) {}
 
 	static int mg_strcasecmp(const char *s1, const char *s2)
 	{
