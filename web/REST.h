@@ -34,6 +34,8 @@ namespace http {
 
 			std::string		getVerb() { return m_Request.method; };
 			bool			getFieldsAndValues(std::string*	pFields, std::string*	pValues);
+			bool			hasTimestamp();
+			bool			stripForbiddenFields(std::string	ValidFields);
 
 		protected:
 			std::vector<std::vector<std::string> >		m_GETFields;

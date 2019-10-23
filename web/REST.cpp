@@ -51,7 +51,7 @@ namespace http {
 				m_PUTFields = result[0][1];
 				m_PATCHFields = result[0][2];
 
-				// look up structure of requested table, by default all fields are elidgable to be returned
+				// look up structure of requested table, by default all fields are eligible to be returned
 				std::string		sSQL = "pragma table_info('" + m_Table + "');";
 				m_GETFields = m_sql.safe_query(sSQL.c_str());
 				if (!m_GETFields.empty())
@@ -86,7 +86,7 @@ namespace http {
 			{
 				DELETE();
 			}
-			else m_Reply = reply::stock_reply(reply::bad_request);
+			else m_Reply = reply::stock_reply(reply::not_allowed);
 
 		}
 
@@ -104,7 +104,7 @@ namespace http {
 					return false;
 				}
 
-				// Iterate through supplied data and build SQL
+				// Iterate through supplied data and strings containing field names and values
 				for (Json::Value::const_iterator it = root.begin(); it != root.end(); it++)
 				{
 					// Skip primary keys and timestamps for insert, these will be set by database
@@ -123,14 +123,13 @@ namespace http {
 							}
 						}
 
-						// Bail if field is not expected
+						// Skip if field is not expected/allowed (probably filtered by PUTFields/PATCHFields)
 						if (!bValid)
 						{
-							_log.Log(LOG_ERROR, "Insert into '%s' failed due to an invalid field name '%s'.", m_Table.c_str(), it.name().c_str());
-							m_Reply = reply::stock_reply(reply::bad_request);
-							return false;
+							continue;
 						}
 
+						// Handle various data types and convert them to string
 						if (pFields->length()) *pFields += ", ";
 						*pFields += it.name();
 						if (it->isString())
@@ -175,6 +174,32 @@ namespace http {
 			}
 
 			m_Reply = reply::stock_reply(reply::bad_request);
+			return false;
+		}
+
+		bool	CRESTBase::hasTimestamp()
+		{
+			// Search for timestamp field
+			for (int i = 0; i < m_GETFields.size(); i++)
+			{
+				if (m_GETFields[i][1] == "Timestamp")
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		bool	CRESTBase::stripForbiddenFields(std::string	ValidFields)
+		{
+			for (int i = 0; i < m_GETFields.size(); i++)
+			{
+				if (ValidFields.find(m_GETFields[i][1]) == std::string::npos)
+				{
+					m_GETFields.erase(m_GETFields.begin()+i);
+					return true;
+				}
+			}
 			return false;
 		}
 
@@ -305,6 +330,15 @@ namespace http {
 				return;
 			}
 
+			// Remember if the table has a timestamp (for later)
+			bool	bHasTimestamp = hasTimestamp();
+
+			// Respect the 'PUT Fields' configured for the table
+			if (m_PUTFields != "*")
+			{
+				while (stripForbiddenFields(m_PUTFields));
+			}
+
 			// Unpack request and match to database schema
 			std::string		sFields;
 			std::string		sValues;
@@ -313,24 +347,39 @@ namespace http {
 				return;
 			}
 
+			// Split data into vectors so we can iterate through them
 			std::vector<std::string> vFields;
 			boost::split(vFields, sFields, boost::is_any_of(","), boost::token_compress_on);
 			std::vector<std::string> vValues;
 			boost::split(vValues, sValues, boost::is_any_of(","), boost::token_compress_on);
 			if (vFields.size() != vValues.size())
 			{
-				_log.Log(LOG_ERROR, "%s: Fields (%d) vs Values (%d) mismtch.", __func__, vFields.size(), vValues.size());
+				_log.Log(LOG_ERROR, "%s: Fields (%d) vs Values (%d) mismatch.", __func__, vFields.size(), vValues.size());
 				return;
 			}
 
+			// If there are no updatable fields then bail
+			if (vFields.empty())
+			{
+				m_Reply = reply::stock_reply(reply::not_allowed);
+				return;
+			}
 
+			// Build SQL statement
 			std::string		sSQL = "UPDATE " + m_Table + " SET ";
 			for (int i = 0; i < vFields.size(); i++)
 			{
 				sSQL += vFields[i] + "=" + vValues[i];
-				if (i < vFields.size()-1) sSQL += ", ";
+				if (i < vFields.size() - 1) sSQL += ", ";
 			}
 
+			// if the table has a timestamp field then update it to 'now'
+			if (bHasTimestamp)
+			{
+				sSQL += ", Timestamp=CURRENT_TIMESTAMP";
+			}
+
+			// Add the where clause to update the correct row (use REST API URL number)
 			sSQL += " WHERE " + m_Table + "ID=" + std::to_string(m_TableKey) + "; ";
 			m_sql.safe_query(sSQL.c_str());
 			std::vector<std::vector<std::string> >	result = m_sql.safe_query("SELECT changes();");
@@ -341,13 +390,13 @@ namespace http {
 			{
 				m_Reply = reply::stock_reply(reply::bad_request);
 				root["Count"] = 0;
-				_log.Log(LOG_ERROR, "Update '%s' failed to update any records.", m_Table.c_str());
+				_log.Log(LOG_ERROR, "PUT '%s' failed to update any records.", m_Table.c_str());
 			}
 			else
 			{
 				m_Reply = reply::stock_reply(reply::created);
 				root["Count"] = atoi(result[0][0].c_str());
-				_log.Log(LOG_NORM, "Update '%s' succeeded, %s records modified.", m_Table.c_str(), result[0][0].c_str());
+				_log.Log(LOG_NORM, "PUT '%s' succeeded, %s records modified.", m_Table.c_str(), result[0][0].c_str());
 			}
 
 			// Add to the response
