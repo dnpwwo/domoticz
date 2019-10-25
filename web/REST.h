@@ -33,7 +33,7 @@ namespace http {
 			std::string		m_PATCHFields;
 
 			std::string		getVerb() { return m_Request.method; };
-			bool			getFieldsAndValues(std::string*	pFields, std::string*	pValues);
+			bool			getFieldsAndValues(std::vector<std::string>*	pFields, std::vector<std::string>*	pValues);
 			bool			hasTimestamp();
 			bool			stripForbiddenFields(std::string	ValidFields);
 

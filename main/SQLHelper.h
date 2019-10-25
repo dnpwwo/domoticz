@@ -7,33 +7,30 @@
 #define timer_resolution_hz 25
 
 struct sqlite3;
-
-enum _eWindUnit
-{
-	WINDUNIT_MS=0,
-	WINDUNIT_KMH,
-	WINDUNIT_MPH,
-	WINDUNIT_Knots,
-	WINDUNIT_Beaufort,
-};
-
-enum _eTempUnit
-{
-	TEMPUNIT_C=0,
-	TEMPUNIT_F,
-};
-
-enum _eWeightUnit
-{
-    WEIGHTUNIT_KG,
-    WEIGHTUNIT_LB,
-};
+struct sqlite3_stmt;
 
 //row result for an sql query : string Vector
 typedef   std::vector<std::string> TSqlRowQuery;
 
 // result for an sql query : Vector of TSqlRowQuery
 typedef   std::vector<TSqlRowQuery> TSqlQueryResult;
+
+class CSQLStatement
+{
+private:
+	sqlite3*		m_DBase;
+	sqlite3_stmt*	m_Statement;
+	int				iNextParam;
+	int				m_Status;
+	std::string		m_ErrorText;
+public:
+	CSQLStatement(sqlite3* pDBase, const std::string& pSQL);
+	int	AddParameter(std::string& pParam);
+	int Execute();
+	bool Error();
+	const char* ErrorText() { return m_ErrorText.c_str(); };
+	~CSQLStatement();
+};
 
 class CSQLHelper : public StoppableTask
 {
@@ -44,6 +41,7 @@ public:
 	void SetDatabaseName(const std::string &DBName);
 
 	bool OpenDatabase();
+	sqlite3* GetDatabase() { return m_dbase; };
 	void CloseDatabase();
 
 	bool BackupDatabase(const std::string &OutputFile);
@@ -69,6 +67,7 @@ public:
 	void VacuumDatabase();
 	void OptimizeDatabase(sqlite3 *dbase);
 
+	int execute_sql(const std::string& sSQL, std::vector<std::string>* pValues, bool bLogError);
 	std::vector<std::vector<std::string> > safe_query(const char *fmt, ...);
 	std::vector<std::vector<std::string> > safe_queryBlob(const char *fmt, ...);
 	void safe_exec_no_return(const char *fmt, ...);

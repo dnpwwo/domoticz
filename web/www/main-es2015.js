@@ -253,7 +253,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Interface Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n  <div>\r\n    <mat-form-field>\r\n      <mat-label>Name</mat-label>\r\n      <input matInput placeholder=\"Interface Name\" formControlName=\"Name\" />\r\n    </mat-form-field>\r\n  </div>\r\n  <div>\r\n    <mat-form-field style=\"min-width: 100%;\">\r\n      <mat-label>Configuration</mat-label>\r\n      <textarea matInput placeholder=\"Configuration\" formControlName=\"Configuration\"></textarea>\r\n    </mat-form-field>\r\n  </div>\r\n  <mat-checkbox formControlName=\"Notifiable\">Notifiable</mat-checkbox>\r\n  <mat-checkbox formControlName=\"Active\">Active</mat-checkbox>\r\n  <div><br/>\r\n    <ace fxFlex=\"auto\" [config]=\"config\" [disabled]=\"disabled\" [(value)]=\"content\">\r\n      Some example content\r\n    </ace>\r\n  </div>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(selectedRow == row)\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Interface Maintenance</h2>\r\n\r\n<form [formGroup]=\"form\">\r\n  <div>\r\n    <mat-form-field>\r\n      <mat-label>Name</mat-label>\r\n      <input matInput placeholder=\"Interface Name\" formControlName=\"Name\" />\r\n    </mat-form-field>\r\n  </div>\r\n  <div>\r\n    <mat-form-field style=\"min-width: 100%;\">\r\n      <mat-label>Configuration</mat-label>\r\n      <textarea matInput placeholder=\"Configuration\" formControlName=\"Configuration\"></textarea>\r\n    </mat-form-field>\r\n  </div>\r\n  <mat-checkbox formControlName=\"Notifiable\">Notifiable</mat-checkbox>\r\n  <mat-checkbox formControlName=\"Active\">Active</mat-checkbox>\r\n  <div><br/>\r\n    <ace fxFlex=\"auto\" [config]=\"config\" [disabled]=\"disabled\" [(value)]=\"content\"></ace>\r\n  </div>\r\n\r\n  <mat-dialog-actions align=\"end\">\r\n    <button mat-raised-button color=\"primary\" [disabled]=\"(!formIsValid())\" (click)=\"onSubmit();\" matTooltip=\"Save\" [matTooltipShowDelay]=\"500\"><mat-icon>save</mat-icon></button>\r\n    <button style=\"margin-left:6px;\" mat-raised-button color=\"accent\" mat-dialog-close matTooltip=\"Cancel\" [matTooltipShowDelay]=\"500\"><mat-icon>cancel</mat-icon></button>\r\n  </mat-dialog-actions>\r\n\r\n</form>\r\n");
 
 /***/ }),
 
@@ -2943,8 +2943,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm2015/common.js");
 /* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm2015/material.js");
 /* harmony import */ var _interface_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../interface.service */ "./src/app/hardware/interface.service.ts");
-/* harmony import */ var _interface_interface_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../interface/interface.component */ "./src/app/hardware/interface/interface.component.ts");
-/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+/* harmony import */ var _interface__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../interface */ "./src/app/hardware/interface.ts");
+/* harmony import */ var _interface_interface_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../interface/interface.component */ "./src/app/hardware/interface/interface.component.ts");
+/* harmony import */ var src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! src/app/system/confirmation-dialog/confirmation-dialog.component */ "./src/app/system/confirmation-dialog/confirmation-dialog.component.ts");
+
 
 
 
@@ -2961,7 +2963,8 @@ let InterfaceListComponent = class InterfaceListComponent {
         this.dialog = dialog;
         this.deleteDialog = deleteDialog;
         this.Interfaces = [];
-        this.tableColumns = ['InterfaceID', 'Name', 'Script', 'Configuration', 'Notifiable', 'Active'];
+        //tableColumns: string[] = ['InterfaceID', 'Name', 'Script', 'Configuration', 'Notifiable', 'Active'];
+        this.tableColumns = ['InterfaceID', 'Name', 'Notifiable', 'Active'];
         this.selectedRowNumber = 0;
         this.dialogConfig = new _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialogConfig"]();
     }
@@ -2970,8 +2973,11 @@ let InterfaceListComponent = class InterfaceListComponent {
         console.log('goBack()...');
     }
     ngOnInit() {
+        this.loadData();
         this.dialogConfig.autoFocus = true;
         this.dialogConfig.width = "90%";
+    }
+    loadData() {
         this.interfaceService.getInterfaces().subscribe((InterfacesMsg) => {
             if (InterfacesMsg != null) {
                 this.Interfaces = InterfacesMsg.Interfaces;
@@ -2986,22 +2992,31 @@ let InterfaceListComponent = class InterfaceListComponent {
         });
     }
     onNew() {
-        this.dialogConfig.data = undefined;
-        this.dialog.open(_interface_interface_component__WEBPACK_IMPORTED_MODULE_5__["InterfaceComponent"], this.dialogConfig);
+        this.dialogConfig.data = new _interface__WEBPACK_IMPORTED_MODULE_5__["Interface"]();
+        const dialogRef = this.dialog.open(_interface_interface_component__WEBPACK_IMPORTED_MODULE_6__["InterfaceComponent"], this.dialogConfig);
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                this.interfaceService.createInterface(result, this);
+            }
+        });
     }
     onEdit() {
         this.dialogConfig.data = this.selectedRow;
-        this.dialog.open(_interface_interface_component__WEBPACK_IMPORTED_MODULE_5__["InterfaceComponent"], this.dialogConfig);
+        const dialogRef = this.dialog.open(_interface_interface_component__WEBPACK_IMPORTED_MODULE_6__["InterfaceComponent"], this.dialogConfig);
+        dialogRef.afterClosed().subscribe(result => {
+            if (result) {
+                this.interfaceService.updateInterface(this.selectedRow.InterfaceID, result, this);
+            }
+        });
     }
     onDelete() {
-        const dialogRef = this.deleteDialog.open(src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_6__["ConfirmationDialogComponent"], {
+        const dialogRef = this.deleteDialog.open(src_app_system_confirmation_dialog_confirmation_dialog_component__WEBPACK_IMPORTED_MODULE_7__["ConfirmationDialogComponent"], {
             width: '75%',
             data: "Please confirm deletion of interface '" + this.selectedRow.Name + "'?"
         });
         dialogRef.afterClosed().subscribe(result => {
             if (result) {
-                debugger;
-                this.interfaceService.deleteInterface(this.selectedRow.InterfaceID);
+                this.interfaceService.deleteInterface(this.selectedRow.InterfaceID, this);
             }
         });
     }
@@ -3225,14 +3240,47 @@ let InterfaceService = class InterfaceService {
     getInterface(InterfaceId) {
         return this.httpClient.get(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Interfaces'}/${InterfaceId}`);
     }
-    createInterface(Interface) {
-        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Interfaces'}`, `${Interface}`);
+    createInterface(Interface, callback = null) {
+        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Interfaces'}`, JSON.stringify(Interface))
+            .subscribe((val) => {
+            console.log("POST call successful value: ", val);
+        }, response => {
+            console.log("POST call in error", response);
+            if (callback != null)
+                callback.loadData();
+        }, () => {
+            console.log("The POST observable is now completed.");
+            if (callback != null)
+                callback.loadData();
+        });
     }
-    updateInterface(InterfaceId, Interface) {
-        return this.httpClient.post(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Interfaces'}/${InterfaceId}`, `${Interface}`);
+    updateInterface(InterfaceId, Interface, callback = null) {
+        return this.httpClient.put(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Interfaces'}/${InterfaceId}`, JSON.stringify(Interface))
+            .subscribe((val) => {
+            console.log("PUT call successful value: ", val);
+        }, response => {
+            console.log("PUT call in error", response);
+            if (callback != null)
+                callback.loadData();
+        }, () => {
+            console.log("The PUT observable is now completed.");
+            if (callback != null)
+                callback.loadData();
+        });
     }
-    deleteInterface(InterfaceId) {
-        return this.httpClient.delete(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Interfaces'}/${InterfaceId}`);
+    deleteInterface(InterfaceId, callback = null) {
+        return this.httpClient.delete(`${_environments_environment__WEBPACK_IMPORTED_MODULE_3__["environment"].API_URL + 'Interfaces'}/${InterfaceId}`)
+            .subscribe((val) => {
+            console.log("DELETE call successful value: ", val);
+        }, response => {
+            console.log("DELETE call in error", response);
+            if (callback != null)
+                callback.loadData();
+        }, () => {
+            console.log("The DELETE observable is now completed.");
+            if (callback != null)
+                callback.loadData();
+        });
     }
 };
 InterfaceService.ctorParameters = () => [
@@ -3358,7 +3406,7 @@ let InterfaceComponent = class InterfaceComponent {
         this.form = fb.group({
             TableAccessID: [data.InterfaceID],
             Name: [data.Name, _angular_forms__WEBPACK_IMPORTED_MODULE_9__["Validators"].compose([_angular_forms__WEBPACK_IMPORTED_MODULE_9__["Validators"].required, _angular_forms__WEBPACK_IMPORTED_MODULE_9__["Validators"].minLength(8)])],
-            Script: [data.Script, _angular_forms__WEBPACK_IMPORTED_MODULE_9__["Validators"].required],
+            Script: [data.Script],
             Configuration: [data.Configuration, _angular_forms__WEBPACK_IMPORTED_MODULE_9__["Validators"].required],
             Notifiable: [data.Notifiable],
             Active: [data.Active]
@@ -3372,16 +3420,14 @@ let InterfaceComponent = class InterfaceComponent {
         // this.componentRef.directiveRef.ace();
         this.config.maxLines = (window.innerHeight / 2) / this.componentRef.directiveRef.ace().renderer.lineHeight;
     }
+    formIsValid() {
+        return this.form.valid;
+    }
     onSubmit() {
         if (this.form.valid) {
-            if (this.form.value.InterfaceID == -1) {
-                console.log('Create: ');
-            }
-            else {
-                console.log('Update: ');
-            }
-            console.log(this.form.value);
-            this.dialogRef.close();
+            debugger;
+            this.form.value.Script = this.componentRef.directiveRef.ace().getValue();
+            this.dialogRef.close(this.form.value);
         }
         else {
             this.snackBar.open('Data is not valid. ', '', { duration: 5000 });

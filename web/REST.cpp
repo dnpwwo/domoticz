@@ -90,7 +90,7 @@ namespace http {
 
 		}
 
-		bool	CRESTBase::getFieldsAndValues(std::string* pFields, std::string* pValues)
+		bool	CRESTBase::getFieldsAndValues(std::vector<std::string>* pFields, std::vector<std::string>* pValues)
 		{
 			try
 			{
@@ -112,13 +112,11 @@ namespace http {
 					{
 						// Check field name is valid
 						bool	bValid = false;
-						bool	bString = false;
 						for (const auto& iField : m_GETFields)
 						{
 							if (iField[1] == it.name())
 							{
 								bValid = true;
-								bString = (iField[2] == "TEXT");
 								break;
 							}
 						}
@@ -130,40 +128,43 @@ namespace http {
 						}
 
 						// Handle various data types and convert them to string
-						if (pFields->length()) *pFields += ", ";
-						*pFields += it.name();
+						pFields->push_back(it.name());
 						if (it->isString())
 						{
-							if (pValues->length()) *pValues += ", ";
-							if (bString)
-							{
-								*pValues += "'" + std::string(it->asCString()) + "'";
-							}
-							else
-							{
-								*pValues += std::string(it->asCString());
-							}
+							pValues->push_back(it->asCString());
 						}
 						else if (it->isInt())
 						{
-							if (pValues->length()) *pValues += ", ";
-							*pValues += std::to_string(it->asInt());
+							pValues->push_back(std::to_string(it->asInt()));
 						}
 						else if (it->isBool())
 						{
-							if (pValues->length()) *pValues += ", ";
-							*pValues += std::to_string(it->asBool());
+							pValues->push_back(std::to_string(it->asBool()));
 						}
 						else if (it->isDouble())
 						{
-							if (pValues->length()) *pValues += ", ";
-							*pValues += std::to_string(it->asDouble());
+							pValues->push_back(std::to_string(it->asDouble()));
 						}
 						else
 						{
 							_log.Log(LOG_ERROR, "%s: Unhandled type for field '%s'", __func__, it.name().c_str());
 						}
 					}
+				}
+
+				// Sanity check returned vectors
+				if (pFields->size() != pValues->size())
+				{
+					_log.Log(LOG_ERROR, "%s: Fields (%d) vs Values (%d) mismatch.", __func__, pFields->size(), pValues->size());
+					m_Reply = reply::stock_reply(reply::bad_request);
+					return false;
+				}
+
+				// If there are no updatable fields then bail
+				if (pFields->empty())
+				{
+					m_Reply = reply::stock_reply(reply::not_allowed);
+					return false;
 				}
 
 				return true;
@@ -212,35 +213,45 @@ namespace http {
 			}
 
 			// Unpack request and match to database schema
-			std::string		sFields;
-			std::string		sValues;
-			if (!getFieldsAndValues(&sFields, &sValues))
+			std::vector<std::string> vFields;
+			std::vector<std::string> vValues;
+			if (!getFieldsAndValues(&vFields, &vValues))
 			{
 				return;
 			}
 
-			// Ignore <table>ID and Timestamp fields for insert operations
-			std::string		sSQL = "INSERT INTO " + m_Table + " (" + sFields + ") VALUES (" + sValues + ");";
-			m_sql.safe_query(sSQL.c_str());
-			std::vector<std::vector<std::string> >	result = m_sql.safe_query("SELECT changes();");
+			// Build SQL statement
+			std::string		sSQL = "INSERT INTO " + m_Table + " (";
+			for (int i = 0; i < vFields.size(); i++)
+			{
+				sSQL += vFields[i];
+				if (i < vFields.size() - 1) sSQL += ", ";
+			}
+			sSQL += ") VALUES (";
+			for (int i = 0; i < vValues.size(); i++)
+			{
+				sSQL += "?";
+				if (i < vValues.size() - 1) sSQL += ", ";
+			}
+			sSQL += ");";
 
-			// Handle any data we get back
-			Json::Value root;
-			if (result.empty() || result[0][0] == "0")
+			// Execute the statement
+			int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
+			if (!iRowCount)
 			{
 				m_Reply = reply::stock_reply(reply::bad_request);
-				root["Count"] = 0;
 				_log.Log(LOG_ERROR, "Insert into '%s' failed to create a record.", m_Table.c_str());
 			}
 			else
 			{
 				m_Reply = reply::stock_reply(reply::created);
-				root["Count"] = atoi(result[0][0].c_str());
-				_log.Log(LOG_NORM, "Insert into '%s' succeeded, %s records created.", m_Table.c_str(), result[0][0].c_str());
+				_log.Log(LOG_NORM, "Insert into '%s' succeeded, %d records created.", m_Table.c_str(), iRowCount);
 			}
 
 			// Add to the response
+			Json::Value			root;
 			Json::FastWriter	jWriter;
+			root["Count"] = iRowCount;
 			m_Reply.content = jWriter.write(root);
 		}
 
@@ -340,28 +351,10 @@ namespace http {
 			}
 
 			// Unpack request and match to database schema
-			std::string		sFields;
-			std::string		sValues;
-			if (!getFieldsAndValues(&sFields, &sValues))
-			{
-				return;
-			}
-
-			// Split data into vectors so we can iterate through them
 			std::vector<std::string> vFields;
-			boost::split(vFields, sFields, boost::is_any_of(","), boost::token_compress_on);
 			std::vector<std::string> vValues;
-			boost::split(vValues, sValues, boost::is_any_of(","), boost::token_compress_on);
-			if (vFields.size() != vValues.size())
+			if (!getFieldsAndValues(&vFields, &vValues))
 			{
-				_log.Log(LOG_ERROR, "%s: Fields (%d) vs Values (%d) mismatch.", __func__, vFields.size(), vValues.size());
-				return;
-			}
-
-			// If there are no updatable fields then bail
-			if (vFields.empty())
-			{
-				m_Reply = reply::stock_reply(reply::not_allowed);
 				return;
 			}
 
@@ -369,7 +362,7 @@ namespace http {
 			std::string		sSQL = "UPDATE " + m_Table + " SET ";
 			for (int i = 0; i < vFields.size(); i++)
 			{
-				sSQL += vFields[i] + "=" + vValues[i];
+				sSQL += vFields[i] + "=?";
 				if (i < vFields.size() - 1) sSQL += ", ";
 			}
 
@@ -381,33 +374,87 @@ namespace http {
 
 			// Add the where clause to update the correct row (use REST API URL number)
 			sSQL += " WHERE " + m_Table + "ID=" + std::to_string(m_TableKey) + "; ";
-			m_sql.safe_query(sSQL.c_str());
-			std::vector<std::vector<std::string> >	result = m_sql.safe_query("SELECT changes();");
 
-			// Handle any data we get back
-			Json::Value root;
-			if (result.empty() || result[0][0] == "0")
+			// Execute the statement
+			int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
+			if (!iRowCount)
 			{
 				m_Reply = reply::stock_reply(reply::bad_request);
-				root["Count"] = 0;
-				_log.Log(LOG_ERROR, "PUT '%s' failed to update any records.", m_Table.c_str());
+				_log.Log(LOG_ERROR, "Update of '%s' failed to modify a record.", m_Table.c_str());
 			}
 			else
 			{
 				m_Reply = reply::stock_reply(reply::created);
-				root["Count"] = atoi(result[0][0].c_str());
-				_log.Log(LOG_NORM, "PUT '%s' succeeded, %s records modified.", m_Table.c_str(), result[0][0].c_str());
+				_log.Log(LOG_NORM, "Update of '%s' succeeded, %d records modified.", m_Table.c_str(), iRowCount);
 			}
 
 			// Add to the response
+			Json::Value			root;
 			Json::FastWriter	jWriter;
+			root["Count"] = iRowCount;
 			m_Reply.content = jWriter.write(root);
 		}
 
 		void	CRESTBase::PATCH()
 		{
-			// Don't support PATCH operations by default
-			m_Reply = reply::stock_reply(reply::not_allowed);
+			// Sanity check data
+			if (!m_Request.content_length)
+			{
+				return;
+			}
+
+			// Remember if the table has a timestamp (for later)
+			bool	bHasTimestamp = hasTimestamp();
+
+			// Respect the 'PUT Fields' configured for the table
+			if (m_PUTFields != "*")
+			{
+				while (stripForbiddenFields(m_PATCHFields));
+			}
+
+			// Unpack request and match to database schema
+			std::vector<std::string> vFields;
+			std::vector<std::string> vValues;
+			if (!getFieldsAndValues(&vFields, &vValues))
+			{
+				return;
+			}
+
+			// Build SQL statement
+			std::string		sSQL = "UPDATE " + m_Table + " SET ";
+			for (int i = 0; i < vFields.size(); i++)
+			{
+				sSQL += vFields[i] + "=?";
+				if (i < vFields.size() - 1) sSQL += ", ";
+			}
+
+			// if the table has a timestamp field then update it to 'now'
+			if (bHasTimestamp)
+			{
+				sSQL += ", Timestamp=CURRENT_TIMESTAMP";
+			}
+
+			// Add the where clause to update the correct row (use REST API URL number)
+			sSQL += " WHERE " + m_Table + "ID=" + std::to_string(m_TableKey) + "; ";
+
+			// Execute the statement
+			int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
+			if (!iRowCount)
+			{
+				m_Reply = reply::stock_reply(reply::bad_request);
+				_log.Log(LOG_ERROR, "Patch of '%s' failed to update a record.", m_Table.c_str());
+			}
+			else
+			{
+				m_Reply = reply::stock_reply(reply::created);
+				_log.Log(LOG_NORM, "Patch of '%s' succeeded, %d records updated.", m_Table.c_str(), iRowCount);
+			}
+
+			// Add to the response
+			Json::Value			root;
+			Json::FastWriter	jWriter;
+			root["Count"] = iRowCount;
+			m_Reply.content = jWriter.write(root);
 		}
 
 		void	CRESTBase::DELETE()

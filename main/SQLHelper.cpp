@@ -198,7 +198,7 @@ const char* sqlCreateTableAccess =
 			"[CanPATCH] TEXT DEFAULT 0, "
 			"[CanDELETE] TEXT DEFAULT 0, "
 			"[PUTFields] TEXT DEFAULT \"*\", "
-			"[PATCHFields] TEXT DEFAULT \"*\", "
+			"[PATCHFields] TEXT DEFAULT \"\", "
 		"FOREIGN KEY(RoleID) REFERENCES Role(RoleID) ON DELETE CASCADE);";
 
 const char* sqlCreateStandardScript =
@@ -209,6 +209,60 @@ const char* sqlCreateStandardScript =
 			"[Active] INTEGER DEFAULT 0);";
 
 extern std::string szUserDataFolder;
+
+CSQLStatement::CSQLStatement(sqlite3* pDBase, const std::string& pSQL) : m_DBase(pDBase), m_Statement(nullptr), iNextParam(1), m_Status(SQLITE_OK)
+{
+	const char* pTail;
+	int	iRetVal = sqlite3_prepare_v3(m_DBase, pSQL.c_str(), pSQL.length(), 0, &m_Statement, &pTail);
+	if (iRetVal != SQLITE_OK)
+	{
+		m_Status = iRetVal;
+		m_ErrorText = sqlite3_errmsg(m_DBase);
+	}
+}
+
+int	CSQLStatement::AddParameter(std::string& pParam)
+{
+	std::string		sText = pParam;
+	// Strip delimiters if supplied
+	if (((sText[0] == '\'') && (sText[sText.length()-1] == '\'')) ||
+		 (sText[0] == '\"') && (sText[sText.length() - 1] == '\"'))
+	{
+		sText = pParam.substr(1, pParam.size() - 2);;
+	}
+
+	int	iRetVal = sqlite3_bind_text(m_Statement, iNextParam++, sText.c_str(), sText.length(), SQLITE_TRANSIENT);
+	if (iRetVal != SQLITE_OK)
+	{
+		m_Status = iRetVal;
+		m_ErrorText = sqlite3_errmsg(m_DBase);
+	}
+	return iRetVal;
+}
+
+int CSQLStatement::Execute()
+{
+	int	iRetVal = sqlite3_step(m_Statement);
+	if (iRetVal != SQLITE_DONE)
+	{
+		m_Status = iRetVal;
+		m_ErrorText = sqlite3_errmsg(m_DBase);
+	}
+	return iRetVal;
+}
+
+bool CSQLStatement::Error()
+{
+	return (m_Status != SQLITE_OK) && (m_Status != SQLITE_DONE);
+};
+
+CSQLStatement::~CSQLStatement()
+{
+	if (m_Statement)
+	{
+		sqlite3_finalize(m_Statement);
+	}
+}
 
 CSQLHelper::CSQLHelper(void)
 {
@@ -314,8 +368,8 @@ bool CSQLHelper::OpenDatabase()
 
 		// Give access to tables
 		query("INSERT INTO TableAccess (Name,RoleID,CanGET) SELECT A.name, B.RoleID, true FROM sqlite_master A, Role B WHERE (A.type='table' AND A.name <> 'sqlite_sequence' AND A.name NOT LIKE 'User%' AND A.name NOT LIKE 'TableAccess%') AND (B.Name <> 'Administrator')");
-		query("UPDATE TableAccess SET CanPATCH=true, PATCHFields='Value' WHERE Name='DeviceValue' AND RoleID IN (SELECT RoleID FROM Role WHERE Name <> 'Administrator')");
-		query("INSERT INTO TableAccess (Name,RoleID,CanGET,CanPOST,CanPUT,CanPATCH,CanDELETE) SELECT A.name, B.RoleID, true, true, true, true, true FROM sqlite_master A, Role B WHERE(A.type = 'table' and A.name <> 'sqlite_sequence') AND(B.Name = 'Administrator')");
+		query("INSERT INTO TableAccess (Name,RoleID,CanGET,CanPOST,CanPUT,CanPATCH,CanDELETE) SELECT A.name, B.RoleID, true, true, true, false, true FROM sqlite_master A, Role B WHERE(A.type = 'table' and A.name <> 'sqlite_sequence') AND(B.Name = 'Administrator')");
+		query("UPDATE TableAccess SET CanPATCH=true, PATCHFields='Value' WHERE Name='Value'");
 
 		// Units that Values can be associated with
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Light On/Off', 0, 1, 'Light48_Off.png,Light48_On.png', 'Off,On')");
@@ -480,6 +534,38 @@ bool CSQLHelper::safe_UpdateBlobInTableWithID(const std::string &Table, const st
 	}
 	sqlite3_finalize(stmt);
 	return true;
+}
+
+int CSQLHelper::execute_sql(const std::string& sSQL, std::vector<std::string>* pValues, bool bLogError)
+{
+	CSQLStatement	sqlStatement(m_dbase, sSQL);
+	std::vector<std::vector<std::string> >	result;
+	for (unsigned int i = 0; (i < pValues->size()) && (!sqlStatement.Error()); i++)
+	{
+		sqlStatement.AddParameter((*pValues)[i]);
+	}
+
+	if (!sqlStatement.Error())
+	{
+		sqlStatement.Execute();
+	}
+
+	if (!sqlStatement.Error())
+	{
+		result = m_sql.safe_query("SELECT changes();");
+	}
+	else
+	{
+		if (bLogError)
+		{
+			_log.Log(LOG_ERROR, "Error performing operation: '%s'", sqlStatement.ErrorText());
+		}
+	}
+
+	if (result.empty() || result[0][0] == "0")
+		return 0;
+	else
+		return atoi(result[0][0].c_str());
 }
 
 std::vector<std::vector<std::string> > CSQLHelper::safe_query(const char *fmt, ...)
