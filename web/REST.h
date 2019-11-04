@@ -67,10 +67,10 @@ namespace http {
 			virtual void	GET();
 		};
 
-		class CRESTUserSession : CRESTBase
+		class CRESTSession : CRESTBase
 		{
 		public:
-			CRESTUserSession(const WebEmSession& session, const request& req, reply& rep) : CRESTBase(session, req, rep) {};
+			CRESTSession(const WebEmSession& session, const request& req, reply& rep) : CRESTBase(session, req, rep) {};
 		protected:
 			virtual void	GET();
 		};

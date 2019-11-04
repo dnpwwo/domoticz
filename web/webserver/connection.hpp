@@ -19,6 +19,7 @@
 #include "request.hpp"
 #include "request_handler.hpp"
 #include "request_parser.hpp"
+#include "../Websockets.hpp"
 #ifdef WWW_ENABLE_SSL
 #include <boost/asio/ssl.hpp>
 typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
@@ -161,6 +162,13 @@ namespace http {
 			void handle_handshake(const boost::system::error_code& error);
 #endif
 
+			/// websocket stuff
+			CWebsocket websocket_parser;
+			enum {
+				connection_http,
+				connection_websocket,
+				connection_websocket_closing
+			} connection_type;
 		};
 
 		typedef std::shared_ptr<connection> connection_ptr;

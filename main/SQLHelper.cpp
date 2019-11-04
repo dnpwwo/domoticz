@@ -177,7 +177,7 @@ const char* sqlCreateUser =
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
 		"FOREIGN KEY(RoleID) REFERENCES Role(RoleID) ON DELETE CASCADE);";
 
-const char* sqlCreateUserSession =
+const char* sqlCreateSession =
 	"CREATE TABLE IF NOT EXISTS [Session] ("
 			"[SessionID] TEXT NOT NULL, "
 			"[AuthToken] TEXT NOT NULL, "
@@ -342,7 +342,7 @@ bool CSQLHelper::OpenDatabase()
 
 	query(sqlCreateRole);
 	query(sqlCreateUser);
-	query(sqlCreateUserSession);
+	query(sqlCreateSession);
 	query(sqlCreateTableAccess);
 
 	//Add indexes to log tables

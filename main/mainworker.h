@@ -7,6 +7,7 @@
 #ifdef ENABLE_PYTHON
 #	include "../hardware/plugins/PluginManager.h"
 #endif
+#include "../main/UpdatePublisher.h"
 
 class MainWorker : public StoppableTask
 {
@@ -42,6 +43,8 @@ public:
 #ifdef ENABLE_PYTHON
 	Plugins::CPluginSystem m_pluginsystem;
 #endif
+	CUpdateManager	m_UpdateManager;
+
 	bool m_bIgnoreUsernamePassword;
 	bool m_bHaveUpdate;
 	int m_iRevision;

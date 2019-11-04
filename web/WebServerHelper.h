@@ -9,7 +9,7 @@ namespace http {
 			~CWebServerHelper();
 
 			// called from mainworker():
-			bool StartServers();
+			bool StartServers(UpdatePublisher*	Publisher);
 			void StopServers();
 			void SetWebCompressionMode(const _eWebCompressionMode gzmode);
 			void SetAuthenticationMethod(const _eAuthenticationMethod amethod);

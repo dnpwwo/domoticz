@@ -27,17 +27,6 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-#ifdef _DEBUG
-//#define PARSE_RFXCOM_DEVICE_LOG
-//#define DEBUG_DOWNLOAD
-//#define DEBUG_RXQUEUE
-#endif
-
-#ifdef PARSE_RFXCOM_DEVICE_LOG
-#include <iostream>
-#include <fstream>
-#endif
-
 #define round(a) ( int ) ( a + .5 )
 
 extern std::string szStartupFolder;
@@ -414,6 +403,9 @@ bool MainWorker::Start()
 		return false;
 	}
 
+	// Add database hook to communicate updates
+	m_UpdateManager.Start(m_sql.GetDatabase());
+
 	GetSunSettings();
 	GetAvailableWebThemes();
 
@@ -423,7 +415,7 @@ bool MainWorker::Start()
 
 	// Start Web Server(s)
 	http::server::CWebServerHelper	WebServers;
-	if (!WebServers.StartServers())
+	if (!WebServers.StartServers(&m_UpdateManager.Publisher))
 	{
 		_log.Log(LOG_ERROR, "Error starting webserver(s)");
 #ifdef WIN32
@@ -453,6 +445,7 @@ bool MainWorker::Stop()
 #ifdef ENABLE_PYTHON
 		m_pluginsystem.StopPluginSystem();
 #endif
+		m_UpdateManager.Stop();
 
 		RequestStop();
 		m_thread->join();

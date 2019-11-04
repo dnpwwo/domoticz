@@ -198,7 +198,7 @@ namespace http {
 			}
 			else {
 				std::vector<std::vector<std::string> > result;
-				result = m_sql.safe_query("SELECT SessionID, UserID, RoleID, AuthToken, Expiry FROM UserSession WHERE SessionID = '%q'",
+				result = m_sql.safe_query("SELECT SessionID, UserID, RoleID, AuthToken, Expiry FROM Session WHERE SessionID = '%q'",
 					sessionId.c_str());
 				if (!result.empty()) {
 					session.id = result[0][0].c_str();
@@ -238,7 +238,7 @@ namespace http {
 			WebEmStoredSession storedSession = GetSession(session.id);
 			if (storedSession.id.empty()) {
 				m_sql.safe_query(
-					"INSERT INTO UserSession (SessionID, UserID, RoleID, AuthToken, Expiry) VALUES ('%q', '%q', '%q', '%q', '%q')",
+					"INSERT INTO Session (SessionID, UserID, RoleID, AuthToken, Expiry) VALUES ('%q', '%q', '%q', '%q', '%q')",
 					session.id.c_str(),
 					session.username,
 					session.auth_token.c_str(),
@@ -246,7 +246,7 @@ namespace http {
 			}
 			else {
 				m_sql.safe_query(
-					"UPDATE UserSession set AuthToken = '%q', Expiry = '%q') WHERE SessionID = '%q'", session.auth_token.c_str(), szExpires, session.id.c_str());
+					"UPDATE Session set AuthToken = '%q', Expiry = '%q') WHERE SessionID = '%q'", session.auth_token.c_str(), szExpires, session.id.c_str());
 			}
 		}
 
@@ -259,7 +259,7 @@ namespace http {
 				return;
 			}
 			m_sql.safe_query(
-				"DELETE FROM UserSession WHERE SessionID = '%q'",
+				"DELETE FROM Session WHERE SessionID = '%q'",
 				sessionId.c_str());
 		}
 
@@ -269,7 +269,7 @@ namespace http {
 		void CWebServer::CleanSessions() {
 			//_log.Log(LOG_STATUS, "SessionStore : clean...");
 			m_sql.safe_query(
-				"DELETE FROM UserSession WHERE Expiry < datetime('now', 'localtime')");
+				"DELETE FROM Session WHERE Expiry < datetime('now', 'localtime')");
 		}
 
 		/**
@@ -280,7 +280,7 @@ namespace http {
 		 * because the username will be unknown (see cWebemRequestHandler::checkAuthToken).
 		 */
 		void CWebServer::RemoveUsersSessions(const std::string& username, const WebEmSession & exceptSession) {
-			m_sql.safe_query("DELETE FROM UserSession US, User U WHERE (U.Username =='%q') AND (U.UserID = US.UserID) AND (SessionID!='%q')", username.c_str(), exceptSession.id.c_str());
+			m_sql.safe_query("DELETE FROM Session US, User U WHERE (U.Username =='%q') AND (U.UserID = US.UserID) AND (SessionID!='%q')", username.c_str(), exceptSession.id.c_str());
 		}
 
 		void CWebServer::HandleREST(const WebEmSession& session, const request& req, reply& rep)

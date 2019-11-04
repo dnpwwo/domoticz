@@ -363,6 +363,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\main\SunRiseSet.cpp" />
+    <ClCompile Include="..\main\UpdatePublisher.cpp" />
     <ClCompile Include="..\sqlite\sqlite3.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -395,6 +396,7 @@
     <ClCompile Include="..\web\webserver\request_handler.cpp" />
     <ClCompile Include="..\web\webserver\request_parser.cpp" />
     <ClCompile Include="..\web\webserver\server.cpp" />
+    <ClCompile Include="..\web\Websockets.cpp" />
     <ClCompile Include="WindowsHelper.cpp" />
   </ItemGroup>
   <ItemGroup>

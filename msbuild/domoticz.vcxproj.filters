@@ -990,6 +990,12 @@
     <ClCompile Include="..\web\REST.cpp">
       <Filter>Web</Filter>
     </ClCompile>
+    <ClCompile Include="..\main\UpdatePublisher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\web\Websockets.cpp">
+      <Filter>Web</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="domoticz.rc">

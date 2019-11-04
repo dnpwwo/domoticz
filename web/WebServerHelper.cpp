@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "../main/UpdatePublisher.h"
 #include "WebServerHelper.h"
 #include "../main/Logger.h"
 #include "../main/SQLHelper.h"
@@ -21,7 +22,7 @@ namespace http {
 		CWebServerHelper::~CWebServerHelper()
 		{
 		}
-		bool CWebServerHelper::StartServers()
+		bool CWebServerHelper::StartServers(UpdatePublisher*	Publisher)
 		{
 			server_settings		web_settings;
 			ssl_server_settings	secure_web_settings;

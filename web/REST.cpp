@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include "REST.h"
 
 #include "REST.h"
 #include "../main/SQLHelper.h"
@@ -508,7 +507,7 @@ namespace http {
 			CRESTBase::GET();
 		}
 
-		void	CRESTUserSession::GET()
+		void	CRESTSession::GET()
 		{
 			// Remove the Password field
 			for (int i = 0; i < m_GETFields.size(); i++)
@@ -626,9 +625,9 @@ namespace http {
 					{
 						pREST = (CRESTBase*) new CRESTUser(session, req, rep);
 					}
-					else if (sTable == "UserSession")
+					else if (sTable == "Session")
 					{
-						pREST = (CRESTBase*) new CRESTUserSession(session, req, rep);
+						pREST = (CRESTBase*) new CRESTSession(session, req, rep);
 					}
 					else
 					{
