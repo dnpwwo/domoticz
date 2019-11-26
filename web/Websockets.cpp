@@ -3,6 +3,7 @@
 #include "../json/json.h"
 #include "../main/Logger.h"
 #include "../main/mainworker.h"
+#include "../main/SQLHelper.h"
 
 #define FIN_MASK 0x80
 #define RSVI1_MASK 0x40
@@ -163,6 +164,9 @@ namespace http {
 			start_new_packet = true;
 			MyWrite = _MyWrite;
 			WsWrite = _WSWrite;
+
+			// TODO: Don't hardcode this
+			this->sUser = "Admin";
 		}
 
 		CWebsocket::~CWebsocket()
@@ -281,107 +285,97 @@ namespace http {
 				Json::Value root;
 				root["Count"] = 1;
 				std::string		sTable = pEntry->m_Table + "s";
-				if (pEntry->m_Columns.size())
+				for (unsigned int i = 0; i < vSubscriptions.size(); i++)
 				{
-					for (unsigned int i = 0; i < pEntry->m_Columns.size(); i++)
+					if (vSubscriptions[i] == sTable)
 					{
-						if (pEntry->m_ColumnTypes[i] == "INTEGER")
+						if (pEntry->m_Columns.size())
 						{
-							root[sTable.c_str()][0][pEntry->m_Columns[i]] = atoi(pEntry->m_Values[i].c_str());
+							for (unsigned int i = 0; i < pEntry->m_Columns.size(); i++)
+							{
+
+								// Forbidden fields need to be stripped, just like for REST calls
+
+								// TODO
+
+								if (pEntry->m_ColumnTypes[i] == "INTEGER")
+								{
+									root[sTable.c_str()][0][pEntry->m_Columns[i]] = atoi(pEntry->m_Values[i].c_str());
+								}
+								else
+								{
+									root[sTable.c_str()][0][pEntry->m_Columns[i]] = pEntry->m_Values[i];
+								}
+							}
 						}
 						else
 						{
-							root[sTable.c_str()][0][pEntry->m_Columns[i]] = pEntry->m_Values[i];
+							// For delete actions set the primary key to a negative value to signal front end
+							root[sTable.c_str()][0][pEntry->m_Table+"ID"] = pEntry->m_RowIdx * -1;
 						}
+
+						// Add to the response
+						Json::FastWriter	jWriter;
+						std::string response = jWriter.write(root);
+						_log.Log(LOG_NORM, "CWebsocket::%s Called, Message: %s", __func__, response.c_str());
+						WsWrite(response);
+						break;
 					}
 				}
-				else
-				{
-					// For delete actions set the primary key to a negative value to signal front end
-					root[sTable.c_str()][0][pEntry->m_Table+"ID"] = pEntry->m_RowIdx * -1;
-				}
-
-				// Add to the response
-				Json::FastWriter	jWriter;
-				std::string response = jWriter.write(root);
-				_log.Log(LOG_NORM, "WebsocketHandler::%s Called, Message: %s", __func__, response.c_str());
-				WsWrite(response);
 			}
 			catch (std::exception& e)
 			{
-				_log.Log(LOG_ERROR, "WebsocketHandler::%s Exception: %s", __func__, e.what());
+				_log.Log(LOG_ERROR, "CWebsocket::%s Exception: %s", __func__, e.what());
 			}
 		}
 
 		boost::tribool CWebsocket::Handle(const std::string& packet_data, bool outbound)
 		{
-			Json::Value jsonValue;
-			Json::StyledWriter writer;
-			/*
-						try
-						{
-							// WebSockets only do security during set up so keep pushing the expiry out to stop it being cleaned up
-							WebEmSession session;
-							std::map<std::string, WebEmSession>::iterator itt = myWebem->m_sessions.find(sessionid);
-							if (itt != myWebem->m_sessions.end())
-							{
-								session = itt->second;
-							}
-							else
-								// for outbound messages create a temporary session if required
-								// todo: Add the username and rights from the original connection
-								if (outbound)
-								{
-										time_t	nowAnd1Day = ((time_t)mytime(NULL)) + WEBSOCKET_SESSION_TIMEOUT;
-										session.timeout = nowAnd1Day;
-										session.expires = nowAnd1Day;
-										session.isnew = false;
-										session.forcelogin = false;
-										session.rememberme = false;
-										session.reply_status = 200;
-								}
+			// Nope
+			if (outbound)
+			{
+				_log.Log(LOG_ERROR, "CWebsocket::%s Error: Outbound should not be true.", __func__);
+				return true;
+			}
 
 
-							Json::Reader reader;
-							Json::Value value;
-							if (!reader.parse(packet_data, value)) {
-								return true;
-							}
-							std::string szEvent = value["event"].asString();
-							if (szEvent.find("request") == std::string::npos)
-								return true;
+			Json::Reader reader;
+			Json::Value value;
+			if (!reader.parse(packet_data, value)) {
+				return true;
+			}
 
-							request req;
-							req.method = "GET";
-							std::string querystring = value["query"].asString();
-							req.uri = "/json.htm?" + querystring;
-							req.http_version_major = 1;
-							req.http_version_minor = 1;
-							req.headers.resize(0); // todo: do we need any headers?
-							req.content.clear();
-							reply rep;
-							if (myWebem->CheckForPageOverride(session, req, rep)) {
-								if (rep.status == reply::ok) {
-									jsonValue["request"] = szEvent;
-									jsonValue["event"] = "response";
-									Json::Value::Int64 reqID = value["requestid"].asInt64();
-									jsonValue["requestid"] = reqID;
-									jsonValue["data"] = rep.content;
-									std::string response = writer.write(jsonValue);
-									MyWrite(response);
-									return true;
-								}
-							}
-						}
-						catch (std::exception& e)
-						{
-							_log.Log(LOG_ERROR, "WebsocketHandler::%s Exception: %s", __func__, e.what());
-						}
+			//
+			//	Valid inbound messages are : subscribe & unsubscribe
+			//
+			std::string sUnsubscribe = value["unsubscribe"].asString();
+			if (sUnsubscribe.length())
+			{
+				for (unsigned int i = 0; i < vSubscriptions.size(); i++)
+				{
+					if (vSubscriptions[i] == sUnsubscribe)
+					{
+						vSubscriptions.erase(vSubscriptions.begin()+i);
+						_log.Log(LOG_NORM, "CWebsocket::%s Processed unsubscribe for: %s.", __func__, sUnsubscribe.c_str());
+						break;
+					}
+				}
+			}
 
-						jsonValue["error"] = "Internal Server Error!!";
-						std::string response = writer.write(jsonValue);
-						MyWrite(response);
-			*/			return true;
+			std::string sSubscribe = value["subscribe"].asString();
+			if (sSubscribe.length())
+			{
+				//	Note: For subscribe, the user must have GET access to the table being subscribed
+				std::vector<std::vector<std::string> > result;
+				result = m_sql.safe_query("SELECT CanGET  FROM TableAccess T, User U WHERE U.Username = '%q' AND U.RoleID = T.RoleID AND T.Name = '%q'", this->sUser.c_str(), sSubscribe.substr(0,sSubscribe.size()-1).c_str());
+				if (!result.empty() && (result[0][0] == "1"))
+				{
+					vSubscriptions.push_back(sSubscribe);
+					_log.Log(LOG_NORM, "CWebsocket::%s Processed subscription to: %s.", __func__, sSubscribe.c_str());
+				}
+			}
+
+			return true;
 		}
 	}
 }

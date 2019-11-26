@@ -50,10 +50,38 @@ const char* sqlCreateInterface =
 
 const char* sqlCreateInterfaceLog =
 		"CREATE TABLE IF NOT EXISTS [InterfaceLog] ("
+			"[InterfaceLogID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[InterfaceID] INTEGER NOT NULL, "
 			"[Message] TEXT DEFAULT \"\","
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP,"
 		"FOREIGN KEY(InterfaceID) REFERENCES Interface(InterfaceID) ON DELETE CASCADE);";
+
+const char* sqlInterfaceAfterInsertTrigger =
+		"CREATE TRIGGER IF NOT EXISTS [InterfaceAfterInsertTrigger] AFTER INSERT ON Interface "
+			"FOR EACH ROW "
+			"BEGIN "
+				"INSERT into InterfaceLog(InterfaceID, Message) values (NEW.InterfaceID, 'Interface \"' || New.Name || '\" created.'); "
+			"END;";
+
+const char* sqlInterfaceAfterUpdateTrigger =
+		"CREATE TRIGGER IF NOT EXISTS[InterfaceAfterUpdateTrigger] AFTER UPDATE ON Interface "
+			"FOR EACH ROW "
+			"BEGIN "
+				"INSERT into InterfaceLog(InterfaceID, Message) values(NEW.InterfaceID, "
+					"CASE "
+					"WHEN NEW.Name != OLD.Name THEN "
+						"'Interface Name \"' || New.Name || '\" updated from \"' || OLD.Name || '\" to \"' || NEW.Name || '\".' "
+					"WHEN NEW.Notifiable != OLD.Notifiable THEN "
+						"'Interface Notifiable flag of \"' || New.Name || '\" updated from \"' || OLD.Notifiable || '\" to \"' || NEW.Notifiable || '\".' "
+					"WHEN NEW.Active != OLD.Active THEN "
+						"'Interface Active flag of \"' || New.Name || '\" updated from \"' || OLD.Active || '\" to \"' || NEW.Active || '\".' "
+					"WHEN NEW.Configuration != OLD.Configuration THEN "
+						"'Interface Configuration updated.' "
+					"WHEN NEW.Script != OLD.Script THEN "
+						"'Interface Script updated.' "
+					"END "
+					"); "
+			"END;";
 
 const char* sqlCreateDevice =
 		"CREATE TABLE IF NOT EXISTS [Device] ("
@@ -61,8 +89,41 @@ const char* sqlCreateDevice =
 			"[InterfaceID] INTEGER NOT NULL, "
 			"[Name] TEXT DEFAULT Unknown, "
 			"[ExternalID] TEXT DEFAULT \"\", "
+			"[Active] INTEGER DEFAULT 0, "
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP,"
 		"FOREIGN KEY(InterfaceID) REFERENCES Interface(InterfaceID) ON DELETE CASCADE);";
+
+const char* sqlDeviceAfterInsertTrigger =
+		"CREATE TRIGGER IF NOT EXISTS [DeviceAfterInsertTrigger] AFTER INSERT ON Device "
+			"FOR EACH ROW "
+			"BEGIN "
+				"INSERT into InterfaceLog(InterfaceID, Message) values(NEW.InterfaceID, 'Device \"' || New.Name || '\" created, ID '||New.DeviceID||', ExternalID \"'||New.ExternalID||'\".'); "
+			"END;";
+
+const char* sqlDeviceAfterUpdateTrigger =
+		"CREATE TRIGGER IF NOT EXISTS [DeviceAfterUpdateTrigger] AFTER UPDATE ON Device "
+			"FOR EACH ROW "
+			"BEGIN "
+				"INSERT into InterfaceLog(InterfaceID, Message) values(NEW.InterfaceID, "
+					"CASE "
+						"WHEN (OLD.Name == NEW.Name) AND (OLD.ExternalID == New.ExternalID) AND (OLD.Active == New.Active) THEN "
+							"'Device \"' || New.Name || '\" touched.' "
+						"WHEN (OLD.Active != New.Active) AND (NEW.Active == 1) THEN "
+							"'Device \"' || New.Name || '\" status changed: Active.' "
+						"WHEN (OLD.Active != New.Active) AND (NEW.Active == 0) THEN "
+							"'Device \"' || New.Name || '\" status changed: Inactive.' "
+						"ELSE "
+							"'Device \"' || New.Name || '\" updated, ID '||New.DeviceID||', ExternalID \"'||New.ExternalID||'\".' "
+					"END "
+				"); "
+			"END;";
+
+const char* sqlDeviceAfterDeleteTrigger =
+		"CREATE TRIGGER IF NOT EXISTS [DeviceAfterDeleteTrigger] AFTER DELETE ON Device "
+			"FOR EACH ROW "
+			"BEGIN "
+				"INSERT into InterfaceLog(InterfaceID, Message) values(OLD.InterfaceID, 'Device \"' || OLD.Name || '\" deleted, ID '||OLD.DeviceID||', ExternalID \"'||OLD.ExternalID||'\".'); "
+			"END;";
 
 const char* sqlCreateUnit =
 	"CREATE TABLE IF NOT EXISTS [Unit] ("
@@ -88,6 +149,7 @@ const char* sqlCreateValue =
 
 const char* sqlCreateValueLog =
 	"CREATE TABLE IF NOT EXISTS [ValueLog] ("
+			"[ValueLogID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[ValueID] INTEGER NOT NULL, "
 			"[Message] TEXT DEFAULT \"\","
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
@@ -95,10 +157,31 @@ const char* sqlCreateValueLog =
 
 const char* sqlCreateValueHistory =
 	"CREATE TABLE IF NOT EXISTS [ValueHistory] ("
+			"[ValueHistoryID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[ValueID] INTEGER NOT NULL, "
 			"[Value] TEXT DEFAULT \"\", "
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
 		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
+
+const char* sqlValueAfterInsertTrigger =
+	"CREATE TRIGGER IF NOT EXISTS [ValueAfterInsertTrigger] AFTER INSERT ON Value "
+		"FOR EACH ROW "
+		"BEGIN "
+			"INSERT into ValueLog(ValueID, Message) values(NEW.ValueID, 'Value \"' || New.Name || '\" created.'); "
+			"INSERT into ValueHistory(ValueID, Value) values(NEW.ValueID, NEW.Value); "
+		"END;";
+
+const char* sqlValueAfterUpdateTrigger =
+	"CREATE TRIGGER IF NOT EXISTS [ValueAfterUpdateTrigger] AFTER UPDATE ON Value "
+		"FOR EACH ROW "
+		"WHEN (OLD.Value != NEW.Value) AND "
+			" ((CAST(strftime('%s', CURRENT_TIMESTAMP) as integer) - "
+			"	CAST(strftime('%s', (SELECT max(Timestamp) FROM ValueHistory WHERE ValueID = NEW.ValueID)) as integer)) "
+			"	>= NEW.RetentionInterval) "
+		"BEGIN "
+			"INSERT into ValueLog(ValueID, Message) values(NEW.ValueID, 'Value \"' || New.Name || '\" updated from \"'||OLD.Value||'\" to \"'||NEW.Value||'\".'); "
+			"INSERT into ValueHistory(ValueID, Value) VALUES (NEW.ValueID, NEW.Value); "
+		"END;";
 
 const char* sqlCreateValueScript =
 	"CREATE TABLE IF NOT EXISTS [ValueScript] ("
@@ -137,13 +220,13 @@ const char* sqlCreateValueTimer =
 		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
 
 const char* sqlCreateScene =
-			"CREATE TABLE IF NOT EXISTS [Scene] ("
+	"CREATE TABLE IF NOT EXISTS [Scene] ("
 			"[SceneID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Name] TEXT UNIQUE NOT NULL, "
 			"[Active] INTEGER DEFAULT 0);";
 
 const char* sqlCreateSceneValue =
-"CREATE TABLE IF NOT EXISTS [SceneValue] ("
+	"CREATE TABLE IF NOT EXISTS [SceneValue] ("
 			"[SceneValueID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[SceneID] INTEGER NOT NULL, "
 			"[ValueID] INTEGER NOT NULL, "
@@ -154,7 +237,7 @@ const char* sqlCreateSceneValue =
 			"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
 
 const char* sqlCreateRole =
-			"CREATE TABLE IF NOT EXISTS [Role] ("
+	"CREATE TABLE IF NOT EXISTS [Role] ("
 			"[RoleID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Name] TEXT UNIQUE NOT NULL, "
 			"[RemoteAccess] INTEGER DEFAULT 0, "
@@ -324,12 +407,19 @@ bool CSQLHelper::OpenDatabase()
 	query(sqlCreatePreference);
 	query(sqlCreateInterface);
 	query(sqlCreateInterfaceLog);
+	query(sqlInterfaceAfterInsertTrigger);
+	query(sqlInterfaceAfterUpdateTrigger);
 	query(sqlCreateDevice);
+	query(sqlDeviceAfterInsertTrigger);
+	query(sqlDeviceAfterUpdateTrigger);
+	query(sqlDeviceAfterDeleteTrigger);
 	query(sqlCreateUnit);
 	query(sqlCreateValue);
 	query(sqlCreateValueHistory);
 	query(sqlCreateValueLog);
 	query(sqlCreateValueHistory);
+	query(sqlValueAfterInsertTrigger);
+	query(sqlValueAfterUpdateTrigger);
 	query(sqlCreateValueScript);
 	query(sqlCreateValueNotification);
 	query(sqlCreateStandardScript);

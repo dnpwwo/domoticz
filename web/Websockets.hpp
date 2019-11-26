@@ -70,6 +70,8 @@ namespace http {
 			boost::function<void(const std::string& packet_data)> MyWrite;
 			boost::function<void(const std::string& packet_data)> WsWrite;
 			boost::signals2::connection m_Subscriber;
+			std::vector<std::string>	vSubscriptions;
+			std::string		sUser;
 		};
 
 	}
