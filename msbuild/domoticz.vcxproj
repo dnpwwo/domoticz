@@ -327,6 +327,7 @@
     <ClInclude Include="..\hardware\DomoticzHardware.h" />
     <ClInclude Include="..\main\dirent_windows.h" />
     <ClInclude Include="..\main\mainstructs.h" />
+    <ClInclude Include="..\web\DataAccess.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="..\main\SQLHelper.h" />
     <ClInclude Include="..\main\Helper.h" />
@@ -384,6 +385,7 @@
     <ClCompile Include="..\tinyxpath\xpath_static.cpp" />
     <ClCompile Include="..\tinyxpath\xpath_stream.cpp" />
     <ClCompile Include="..\tinyxpath\xpath_syntax.cpp" />
+    <ClCompile Include="..\web\DataAccess.cpp" />
     <ClCompile Include="..\web\REST.cpp" />
     <ClCompile Include="..\web\WebServer.cpp" />
     <ClCompile Include="..\web\WebServerHelper.cpp" />

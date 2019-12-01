@@ -22,6 +22,11 @@ namespace http {
 			opcode_pong = 0x0a
 		};
 
+		struct structSubscription {
+			std::string					sTable;
+			std::vector<std::string>	vFields;
+		};
+
 		class connection;
 		class cWebem;
 
@@ -70,9 +75,8 @@ namespace http {
 			boost::function<void(const std::string& packet_data)> MyWrite;
 			boost::function<void(const std::string& packet_data)> WsWrite;
 			boost::signals2::connection m_Subscriber;
-			std::vector<std::string>	vSubscriptions;
-			std::string		sUser;
+			std::vector<structSubscription>	vSubscriptions;
+			std::string		m_User;
 		};
-
 	}
 }

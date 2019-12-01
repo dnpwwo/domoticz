@@ -4,6 +4,7 @@
 #include "../main/Logger.h"
 #include "../main/mainworker.h"
 #include "../main/SQLHelper.h"
+#include "DataAccess.h"
 
 #define FIN_MASK 0x80
 #define RSVI1_MASK 0x40
@@ -166,7 +167,7 @@ namespace http {
 			WsWrite = _WSWrite;
 
 			// TODO: Don't hardcode this
-			this->sUser = "Admin";
+			m_User = "Admin";
 		}
 
 		CWebsocket::~CWebsocket()
@@ -287,24 +288,25 @@ namespace http {
 				std::string		sTable = pEntry->m_Table + "s";
 				for (unsigned int i = 0; i < vSubscriptions.size(); i++)
 				{
-					if (vSubscriptions[i] == sTable)
+					if (vSubscriptions[i].sTable == sTable)
 					{
 						if (pEntry->m_Columns.size())
 						{
-							for (unsigned int i = 0; i < pEntry->m_Columns.size(); i++)
+							for (unsigned int j = 0; j < pEntry->m_Columns.size(); j++)
 							{
 
-								// Forbidden fields need to be stripped, just like for REST calls
-
-								// TODO
-
-								if (pEntry->m_ColumnTypes[i] == "INTEGER")
+								// Make sure the field is eligable to be returned
+								std::vector<std::string>::iterator	it = std::find(vSubscriptions[i].vFields.begin(), vSubscriptions[i].vFields.end(), pEntry->m_Columns[j]);
+								if (it != vSubscriptions[i].vFields.end())
 								{
-									root[sTable.c_str()][0][pEntry->m_Columns[i]] = atoi(pEntry->m_Values[i].c_str());
-								}
-								else
-								{
-									root[sTable.c_str()][0][pEntry->m_Columns[i]] = pEntry->m_Values[i];
+									if (pEntry->m_ColumnTypes[j] == "INTEGER")
+									{
+										root[sTable.c_str()][0][pEntry->m_Columns[j]] = atoi(pEntry->m_Values[j].c_str());
+									}
+									else
+									{
+										root[sTable.c_str()][0][pEntry->m_Columns[j]] = pEntry->m_Values[j];
+									}
 								}
 							}
 						}
@@ -353,7 +355,7 @@ namespace http {
 			{
 				for (unsigned int i = 0; i < vSubscriptions.size(); i++)
 				{
-					if (vSubscriptions[i] == sUnsubscribe)
+					if (vSubscriptions[i].sTable == sUnsubscribe)
 					{
 						vSubscriptions.erase(vSubscriptions.begin()+i);
 						_log.Log(LOG_NORM, "CWebsocket::%s Processed unsubscribe for: %s.", __func__, sUnsubscribe.c_str());
@@ -366,12 +368,19 @@ namespace http {
 			if (sSubscribe.length())
 			{
 				//	Note: For subscribe, the user must have GET access to the table being subscribed
-				std::vector<std::vector<std::string> > result;
-				result = m_sql.safe_query("SELECT CanGET  FROM TableAccess T, User U WHERE U.Username = '%q' AND U.RoleID = T.RoleID AND T.Name = '%q'", this->sUser.c_str(), sSubscribe.substr(0,sSubscribe.size()-1).c_str());
-				if (!result.empty() && (result[0][0] == "1"))
+				CDataAccess		DataAccess(m_User, sSubscribe.substr(0, sSubscribe.size() - 1), "GET");
+				if (DataAccess.UserHasAccess())
 				{
-					vSubscriptions.push_back(sSubscribe);
+					structSubscription	Subscription;
+					Subscription.sTable = sSubscribe;
+					DataAccess.StripForbiddenFields();
+					DataAccess.GetValidFields(Subscription.vFields);
+					vSubscriptions.push_back(Subscription);
 					_log.Log(LOG_NORM, "CWebsocket::%s Processed subscription to: %s.", __func__, sSubscribe.c_str());
+				}
+				else
+				{
+					_log.Log(LOG_ERROR, "CWebsocket::%s Access Denied. Processing subscription to: %s.", __func__, sSubscribe.c_str());
 				}
 			}
 

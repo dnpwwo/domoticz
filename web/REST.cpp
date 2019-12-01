@@ -17,71 +17,34 @@
 namespace http {
 	namespace server {
 
-		CRESTBase::CRESTBase(const WebEmSession& session, const request& req, reply& rep) : m_Session(session), m_Request(req), m_Reply(rep)
+		CRESTRequest::CRESTRequest(const WebEmSession& session, const request& req, reply& rep) : m_Session(session), m_Request(req), m_Reply(rep)
 		{
+			// TODO: Extract user from Session
+			m_User = "Admin";
+
+			m_Verb = m_Request.method;
 		}
 
-		void	CRESTBase::setTable(std::string sTable, int iTableKey)
-		{
-			m_Table = sTable;
-			m_TableKey = iTableKey;
-		};
-
-		void	CRESTBase::setParent(std::string sParent, int iParentKey)
-		{
-			m_Parent = sParent;
-			m_ParentKey = iParentKey;
-		};
-
-		void	CRESTBase::setOptions(std::string sOrder, std::string sFilter)
-		{
-			m_Order = sOrder;
-			m_Filter = sFilter;
-		}
-
-		bool	CRESTBase::UserHasAccess()
-		{
-			// Check user has access to the table for the requested HTTP verb
-			// TODO: get user ID from actual AccessToken Session
-			std::vector<std::vector<std::string> > result;
-			result = m_sql.safe_query("SELECT Can%q, PUTFields, PATCHFields FROM TableAccess T, User U WHERE U.Username = '%q' AND U.RoleID = T.RoleID AND T.Name = '%q'", this->getVerb().c_str(), "Admin", m_Table.c_str());
-			if (!result.empty() && (result[0][0] == "1"))
-			{
-				m_PUTFields = result[0][1];
-				m_PATCHFields = result[0][2];
-
-				// look up structure of requested table, by default all fields are eligible to be returned
-				std::string		sSQL = "pragma table_info('" + m_Table + "');";
-				m_GETFields = m_sql.safe_query(sSQL.c_str());
-				if (!m_GETFields.empty())
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		void	CRESTBase::ProcessRequest()
+		void	CRESTRequest::ProcessRequest()
 		{
 			// Handle various HTTP verbs
-			if (getVerb() == "POST")
+			if (m_Verb == "POST")
 			{
 				POST();
 			}
-			else if (getVerb() == "GET")
+			else if (m_Verb == "GET")
 			{
 				GET();
 			}
-			else if (getVerb() == "PUT")
+			else if (m_Verb == "PUT")
 			{
 				PUT();
 			}
-			else if (getVerb() == "PATCH")
+			else if (m_Verb == "PATCH")
 			{
 				PATCH();
 			}
-			else if (getVerb() == "DELETE")
+			else if (m_Verb == "DELETE")
 			{
 				DELETE();
 			}
@@ -89,7 +52,7 @@ namespace http {
 
 		}
 
-		bool	CRESTBase::getFieldsAndValues(std::vector<std::string>* pFields, std::vector<std::string>* pValues)
+		bool	CRESTRequest::getFieldsAndValues(std::vector<std::string>* pFields, std::vector<std::string>* pValues)
 		{
 			try
 			{
@@ -98,7 +61,7 @@ namespace http {
 				// Convert string back to JSON
 				if (!reader.parse(m_Request.content, root))
 				{
-					_log.Log(LOG_ERROR, "%s: Failed to parse JSON content for '%s'", __func__, getVerb().c_str());
+					_log.Log(LOG_ERROR, "%s: Failed to parse JSON content for '%s'", __func__, m_Verb.c_str());
 					m_Reply = reply::stock_reply(reply::bad_request);
 					return false;
 				}
@@ -111,7 +74,7 @@ namespace http {
 					{
 						// Check field name is valid
 						bool	bValid = false;
-						for (const auto& iField : m_GETFields)
+						for (const auto& iField : m_ValidFields)
 						{
 							if (iField[1] == it.name())
 							{
@@ -177,33 +140,7 @@ namespace http {
 			return false;
 		}
 
-		bool	CRESTBase::hasTimestamp()
-		{
-			// Search for timestamp field
-			for (int i = 0; i < m_GETFields.size(); i++)
-			{
-				if (m_GETFields[i][1] == "Timestamp")
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-
-		bool	CRESTBase::stripForbiddenFields(std::string	ValidFields)
-		{
-			for (int i = 0; i < m_GETFields.size(); i++)
-			{
-				if (ValidFields.find(m_GETFields[i][1]) == std::string::npos)
-				{
-					m_GETFields.erase(m_GETFields.begin()+i);
-					return true;
-				}
-			}
-			return false;
-		}
-
-		void	CRESTBase::POST()
+		void	CRESTRequest::POST()
 		{
 			// Sanity check data
 			if (!m_Request.content_length)
@@ -254,22 +191,25 @@ namespace http {
 			m_Reply.content = jWriter.write(root);
 		}
 
-		void	CRESTBase::GET()
+		void	CRESTRequest::GET()
 		{
 			// Sanity check data
 			if (m_Request.content_length)
 			{
-				_log.Log(LOG_ERROR, "%s: Unexpected Non-Zero content length (%d) for '%s'", __func__, m_Request.content_length, getVerb().c_str());
+				_log.Log(LOG_ERROR, "%s: Unexpected Non-Zero content length (%d) for '%s'", __func__, m_Request.content_length, m_Verb.c_str());
 				m_Reply = reply::stock_reply(reply::bad_request);
 				return;
 			}
 
+			// Remove "Don't GET" fields 
+			StripForbiddenFields();
+
 			// Build SQL query
 			std::string		sSQL = "SELECT ";
-			for (int i = 0; i < m_GETFields.size(); i++)
+			for (int i = 0; i < m_ValidFields.size(); i++)
 			{
-				sSQL += "T." + m_GETFields[i][1];
-				if (i != m_GETFields.size() - 1) sSQL += ",";
+				sSQL += "T." + m_ValidFields[i][1];
+				if (i != m_ValidFields.size() - 1) sSQL += ",";
 			}
 			sSQL += " FROM " + m_Table + " T ";
 
@@ -315,13 +255,13 @@ namespace http {
 				std::vector<std::string> sd = itt;
 				for (int i = 0; i < sd.size(); i++)
 				{
-					if (m_GETFields[i][2] == "INTEGER")
+					if (m_ValidFields[i][2] == "INTEGER")
 					{
-						root[sOutputName.c_str()][(Json::ArrayIndex)iIndex][m_GETFields[i][1]] = atoi(sd[i].c_str());
+						root[sOutputName.c_str()][(Json::ArrayIndex)iIndex][m_ValidFields[i][1]] = atoi(sd[i].c_str());
 					}
 					else
 					{
-						root[sOutputName.c_str()][(Json::ArrayIndex)iIndex][m_GETFields[i][1]] = sd[i];
+						root[sOutputName.c_str()][(Json::ArrayIndex)iIndex][m_ValidFields[i][1]] = sd[i];
 					}
 				}
 				iIndex++;
@@ -332,7 +272,7 @@ namespace http {
 			m_Reply.content = jWriter.write(root);
 		}
 
-		void	CRESTBase::PUT()
+		void	CRESTRequest::PUT()
 		{
 			// Sanity check data
 			if (!m_Request.content_length)
@@ -344,10 +284,7 @@ namespace http {
 			bool	bHasTimestamp = hasTimestamp();
 
 			// Respect the 'PUT Fields' configured for the table
-			if (m_PUTFields != "*")
-			{
-				while (stripForbiddenFields(m_PUTFields));
-			}
+			StripForbiddenFields();
 
 			// Unpack request and match to database schema
 			std::vector<std::string> vFields;
@@ -394,7 +331,7 @@ namespace http {
 			m_Reply.content = jWriter.write(root);
 		}
 
-		void	CRESTBase::PATCH()
+		void	CRESTRequest::PATCH()
 		{
 			// Sanity check data
 			if (!m_Request.content_length)
@@ -406,10 +343,7 @@ namespace http {
 			bool	bHasTimestamp = hasTimestamp();
 
 			// Respect the 'PUT Fields' configured for the table
-			if (m_PUTFields != "*")
-			{
-				while (stripForbiddenFields(m_PATCHFields));
-			}
+			StripForbiddenFields();
 
 			// Unpack request and match to database schema
 			std::vector<std::string> vFields;
@@ -456,12 +390,12 @@ namespace http {
 			m_Reply.content = jWriter.write(root);
 		}
 
-		void	CRESTBase::DELETE()
+		void	CRESTRequest::DELETE()
 		{
 			// Sanity check data
 			if (m_Request.content_length)
 			{
-				_log.Log(LOG_ERROR, "%s: Unexpected Non-Zero content length (%d) for '%s'", __func__, m_Request.content_length, getVerb().c_str());
+				_log.Log(LOG_ERROR, "%s: Unexpected Non-Zero content length (%d) for '%s'", __func__, m_Request.content_length, m_Verb.c_str());
 				m_Reply = reply::stock_reply(reply::bad_request);
 				return;
 			}
@@ -491,41 +425,25 @@ namespace http {
 			m_Reply.content = jWriter.write(root);
 		}
 
-		void	CRESTUser::GET()
-		{
-			// Remove the Password field
-			for (int i = 0; i < m_GETFields.size(); i++)
-			{
-				if (m_GETFields[i][1] == "Password")
-				{
-					m_GETFields.erase(m_GETFields.begin() + i);
-					break;
-				}
-			}
-
-			// Now invoke base GET
-			CRESTBase::GET();
-		}
-
 		void	CRESTSession::GET()
 		{
 			// Remove the Password field
-			for (int i = 0; i < m_GETFields.size(); i++)
+			for (int i = 0; i < m_ValidFields.size(); i++)
 			{
-				if (m_GETFields[i][1] == "AuthToken")
+				if (m_ValidFields[i][1] == "AuthToken")
 				{
-					m_GETFields.erase(m_GETFields.begin() + i);
+					m_ValidFields.erase(m_ValidFields.begin() + i);
 					break;
 				}
 			}
 
 			// Now invoke base GET
-			CRESTBase::GET();
+			CRESTRequest::GET();
 		}
 
-		CRESTBase* CRESTBase::Create(const WebEmSession& session, const request& req, reply& rep)
+		CRESTRequest* CRESTRequest::Create(const WebEmSession& session, const request& req, reply& rep)
 		{
-			CRESTBase* pREST = NULL;
+			CRESTRequest* pREST = NULL;
 			std::string	sURI = req.uri;
 			std::string	sOrder;
 			std::string	sFilter;
@@ -621,17 +539,13 @@ namespace http {
 					(sTable.length() && !iTableKey && iParentKey && sParent.length())) 		// Case 3
 				{
 					// Handle special cases, otherwise return base class
-					if (sTable == "User")
+					if (sTable == "Session")
 					{
-						pREST = (CRESTBase*) new CRESTUser(session, req, rep);
-					}
-					else if (sTable == "Session")
-					{
-						pREST = (CRESTBase*) new CRESTSession(session, req, rep);
+						pREST = (CRESTRequest*) new CRESTSession(session, req, rep);
 					}
 					else
 					{
-						pREST = new CRESTBase(session, req, rep);
+						pREST = new CRESTRequest(session, req, rep);
 					}
 
 					// Initialise object's data

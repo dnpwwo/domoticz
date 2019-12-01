@@ -237,6 +237,7 @@ main/mainworker.cpp
 main/SignalHandler.cpp
 main/SQLHelper.cpp
 main/SunRiseSet.cpp
+main/UpdatePublisher.cpp
 hardware/ASyncSerial.cpp
 hardware/DomoticzHardware.cpp
 hardware/plugins/DelayedLink.cpp
@@ -256,7 +257,9 @@ web/webserver/request_parser.cpp
 web/webserver/server.cpp
 web/WebServer.cpp
 web/WebServerHelper.cpp
+web/Websockets.cpp
 web/REST.cpp
+web/DataAccess.cpp
 json/json_reader.cpp
 json/json_value.cpp
 json/json_writer.cpp

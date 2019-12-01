@@ -835,6 +835,9 @@
     <ClInclude Include="..\hardware\plugins\PythonObjects.h">
       <Filter>Devices\Plugins</Filter>
     </ClInclude>
+    <ClInclude Include="..\web\DataAccess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\json\json_value.cpp">
@@ -994,6 +997,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\web\Websockets.cpp">
+      <Filter>Web</Filter>
+    </ClCompile>
+    <ClCompile Include="..\web\DataAccess.cpp">
       <Filter>Web</Filter>
     </ClCompile>
   </ItemGroup>

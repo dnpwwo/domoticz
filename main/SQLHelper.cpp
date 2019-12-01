@@ -280,6 +280,7 @@ const char* sqlCreateTableAccess =
 			"[CanPUT] TEXT DEFAULT 0, "
 			"[CanPATCH] TEXT DEFAULT 0, "
 			"[CanDELETE] TEXT DEFAULT 0, "
+			"[DontGETFields] TEXT DEFAULT \"\", "
 			"[PUTFields] TEXT DEFAULT \"*\", "
 			"[PATCHFields] TEXT DEFAULT \"\", "
 		"FOREIGN KEY(RoleID) REFERENCES Role(RoleID) ON DELETE CASCADE);";
@@ -460,6 +461,8 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO TableAccess (Name,RoleID,CanGET) SELECT A.name, B.RoleID, true FROM sqlite_master A, Role B WHERE (A.type='table' AND A.name <> 'sqlite_sequence' AND A.name NOT LIKE 'User%' AND A.name NOT LIKE 'TableAccess%') AND (B.Name <> 'Administrator')");
 		query("INSERT INTO TableAccess (Name,RoleID,CanGET,CanPOST,CanPUT,CanPATCH,CanDELETE) SELECT A.name, B.RoleID, true, true, true, false, true FROM sqlite_master A, Role B WHERE(A.type = 'table' and A.name <> 'sqlite_sequence') AND(B.Name = 'Administrator')");
 		query("UPDATE TableAccess SET CanPATCH=true, PATCHFields='Value' WHERE Name='Value'");
+		query("UPDATE TableAccess SET CanPATCH=true, PATCHFields='Password', DontGETFields='Password' WHERE Name='User'");
+		query("UPDATE TableAccess SET CanPOST=false, CanPATCH=false, CanDELETE=false WHERE Name='TableAccess'");
 
 		// Units that Values can be associated with
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Light On/Off', 0, 1, 'Light48_Off.png,Light48_On.png', 'Off,On')");

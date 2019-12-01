@@ -285,7 +285,7 @@ namespace http {
 
 		void CWebServer::HandleREST(const WebEmSession& session, const request& req, reply& rep)
 		{
-			CRESTBase* pREST = CRESTBase::Create(session,  req, rep);
+			CRESTRequest* pREST = CRESTRequest::Create(session,  req, rep);
 			// If a REST Object was not created then bail out
 			if (!pREST)
 			{
