@@ -286,15 +286,14 @@ namespace http {
 				Json::Value root;
 				root["Count"] = 1;
 				std::string		sTable = pEntry->m_Table + "s";
-				for (unsigned int i = 0; i < vSubscriptions.size(); i++)
+				for (size_t i = 0; i < vSubscriptions.size(); i++)
 				{
 					if (vSubscriptions[i].sTable == sTable)
 					{
 						if (pEntry->m_Columns.size())
 						{
-							for (unsigned int j = 0; j < pEntry->m_Columns.size(); j++)
+							for (size_t j = 0; j < pEntry->m_Columns.size(); j++)
 							{
-
 								// Make sure the field is eligable to be returned
 								std::vector<std::string>::iterator	it = std::find(vSubscriptions[i].vFields.begin(), vSubscriptions[i].vFields.end(), pEntry->m_Columns[j]);
 								if (it != vSubscriptions[i].vFields.end())
