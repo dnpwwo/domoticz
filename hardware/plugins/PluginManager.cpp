@@ -64,7 +64,6 @@ namespace Plugins {
 	boost::asio::io_service ios;
 
 	std::map<int, CDomoticzHardwareBase*>	CPluginSystem::m_pPlugins;
-	std::map<std::string, std::string>		CPluginSystem::m_PluginXml;
 
 	CPluginSystem::CPluginSystem()
 	{
@@ -95,9 +94,6 @@ namespace Plugins {
 			return false;
 		}
 
-		// Pull UI elements from plugins and create manifest map in memory
-		BuildManifest();
-
 		m_thread = std::make_shared<std::thread>(&CPluginSystem::Do_Work, this);
 		SetThreadName(m_thread->native_handle(), "PluginMgr");
 
@@ -120,9 +116,9 @@ namespace Plugins {
 			// Set program name, this prevents it being set to 'python'
 			Py_SetProgramName(Py_GetProgramFullPath());
 
-			if (PyImport_AppendInittab("Domoticz", PyInit_Domoticz) == -1)
+			if (PyImport_AppendInittab("domoticz", PyInit_Domoticz) == -1)
 			{
-				_log.Log(LOG_ERROR, "PluginSystem: Failed to append 'Domoticz' to the existing table of built-in modules.");
+				_log.Log(LOG_ERROR, "PluginSystem: Failed to append 'domoticz' to the existing table of built-in modules.");
 				return false;
 			}
 
@@ -135,6 +131,9 @@ namespace Plugins {
 			}
 
 			m_InitialPythonThread = PyEval_SaveThread();
+
+			// Start listening for changes in Interface/Device/Value records
+			m_Subscriber = m_mainworker.m_UpdateManager.Publisher.connect(boost::bind(&CPluginSystem::DatabaseUpdate, this, _1));
 
 			m_bEnabled = true;
 			_log.Log(LOG_STATUS, "PluginSystem: Started, Python version '%s'.", sVersion.c_str());
@@ -150,6 +149,9 @@ namespace Plugins {
 	bool CPluginSystem::StopPluginSystem()
 	{
 		m_bAllPluginsStarted = false;
+
+		// Stop subscription to updates
+		m_Subscriber.disconnect();
 
 		if (m_thread)
 		{
@@ -185,96 +187,14 @@ namespace Plugins {
 		return true;
 	}
 
-	void CPluginSystem::LoadSettings()
-	{
-		//	Add command to message queue for every plugin
-		for (std::map<int, CDomoticzHardwareBase*>::iterator itt = m_pPlugins.begin(); itt != m_pPlugins.end(); ++itt)
-		{
-			if (itt->second)
-			{
-				CPlugin*	pPlugin = reinterpret_cast<CPlugin*>(itt->second);
-				pPlugin->MessagePlugin(new SettingsDirective(pPlugin));
-			}
-			else
-			{
-				_log.Log(LOG_ERROR, "%s: NULL entry found in Plugins map for Hardware %d.", __func__, itt->first);
-			}
-		}
-	}
-
-	void CPluginSystem::BuildManifest()
-	{
-		//
-		//	Scan plugins folder and load XML plugin manifests
-		//
-		m_PluginXml.clear();
-		std::string plugin_BaseDir;
-#ifdef WIN32
-		plugin_BaseDir = szUserDataFolder + "plugins\\";
-#else
-		plugin_BaseDir = szUserDataFolder + "plugins/";
-#endif
-		if (!createdir(plugin_BaseDir.c_str(), 0755))
-		{
-			_log.Log(LOG_NORM, "%s: Created directory %s", __func__, plugin_BaseDir.c_str());
-		}
-
-		std::vector<std::string> DirEntries, FileEntries;
-		std::vector<std::string>::const_iterator itt_Dir, itt_File;
-		std::string plugin_Dir, plugin_File;
-
-		DirectoryListing(DirEntries, plugin_BaseDir, true, false);
-		for (itt_Dir = DirEntries.begin(); itt_Dir != DirEntries.end(); ++itt_Dir)
-		{
-			if (*itt_Dir != "examples")
-			{
-#ifdef WIN32
-				plugin_Dir = plugin_BaseDir + *itt_Dir + "\\";
-#else
-				plugin_Dir = plugin_BaseDir + *itt_Dir + "/";
-#endif
-				DirectoryListing(FileEntries, plugin_Dir, false, true);
-				for (itt_File = FileEntries.begin(); itt_File != FileEntries.end(); ++itt_File)
-				{
-					if (*itt_File == "plugin.py")
-					{
-						try
-						{
-							std::string sXML;
-							plugin_File = plugin_Dir + *itt_File;
-							std::string line;
-							std::ifstream readFile(plugin_File.c_str());
-							bool bFound = false;
-							while (getline(readFile, line)) {
-								if (!bFound && (line.find("<plugin") != std::string::npos))
-									bFound = true;
-								if (bFound)
-									sXML += line + '\n';
-								if (line.find("</plugin>") != std::string::npos)
-									break;
-							}
-							readFile.close();
-							m_PluginXml.insert(std::pair<std::string, std::string>(plugin_Dir, sXML));
-						}
-						catch (...)
-						{
-							_log.Log(LOG_ERROR, "%s: Exception loading plugin file: '%s'", __func__, plugin_File.c_str());
-						}
-					}
-				}
-				FileEntries.clear();
-			}
-		}
-	}
-
-	CDomoticzHardwareBase* CPluginSystem::RegisterPlugin(const int HwdID, const std::string & Name, const std::string & PluginKey)
+	CDomoticzHardwareBase* CPluginSystem::RegisterPlugin(const int InterfaceID, const std::string & Name)
 	{
 		CPlugin*	pPlugin = NULL;
 		if (m_bEnabled)
 		{
 			std::lock_guard<std::mutex> l(PluginMutex);
-			pPlugin = new CPlugin(HwdID, Name, PluginKey);
-			m_pPlugins.insert(std::pair<int, CPlugin*>(HwdID, pPlugin));
+			pPlugin = new CPlugin(InterfaceID, Name);
+			m_pPlugins.insert(std::pair<int, CPlugin*>(InterfaceID, pPlugin));
 		}
 		else
 		{
@@ -283,12 +203,12 @@ namespace Plugins {
 		return reinterpret_cast<CDomoticzHardwareBase*>(pPlugin);
 	}
 
-	void CPluginSystem::DeregisterPlugin(const int HwdID)
+	void CPluginSystem::DeregisterPlugin(const int InterfaceID)
 	{
-		if (m_pPlugins.count(HwdID))
+		if (m_pPlugins.count(InterfaceID))
 		{
 			std::lock_guard<std::mutex> l(PluginMutex);
-			m_pPlugins.erase(HwdID);
+			m_pPlugins.erase(InterfaceID);
 		}
 	}
 
@@ -381,23 +301,88 @@ namespace Plugins {
 		_log.Log(LOG_STATUS, "PluginSystem: Exiting work loop.");
 	}
 
-	void CPluginSystem::DeviceModified(uint64_t ID)
+	std::string GetFieldValue(std::string fieldName, CUpdateEntry* pEntry)
 	{
-		std::vector<std::vector<std::string> > result;
-		result = m_sql.safe_query("SELECT HardwareID,Unit FROM DeviceStatus WHERE (ID == %" PRIu64 ")", ID);
-		if (!result.empty())
+		for (size_t i = 0; i < pEntry->m_Columns.size(); i++)
 		{
-			std::vector<std::string> sd = result[0];
-			std::string sHwdID = sd[0];
-			std::string Unit = sd[1];
-			//CDomoticzHardwareBase *pHardware = m_mainworker.GetHardwareByIDType(sHwdID, HTYPE_PythonPlugin);
-			CDomoticzHardwareBase *pHardware = NULL;
-			if (pHardware != NULL)
+			if (pEntry->m_Columns[i] == fieldName)
 			{
-				//std::vector<std::string> sd = result[0];
-				_log.Debug(DEBUG_NORM, "CPluginSystem::DeviceModified: Notifying plugin %u about modification of device %u", atoi(sHwdID.c_str()), atoi(Unit.c_str()));
-				Plugins::CPlugin *pPlugin = (Plugins::CPlugin*)pHardware;
-				pPlugin->DeviceModified(atoi(Unit.c_str()));
+				return pEntry->m_Values[i];
+			}
+		}
+		return "";
+	}
+
+	void CPluginSystem::DatabaseUpdate(CUpdateEntry*	pEntry)
+	{
+		if (m_bEnabled) // Ignore events during start up
+		{
+			std::string		sTable = pEntry->m_Table + "s";
+			if (sTable == "Interfaces") {
+				int InterfaceID = pEntry->m_RowIdx;
+				bool bActive = (GetFieldValue("Active", pEntry) == "1") ? true : false;
+
+				if (pEntry->m_Action == "Insert") {
+					if (bActive)
+					{
+						CDomoticzHardwareBase* pPlugin = RegisterPlugin(InterfaceID, pEntry->m_Values[1]);
+						if (pPlugin) pPlugin->Start();
+					}
+				}
+				else if (pEntry->m_Action == "Update") {
+					// If update makes interface active but it isn't currently then register it
+					if (bActive && !m_pPlugins.count(InterfaceID))
+					{
+						CDomoticzHardwareBase* pPlugin = RegisterPlugin(InterfaceID, pEntry->m_Values[1]);
+						if (pPlugin) pPlugin->Start();
+					}
+					// If update makes interface inactive but it isn't currently then deregister it
+					else if (!bActive && m_pPlugins.count(InterfaceID))
+					{
+						m_pPlugins.find(InterfaceID)->second->Stop();
+						DeregisterPlugin(InterfaceID);
+					}
+					// Just restart if it is is supposed to be active
+					else if (bActive)
+					{
+						m_pPlugins.find(InterfaceID)->second->Stop();
+						m_pPlugins.find(InterfaceID)->second->Start();
+					}
+				}
+				else if (pEntry->m_Action == "Delete") {
+					if (!bActive && m_pPlugins.count(InterfaceID))
+					{
+						m_pPlugins.find(InterfaceID)->second->Stop();
+						DeregisterPlugin(InterfaceID);
+					}
+				}
+				else
+				{
+					_log.Log(LOG_STATUS, "PluginSystem: Interface change event on '%s', ignored.", pEntry->m_Values[1].c_str());
+				}
+			}
+			else if (sTable == "Devices") {
+				_log.Log(LOG_STATUS, "PluginSystem: Device change event, ignored.");
+				//pPlugin->DeviceModified(atoi(Unit.c_str()));
+			}
+			else if (sTable == "Values") {
+				_log.Log(LOG_STATUS, "PluginSystem: Value change event, ignored.");
+			}
+			else if (sTable == "Preferences") {
+				_log.Log(LOG_STATUS, "PluginSystem: Preference change event on '%s', ignored.", pEntry->m_Values[1].c_str());
+				/*
+				for (std::map<int, CDomoticzHardwareBase*>::iterator itt = m_pPlugins.begin(); itt != m_pPlugins.end(); ++itt)
+				{
+					if (itt->second)
+					{
+						CPlugin* pPlugin = reinterpret_cast<CPlugin*>(itt->second);
+						pPlugin->MessagePlugin(new SettingsDirective(pPlugin));
+					}
+					else
+					{
+						_log.Log(LOG_ERROR, "%s: NULL entry found in Plugins map for Hardware %d.", __func__, itt->first);
+					}
+				} */
 			}
 		}
 	}

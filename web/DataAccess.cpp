@@ -69,7 +69,7 @@ namespace http {
 
 		void	CDataAccess::StripForbiddenFields()
 		{
-			if (m_Verb == "PUT")
+			if ((m_Verb == "PUT") && (m_PUTFields != "*"))	// Skip this for wild cards
 			{
 				for (size_t i = 0; i < m_ValidFields.size(); i++)
 				{
@@ -80,7 +80,7 @@ namespace http {
 					}
 				}
 			}
-			else if (m_Verb == "PATCH")
+			else if ((m_Verb == "PATCH") && (m_PATCHFields != "*"))	// Skip this for wild cards
 			{
 				for (size_t i = 0; i < m_ValidFields.size(); i++)
 				{
@@ -91,7 +91,7 @@ namespace http {
 					}
 				}
 			}
-			else
+			else if ((m_Verb == "GET") && m_DontGETFields.length())	// Skip this if nothing specified
 			{
 				for (size_t i = 0; i < m_ValidFields.size(); i++)
 				{

@@ -30,7 +30,7 @@ public:
 	time_t m_LastHeartbeat = { 0 };
 	time_t m_LastHeartbeatReceive = { 0 };
 
-	int m_HwdID = { 0 }; //must be uniquely assigned
+	int m_InterfaceID = { 0 }; //must be uniquely assigned
 	bool m_bSkipReceiveCheck = { false };
 	unsigned long m_DataTimeout = { 0 };
 	std::string m_Name;

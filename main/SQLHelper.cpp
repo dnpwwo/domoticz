@@ -45,6 +45,7 @@ const char* sqlCreateInterface =
 			"[Name] TEXT UNIQUE DEFAULT Unknown, "
 			"[Script] TEXT DEFAULT \"\","
 			"[Configuration] TEXT DEFAULT \"\","
+			"[Debug] INTEGER DEFAULT 0, "
 			"[Notifiable] INTEGER DEFAULT 0, "
 			"[Active] INTEGER DEFAULT 0);";
 
@@ -89,22 +90,31 @@ const char* sqlCreateDevice =
 			"[InterfaceID] INTEGER NOT NULL, "
 			"[Name] TEXT DEFAULT Unknown, "
 			"[ExternalID] TEXT DEFAULT \"\", "
+			"[Debug] INTEGER DEFAULT 0, "
 			"[Active] INTEGER DEFAULT 0, "
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP,"
 		"FOREIGN KEY(InterfaceID) REFERENCES Interface(InterfaceID) ON DELETE CASCADE);";
+
+const char* sqlCreateDeviceLog =
+		"CREATE TABLE IF NOT EXISTS [DeviceLog] ("
+			"[DeviceLogID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[DeviceID] INTEGER NOT NULL, "
+			"[Message] TEXT DEFAULT \"\","
+			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP,"
+		"FOREIGN KEY(DeviceID) REFERENCES Device(DeviceID) ON DELETE CASCADE);";
 
 const char* sqlDeviceAfterInsertTrigger =
 		"CREATE TRIGGER IF NOT EXISTS [DeviceAfterInsertTrigger] AFTER INSERT ON Device "
 			"FOR EACH ROW "
 			"BEGIN "
-				"INSERT into InterfaceLog(InterfaceID, Message) values(NEW.InterfaceID, 'Device \"' || New.Name || '\" created, ID '||New.DeviceID||', ExternalID \"'||New.ExternalID||'\".'); "
+				"INSERT into DeviceLog(DeviceID, Message) values(NEW.DeviceID, 'Device \"' || New.Name || '\" created, ID '||New.DeviceID||', ExternalID \"'||New.ExternalID||'\".'); "
 			"END;";
 
 const char* sqlDeviceAfterUpdateTrigger =
 		"CREATE TRIGGER IF NOT EXISTS [DeviceAfterUpdateTrigger] AFTER UPDATE ON Device "
 			"FOR EACH ROW "
 			"BEGIN "
-				"INSERT into InterfaceLog(InterfaceID, Message) values(NEW.InterfaceID, "
+				"INSERT into DeviceLog(DeviceID, Message) values(NEW.DeviceID, "
 					"CASE "
 						"WHEN (OLD.Name == NEW.Name) AND (OLD.ExternalID == New.ExternalID) AND (OLD.Active == New.Active) THEN "
 							"'Device \"' || New.Name || '\" touched.' "
@@ -118,19 +128,14 @@ const char* sqlDeviceAfterUpdateTrigger =
 				"); "
 			"END;";
 
-const char* sqlDeviceAfterDeleteTrigger =
-		"CREATE TRIGGER IF NOT EXISTS [DeviceAfterDeleteTrigger] AFTER DELETE ON Device "
-			"FOR EACH ROW "
-			"BEGIN "
-				"INSERT into InterfaceLog(InterfaceID, Message) values(OLD.InterfaceID, 'Device \"' || OLD.Name || '\" deleted, ID '||OLD.DeviceID||', ExternalID \"'||OLD.ExternalID||'\".'); "
-			"END;";
-
 const char* sqlCreateUnit =
 	"CREATE TABLE IF NOT EXISTS [Unit] ("
 			"[UnitID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Name] TEXT UNIQUE DEFAULT \"\", "
 			"[Minimum] INTEGER DEFAULT 0, "
 			"[Maximum] INTEGER DEFAULT 0, "
+			"[RetentionDays] INTEGER DEFAULT 30, "
+			"[RetentionInterval] INTEGER DEFAULT 900, "
 			"[IconList] TEXT DEFAULT \"\", "
 			"[TextLabels] TEXT DEFAULT \"\");";
 
@@ -143,6 +148,7 @@ const char* sqlCreateValue =
 			"[Value] TEXT DEFAULT \"\", "
 			"[RetentionDays] INTEGER DEFAULT -1, "
 			"[RetentionInterval] INTEGER DEFAULT 900, "
+			"[Debug] INTEGER DEFAULT 0, "
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
 		"FOREIGN KEY(UnitID) REFERENCES Unit(UnitID), "
 		"FOREIGN KEY(DeviceID) REFERENCES Device(DeviceID) ON DELETE CASCADE);";
@@ -411,9 +417,9 @@ bool CSQLHelper::OpenDatabase()
 	query(sqlInterfaceAfterInsertTrigger);
 	query(sqlInterfaceAfterUpdateTrigger);
 	query(sqlCreateDevice);
+	query(sqlCreateDeviceLog);
 	query(sqlDeviceAfterInsertTrigger);
 	query(sqlDeviceAfterUpdateTrigger);
-	query(sqlDeviceAfterDeleteTrigger);
 	query(sqlCreateUnit);
 	query(sqlCreateValue);
 	query(sqlCreateValueHistory);
@@ -476,7 +482,7 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Celsius', -25, 100, 'temp48.png', '°C')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Temperature', 0, 6, 'temp-0-5.png,temp-5-10.png,temp-10-15.png,temp-15-20.png,temp-20-25.png,temp-25-30.png,temp-gt-30.png', 'Cold,Chilly,Cool,Mild,Warm,Hot,Baking')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Wind Direction', 0, 15, 'WindN.png,WindNNE.png,WindNE.png,WindENE.png,WindE.png,WindESE.png,WindSE.png,WindSSE.png,WindS.png,WindSSW.png,WindSW.png,WindWSW.png,WindW.png,WindWNW.png,WindNW.png,WindNNW.png', 'N,NNE,NE,ENE,E,ESE,SE,SSE,S,SSW,SW,WSW,W,WNW,NW,NNW')");
-		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Volume On/Muted', 0, 100, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,On')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, RetentionDays, RetentionInterval, IconList, TextLabels) VALUES ('Volume On/Muted', 0, 100, 1, 300, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,On')");
 
 		sqlite3_wal_checkpoint(m_dbase, NULL);
 	}

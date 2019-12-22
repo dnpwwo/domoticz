@@ -44,6 +44,10 @@ namespace Plugins {
 		DECLARE_PYTHON_SYMBOL(void, Py_Finalize, );
 		DECLARE_PYTHON_SYMBOL(PyThreadState*, Py_NewInterpreter, );
 		DECLARE_PYTHON_SYMBOL(void, Py_EndInterpreter, PyThreadState*);
+		DECLARE_PYTHON_SYMBOL(PyObject*, PyModule_New, const char*);
+		DECLARE_PYTHON_SYMBOL(int, PyModule_AddStringConstant, PyObject* COMMA const char* COMMA const char*);
+		DECLARE_PYTHON_SYMBOL(PyObject*, PyEval_GetBuiltins, );
+		DECLARE_PYTHON_SYMBOL(PyObject*, PyRun_StringFlags, const char* COMMA int COMMA PyObject* COMMA PyObject* COMMA PyCompilerFlags*);
 		DECLARE_PYTHON_SYMBOL(wchar_t*, Py_GetPath, );
 		DECLARE_PYTHON_SYMBOL(void, Py_SetPath, const wchar_t*);
 		DECLARE_PYTHON_SYMBOL(void, PySys_SetPath, const wchar_t*);
@@ -177,6 +181,10 @@ namespace Plugins {
 					RESOLVE_PYTHON_SYMBOL(Py_Finalize);
 					RESOLVE_PYTHON_SYMBOL(Py_NewInterpreter);
 					RESOLVE_PYTHON_SYMBOL(Py_EndInterpreter);
+					RESOLVE_PYTHON_SYMBOL(PyModule_New);
+					RESOLVE_PYTHON_SYMBOL(PyModule_AddStringConstant);
+					RESOLVE_PYTHON_SYMBOL(PyRun_StringFlags);
+					RESOLVE_PYTHON_SYMBOL(PyEval_GetBuiltins);
 					RESOLVE_PYTHON_SYMBOL(Py_GetPath);
 					RESOLVE_PYTHON_SYMBOL(Py_SetPath);
 					RESOLVE_PYTHON_SYMBOL(PySys_SetPath);
@@ -379,6 +387,10 @@ extern	SharedLibraryProxy* pythonLib;
 #define	Py_Finalize				pythonLib->Py_Finalize
 #define	Py_NewInterpreter		pythonLib->Py_NewInterpreter
 #define	Py_EndInterpreter		pythonLib->Py_EndInterpreter
+#define	PyModule_New			pythonLib->PyModule_New
+#define	PyModule_AddStringConstant	pythonLib->PyModule_AddStringConstant
+#define	PyRun_StringFlags		pythonLib->PyRun_StringFlags
+#define	PyEval_GetBuiltins		pythonLib->PyEval_GetBuiltins
 #define	Py_SetPath				pythonLib->Py_SetPath
 #define	PySys_SetPath			pythonLib->PySys_SetPath
 #define	Py_GetPath				pythonLib->Py_GetPath

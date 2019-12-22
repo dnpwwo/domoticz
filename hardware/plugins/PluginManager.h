@@ -1,6 +1,9 @@
 #pragma once
 
 #include "../../main/StoppableTask.h"
+#include <boost/signals2.hpp>
+#include <string>
+#include "../main/UpdatePublisher.h"
 
 //
 //	Domoticz Plugin System - Dnpwwo, 2016
@@ -20,10 +23,11 @@ namespace Plugins {
 		void*	m_InitialPythonThread;
 
 		static	std::map<int, CDomoticzHardwareBase*>	m_pPlugins;
-		static	std::map<std::string, std::string>		m_PluginXml;
 
 		std::shared_ptr<std::thread> m_thread;
 		std::mutex m_mutex;
+
+		boost::signals2::connection m_Subscriber;
 
 		void Do_Work();
 	public:
@@ -31,16 +35,13 @@ namespace Plugins {
 		~CPluginSystem(void);
 
 		bool StartPluginSystem();
-		void BuildManifest();
-		std::map<std::string, std::string>* GetManifest() { return &m_PluginXml; };
 		std::map<int, CDomoticzHardwareBase*>* GetHardware() { return &m_pPlugins; };
-		CDomoticzHardwareBase* RegisterPlugin(const int HwdID, const std::string &Name, const std::string &PluginKey);
+		CDomoticzHardwareBase* RegisterPlugin(const int HwdID, const std::string &Name);
 		void	 DeregisterPlugin(const int HwdID);
 		bool	StopPluginSystem();
 		void	AllPluginsStarted() { m_bAllPluginsStarted = true; };
-		static void LoadSettings();
-		void	DeviceModified(uint64_t ID);
 		void*	PythonThread() { return m_InitialPythonThread; };
+		virtual void DatabaseUpdate(CUpdateEntry*);
 	};
 };
 

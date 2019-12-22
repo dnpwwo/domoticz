@@ -1875,7 +1875,7 @@ namespace Plugins {
 			long	lPayloadLength = (vMessage[iOffset] & 0x7F);	// if < 126 then this is the length
 			if (lPayloadLength == 126)
 			{
-				if (vMessage.size() < (iOffset + 2))
+				if (vMessage.size() < (size_t)(iOffset + 2))
 					return false;
 				lPayloadLength = (vMessage[iOffset + 1] << 8) + vMessage[iOffset + 2];
 				iOffset += 2;
@@ -1892,14 +1892,14 @@ namespace Plugins {
 			byte*	pbMask = NULL;
 			if (bMasked)
 			{
-				if (vMessage.size() < iOffset)
+				if (vMessage.size() < (size_t)iOffset)
 					return false;
 				lMaskingKey = (long)vMessage[iOffset];
 				pbMask = &vMessage[iOffset];
 				iOffset += 4;
 			}
 
-			if (vMessage.size() < (iOffset + lPayloadLength))
+			if (vMessage.size() < (size_t)(iOffset + lPayloadLength))
 				return false;
 
 			// Append the payload to the existing (maybe) payload

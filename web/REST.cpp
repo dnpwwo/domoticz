@@ -401,7 +401,7 @@ namespace http {
 			}
 
 			// Build SQL statement
-			std::string		sSQL = "DELETE  FROM " + m_Table + " WHERE " + m_Table + "ID = " + std::to_string(m_TableKey) + ";";
+			std::string		sSQL = "DELETE FROM " + m_Table + " WHERE " + m_Table + "ID = " + std::to_string(m_TableKey) + ";";
 			m_sql.safe_query(sSQL.c_str());
 			std::vector<std::vector<std::string> >	result = m_sql.safe_query("SELECT changes();");
 

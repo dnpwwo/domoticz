@@ -51,11 +51,12 @@ namespace Plugins {
 		bool StopHardware() override;
 		void ClearMessageQueue();
 
+		void InterfaceLog(const _eLogLevel level, const char* Message, ...);
 		void LogPythonException();
 		void LogPythonException(const std::string &);
 
 	public:
-		CPlugin(const int HwdID, const std::string &Name, const std::string &PluginKey);
+		CPlugin(const int InterfaceID, const std::string &Name);
 		~CPlugin(void);
 
 		int		PollInterval(int Interval = -1);
@@ -100,7 +101,7 @@ namespace Plugins {
 		void*				m_ImageDict;
 		void*				m_SettingsDict;
 		std::string			m_HomeFolder;
-		PluginDebugMask		m_bDebug;
+		boolean				m_bDebug;
 		bool				m_bIsStarting;
 		bool				m_bTracing;
 	};

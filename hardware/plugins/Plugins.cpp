@@ -12,6 +12,8 @@
 #include "PluginProtocols.h"
 #include "PluginTransports.h"
 #include "PythonObjects.h"
+#include "PythonDevices.h"
+#include "PythonValues.h"
 
 #include "../main/Helper.h"
 #include "../main/Logger.h"
@@ -23,7 +25,7 @@
 		{	\
 			PyObject*	pObj = Py_BuildValue("s", value.c_str());	\
 			if (PyDict_SetItemString(pDict, key, pObj) == -1)	\
-				_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", m_PluginKey.c_str(), key, value.c_str());	\
+				InterfaceLog(LOG_ERROR, "Failed to add key '%s', value '%s' to dictionary.", key, value.c_str());	\
 			Py_DECREF(pObj); \
 		}
 
@@ -524,16 +526,16 @@ namespace Plugins {
 					sConfig = pProtocol->PythontoJSON(pNewConfig);
 
 					// Update database
-					m_sql.safe_query("UPDATE Hardware SET Configuration='%q' WHERE (ID == %d)", sConfig.c_str(), pModState->pPlugin->m_HwdID);
+					m_sql.safe_query("UPDATE Hardware SET Configuration='%q' WHERE (ID == %d)", sConfig.c_str(), pModState->pPlugin->m_InterfaceID);
 				}
 			}
 			PyErr_Clear();
 
 			// Read the configuration 
-			result = m_sql.safe_query("SELECT Configuration FROM Hardware WHERE (ID==%d)", pModState->pPlugin->m_HwdID);
+			result = m_sql.safe_query("SELECT Configuration FROM Hardware WHERE (ID==%d)", pModState->pPlugin->m_InterfaceID);
 			if (result.empty())
 			{
-				_log.Log(LOG_ERROR, "CPlugin:%s, Hardware ID not found in database '%d'.", __func__, pModState->pPlugin->m_HwdID);
+				_log.Log(LOG_ERROR, "CPlugin:%s, Hardware ID not found in database '%d'.", __func__, pModState->pPlugin->m_InterfaceID);
 				return pConfig;
 			}
 
@@ -572,7 +574,7 @@ namespace Plugins {
 
 	struct PyModuleDef DomoticzModuleDef = {
 		PyModuleDef_HEAD_INIT,
-		"Domoticz",
+		"domoticz",
 		NULL,
 		sizeof(struct module_state),
 		DomoticzMethods,
@@ -594,8 +596,16 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s, Device Type not ready.", __func__);
 			return pModule;
 		}
-		Py_INCREF((PyObject *)&CDeviceType);
-		PyModule_AddObject(pModule, "Device", (PyObject *)&CDeviceType);
+		Py_INCREF((PyObject*)& CDeviceType);
+		PyModule_AddObject(pModule, "Device", (PyObject*)& CDeviceType);
+
+		if (PyType_Ready(&CValueType) < 0)
+		{
+			_log.Log(LOG_ERROR, "%s, Value Type not ready.", __func__);
+			return pModule;
+		}
+		Py_INCREF((PyObject*)& CValueType);
+		PyModule_AddObject(pModule, "Value", (PyObject*)& CValueType);
 
 		if (PyType_Ready(&CConnectionType) < 0)
 		{
@@ -617,8 +627,8 @@ namespace Plugins {
 	}
 
 
-	CPlugin::CPlugin(const int HwdID, const std::string &sName, const std::string &sPluginKey) :
-		m_PluginKey(sPluginKey),
+	CPlugin::CPlugin(const int InterfaceID, const std::string &sName) :
+		m_PluginKey("RemoveMe"),
 		m_iPollInterval(10),
 		m_Notifier(NULL),
 		m_bDebug(PDM_NONE),
@@ -628,7 +638,7 @@ namespace Plugins {
 		m_ImageDict(NULL),
 		m_SettingsDict(NULL)
 	{
-		m_HwdID = HwdID;
+		m_InterfaceID = InterfaceID;
 		m_Name = sName;
 		m_bIsStarted = false;
 		m_bIsStarting = false;
@@ -638,6 +648,44 @@ namespace Plugins {
 	CPlugin::~CPlugin(void)
 	{
 		m_bIsStarted = false;
+	}
+
+	void CPlugin::InterfaceLog(const _eLogLevel level, const char* Message, ...)
+	{
+		va_list argList;
+		char cbuffer[1024];
+		va_start(argList, Message);
+		vsnprintf(cbuffer, sizeof(cbuffer), Message, argList);
+		va_end(argList);
+
+		// Firstly do standard log behaviour
+		_log.Log(level, cbuffer);
+
+		// Build SQL statement
+		std::string sMessage = cbuffer;
+		std::string		sSQL = "INSERT INTO InterfaceLog (InterfaceID, Message) VALUES(?,?);";
+		std::vector<std::string> vValues;
+		vValues.push_back(std::to_string(m_InterfaceID));
+		if (level == LOG_DEBUG_INT)
+		{
+			sMessage = "DEBUG: " + sMessage;
+			if (!m_bDebug)
+			{
+				return;  // we aren't debugging so bail out
+			}
+		}
+		else if (level == LOG_ERROR)
+		{
+			sMessage = "ERROR: " + sMessage;
+		}
+		vValues.push_back(sMessage);
+
+		// Execute the statement
+		int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
+		if (!iRowCount)
+		{
+			_log.Log(LOG_ERROR, "Insert into 'InterfaceLog' failed to create a record.");
+		}
 	}
 
 	void CPlugin::LogPythonException()
@@ -711,8 +759,9 @@ namespace Plugins {
 				}
 				if (PyObject_HasAttrString(pExcept, "offset"))
 				{
-					PyObject*		pString = PyObject_GetAttrString(pValue, "offset");
+					PyObject*		pString = PyObject_GetAttrString(pExcept, "offset");
 					offset = PyLong_AsLongLong(pString);
+					PyBytesObject* pBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pString);
 					Py_XDECREF(pString);
 				}
 
@@ -729,7 +778,7 @@ namespace Plugins {
 					sError = "";
 				}
 
-				if (PyObject_HasAttrString(pExcept, "text"))
+				if (PyObject_HasAttrString(pValue, "text"))
 				{
 					PyObject*		pString = PyObject_GetAttrString(pValue, "text");
 					std::string		sUTF = PyUnicode_AsUTF8(pString);
@@ -750,6 +799,36 @@ namespace Plugins {
 		}
 
 		if (pErrBytes) Py_XDECREF(pErrBytes);
+
+		// Log a stack trace if there is one
+		while (pTraceback)
+		{
+			PyFrameObject* frame = pTraceback->tb_frame;
+			if (frame)
+			{
+				int lineno = PyFrame_GetLineNumber(frame);
+				PyCodeObject* pCode = frame->f_code;
+				std::string		FileName = "";
+				if (pCode->co_filename)
+				{
+					PyBytesObject* pFileBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_filename);
+					FileName = pFileBytes->ob_sval;
+					Py_XDECREF(pFileBytes);
+				}
+				std::string		FuncName = "Unknown";
+				if (pCode->co_name)
+				{
+					PyBytesObject* pFuncBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_name);
+					FuncName = pFuncBytes->ob_sval;
+					Py_XDECREF(pFuncBytes);
+				}
+				if (!FileName.empty())
+					_log.Log(LOG_ERROR, "(%s) ----> Line %d in '%s', function %s", m_Name.c_str(), lineno, FileName.c_str(), FuncName.c_str());
+				else
+					_log.Log(LOG_ERROR, "(%s) ----> Line %d in '%s'", m_Name.c_str(), lineno, FuncName.c_str());
+			}
+			pTraceback = pTraceback->tb_next;
+		}
 
 		if (!pExcept && !pValue && !pTraceback)
 		{
@@ -782,19 +861,19 @@ namespace Plugins {
 		}
 		if (pTypeText && pErrBytes)
 		{
-			_log.Log(LOG_ERROR, "(%s) '%s' failed '%s':'%s'.", m_Name.c_str(), sHandler.c_str(), pTypeText, pErrBytes->ob_sval);
+			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s':'%s'.", m_Name.c_str(), sHandler.c_str(), pTypeText, pErrBytes->ob_sval);
 		}
 		if (pTypeText && !pErrBytes)
 		{
-			_log.Log(LOG_ERROR, "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), pTypeText);
+			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), pTypeText);
 		}
 		if (!pTypeText && pErrBytes)
 		{
-			_log.Log(LOG_ERROR, "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), pErrBytes->ob_sval);
+			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), pErrBytes->ob_sval);
 		}
 		if (!pTypeText && !pErrBytes)
 		{
-			_log.Log(LOG_ERROR, "(%s) '%s' failed, unable to determine error.", m_Name.c_str(), sHandler.c_str());
+			InterfaceLog(LOG_ERROR, "(%s) '%s' failed, unable to determine error.", m_Name.c_str(), sHandler.c_str());
 		}
 		if (pErrBytes) Py_XDECREF(pErrBytes);
 
@@ -821,16 +900,16 @@ namespace Plugins {
 					Py_XDECREF(pFuncBytes);
 				}
 				if (!FileName.empty())
-					_log.Log(LOG_ERROR, "(%s) ----> Line %d in '%s', function %s", m_Name.c_str(), lineno, FileName.c_str(), FuncName.c_str());
+					InterfaceLog(LOG_ERROR, "(%s) ----> Line %d in '%s', function %s", m_Name.c_str(), lineno, FileName.c_str(), FuncName.c_str());
 				else
-					_log.Log(LOG_ERROR, "(%s) ----> Line %d in '%s'", m_Name.c_str(), lineno, FuncName.c_str());
+					InterfaceLog(LOG_ERROR, "(%s) ----> Line %d in '%s'", m_Name.c_str(), lineno, FuncName.c_str());
 			}
 			pTraceback = pTraceback->tb_next;
 		}
 
 		if (!pExcept && !pValue && !pTraceback)
 		{
-			_log.Log(LOG_ERROR, "(%s) Call to message handler '%s' failed, unable to decode exception.", m_Name.c_str(), sHandler.c_str());
+			InterfaceLog(LOG_ERROR, "(%s) Call to message handler '%s' failed, unable to decode exception.", m_Name.c_str(), sHandler.c_str());
 		}
 
 		if (pExcept) Py_XDECREF(pExcept);
@@ -886,7 +965,7 @@ namespace Plugins {
 		m_bIsStarting = true;
 		MessagePlugin(new InitializeMessage(this));
 
-		_log.Log(LOG_STATUS, "(%s) Started.", m_Name.c_str());
+		InterfaceLog(LOG_STATUS, "%s interface started.", m_Name.c_str());
 
 		return true;
 	}
@@ -925,7 +1004,7 @@ namespace Plugins {
 	{
 		try
 		{
-			_log.Log(LOG_STATUS, "(%s) Stop directive received.", m_Name.c_str());
+			InterfaceLog(LOG_DEBUG_INT, "%s Stop directive received.", m_Name.c_str());
 
 			// loop on plugin to finish startup
 			while (m_bIsStarting)
@@ -967,7 +1046,7 @@ namespace Plugins {
 				}
 			}
 
-			_log.Log(LOG_STATUS, "(%s) Stopping threads.", m_Name.c_str());
+			InterfaceLog(LOG_DEBUG_INT, "Stopping threads.", m_Name.c_str());
 
 			if (m_thread)
 			{
@@ -986,7 +1065,7 @@ namespace Plugins {
 			//Don't throw from a Stop command
 		}
 
-		_log.Log(LOG_STATUS, "(%s) Stopped.", m_Name.c_str());
+		InterfaceLog(LOG_STATUS, "%s interface stopped.", m_Name.c_str());
 
 		return true;
 	}
@@ -1035,38 +1114,39 @@ namespace Plugins {
 	{
 		m_bIsStarted = false;
 
+		// Load details from database
+		std::vector<std::vector<std::string> > result;
+		result = m_sql.safe_query("SELECT Script, Configuration, Debug, Notifiable FROM Interface WHERE Active = 1 AND InterfaceID = %d", m_InterfaceID);
+		if (!result.empty())
+		{
+			bool bNDebug = (result[0][2] == "1") ? true : false;
+			bool bNotifiable = (result[0][3] == "1") ? true : false;
+		}
+		else
+		{
+			_log.Log(LOG_ERROR, "(%s) Active Interface not found in database.", m_Name.c_str());
+			goto Error;
+		}
+		
 		try
 		{
 			PyEval_RestoreThread((PyThreadState*)m_mainworker.m_pluginsystem.PythonThread());
 			m_PyInterpreter = Py_NewInterpreter();
 			if (!m_PyInterpreter)
 			{
-				_log.Log(LOG_ERROR, "(%s) failed to create interpreter.", m_PluginKey.c_str());
+				InterfaceLog(LOG_ERROR, "Failed to create python interpreter.");
 				goto Error;
 			}
 
-			// Prepend plugin directory to path so that python will search it early when importing
-	#ifdef WIN32
-			std::wstring	sSeparator = L";";
-	#else
-			std::wstring	sSeparator = L":";
-	#endif
+			// Prepend plugin api directory to path so that python will search it early when importing
 			std::wstringstream ssPath;
-			std::string		sFind = "key=\"" + m_PluginKey + "\"";
-			CPluginSystem Plugins;
-			std::map<std::string, std::string>*	mPluginXml = Plugins.GetManifest();
-			std::string		sPluginXML;
-			for (std::map<std::string, std::string>::iterator it_type = mPluginXml->begin(); it_type != mPluginXml->end(); it_type++)
-			{
-				if (it_type->second.find(sFind) != std::string::npos)
-				{
-					m_HomeFolder = it_type->first;
-					ssPath << m_HomeFolder.c_str();
-					sPluginXML = it_type->second;
-					break;
-				}
-			}
-
+#ifdef WIN32
+			std::wstring	sSeparator = L";";
+			ssPath << "hardware" << sSeparator << "hardware\\api";
+#else
+			std::wstring	sSeparator = L":";
+			ssPath << "hardware" << sSeparator << "hardware/api";
+#endif
 			std::wstring	sPath = ssPath.str() + sSeparator;
 			sPath += Py_GetPath();
 
@@ -1079,7 +1159,7 @@ namespace Plugins {
 				void*	pSiteModule = PyImport_ImportModule("site");
 				if (!pSiteModule)
 				{
-					_log.Log(LOG_ERROR, "(%s) failed to load 'site' module, continuing.", m_PluginKey.c_str());
+					InterfaceLog(LOG_ERROR, "Failed to load 'site' module, continuing.");
 				}
 				else
 				{
@@ -1108,7 +1188,7 @@ namespace Plugins {
 			}
 			catch (...)
 			{
-				_log.Log(LOG_ERROR, "(%s) exception loading 'site' module, continuing.", m_PluginKey.c_str());
+				InterfaceLog(LOG_ERROR, "Exception loading 'site' module, continuing.");
 				PyErr_Clear();
 			}
 
@@ -1123,7 +1203,7 @@ namespace Plugins {
 				void*	pFaultModule = PyImport_ImportModule("faulthandler");
 				if (!pFaultModule)
 				{
-					_log.Log(LOG_ERROR, "(%s) failed to load 'faulthandler' module, continuing.", m_PluginKey.c_str());
+					InterfaceLog(LOG_ERROR, "Failed to load 'faulthandler' module, continuing.");
 				}
 				else
 				{
@@ -1136,23 +1216,80 @@ namespace Plugins {
 			}
 			catch (...)
 			{
-				_log.Log(LOG_ERROR, "(%s) exception loading 'faulthandler' module, continuing.", m_PluginKey.c_str());
+				InterfaceLog(LOG_ERROR, "Exception loading 'faulthandler' module, continuing.");
 				PyErr_Clear();
 			}
 
 			try
 			{
-				m_PyModule = PyImport_ImportModule("plugin");
+				// Just importing something seems to set the intpreter up properly
+				m_PyModule = PyImport_ImportModule("api");
 				if (!m_PyModule)
 				{
-					_log.Log(LOG_ERROR, "(%s) failed to load 'plugin.py', Python Path used was '%S'.", m_PluginKey.c_str(), sPath.c_str());
+					InterfaceLog(LOG_ERROR, "Failed to load API library, Python Path used was '%S'.", sPath.c_str());
 					LogPythonException();
 					goto Error;
 				}
 			}
 			catch (...)
 			{
-				_log.Log(LOG_ERROR, "(%s) exception loading 'plugin.py', Python Path used was '%S'.", m_PluginKey.c_str(), sPath.c_str());
+				InterfaceLog(LOG_ERROR, "Exception loading API library, Python Path used was '%S'.", sPath.c_str());
+				PyErr_Clear();
+			}
+
+			try
+			{
+				// Create a module and add code to it
+				m_PyModule = PyModule_New(m_Name.c_str());
+				if (!m_PyModule)
+				{
+					InterfaceLog(LOG_ERROR, "Failed to create module to host plugin.");
+					LogPythonException();
+					goto Error;
+				}
+
+				if (PyModule_AddStringConstant((PyObject*)m_PyModule, "__file__", ""))
+				{
+					InterfaceLog(LOG_ERROR, "Failed to set empty filename for plugin module.");
+					LogPythonException();
+					goto Error;
+				}
+
+				PyObject* localDict = PyModule_GetDict((PyObject*)m_PyModule);   // Returns a borrowed reference: no need to Py_DECREF() it once we are done
+				if (!localDict)
+				{
+					InterfaceLog(LOG_ERROR, "Local dictionary not returned, module intialisation failed.");
+					LogPythonException();
+					goto Error;
+				}
+
+				PyObject* builtins = PyEval_GetBuiltins();  // Returns a borrowed reference: no need to Py_DECREF() it once we are done
+				if (!builtins)
+				{
+					InterfaceLog(LOG_ERROR, "Builtins not returned, module intialisation failed.");
+					LogPythonException();
+					goto Error;
+				}
+
+				if (PyDict_SetItemString(localDict, "__builtins__", builtins))
+				{
+					InterfaceLog(LOG_ERROR, "Failed to add builtins to local dictionary for plugin module.");
+					LogPythonException();
+					goto Error;
+				}
+
+				// Define code in the newly created module
+				PyObject* pyValue = PyRun_String(result[0][0].c_str(), Py_file_input, localDict, localDict);
+				if (!pyValue)
+				{
+					InterfaceLog(LOG_ERROR, "Module load failed.");
+					LogPythonException();
+					goto Error;
+				}
+			}
+			catch (...)
+			{
+				InterfaceLog(LOG_ERROR, "Exception loading 'plugin.py', Python Path used was '%S'.", sPath.c_str());
 				PyErr_Clear();
 			}
 
@@ -1160,7 +1297,7 @@ namespace Plugins {
 			PyObject* pMod = PyState_FindModule(&DomoticzModuleDef);
 			if (!pMod)
 			{
-				_log.Log(LOG_ERROR, "(%s) start up failed, Domoticz module not found in interpreter.", m_PluginKey.c_str());
+				InterfaceLog(LOG_ERROR, "Start up failed, Domoticz module not found in interpreter.");
 				goto Error;
 			}
 			module_state*	pModState = ((struct module_state*)PyModule_GetState(pMod));
@@ -1173,55 +1310,22 @@ namespace Plugins {
 
 			if (!m_thread)
 			{
-				_log.Log(LOG_ERROR, "(%s) failed start worker thread.", m_PluginKey.c_str());
+				InterfaceLog(LOG_ERROR, "Failed start worker thread.");
 				goto Error;
 			}
 
 			//	Add start command to message queue
 			MessagePlugin(new onStartCallback(this));
 
-			std::string		sExtraDetail;
-			TiXmlDocument	XmlDoc;
-			XmlDoc.Parse(sPluginXML.c_str());
-			if (XmlDoc.Error())
-			{
-				_log.Log(LOG_ERROR, "%s: Error '%s' at line %d column %d in XML '%s'.", __func__, XmlDoc.ErrorDesc(), XmlDoc.ErrorRow(), XmlDoc.ErrorCol(), sPluginXML.c_str());
-			}
-			else
-			{
-				TiXmlNode* pXmlNode = XmlDoc.FirstChild("plugin");
-				for (pXmlNode; pXmlNode; pXmlNode = pXmlNode->NextSiblingElement())
-				{
-					TiXmlElement* pXmlEle = pXmlNode->ToElement();
-					if (pXmlEle)
-					{
-						const char*	pAttributeValue = pXmlEle->Attribute("version");
-						if (pAttributeValue)
-						{
-							m_Version = pAttributeValue;
-							sExtraDetail += "version ";
-							sExtraDetail += pAttributeValue;
-						}
-						pAttributeValue = pXmlEle->Attribute("author");
-						if (pAttributeValue)
-						{
-							m_Author = pAttributeValue;
-							if (!sExtraDetail.empty()) sExtraDetail += ", ";
-							sExtraDetail += "author '";
-							sExtraDetail += pAttributeValue;
-							sExtraDetail += "'";
-						}
-					}
-				}
-			}
-			_log.Log(LOG_STATUS, "(%s) Initialized %s", m_Name.c_str(), sExtraDetail.c_str());
+			InterfaceLog(LOG_STATUS, "%s interface initialized.", m_Name.c_str());
 
 			PyEval_SaveThread();
+			m_bIsStarting = false;
 			return true;
 		}
 		catch (...)
 		{
-			_log.Log(LOG_ERROR, "(%s) exception caught in '%s'.", m_PluginKey.c_str(), __func__);
+			InterfaceLog(LOG_ERROR, "Exception caught in '%s'.", m_Name.c_str(), __func__);
 		}
 
 Error:
@@ -1232,75 +1336,21 @@ Error:
 
 	bool CPlugin::Start()
 	{
+		std::vector<std::vector<std::string> > result;
+
 		try
 		{
 			PyObject* pModuleDict = PyModule_GetDict((PyObject*)m_PyModule);  // returns a borrowed referece to the __dict__ object for the module
-			PyObject *pParamsDict = PyDict_New();
-			if (PyDict_SetItemString(pModuleDict, "Parameters", pParamsDict) == -1)
-			{
-				_log.Log(LOG_ERROR, "(%s) failed to add Parameters dictionary.", m_PluginKey.c_str());
-				goto Error;
-			}
-			Py_DECREF(pParamsDict);
-
-			PyObject*	pObj = Py_BuildValue("i", m_HwdID);
-			if (PyDict_SetItemString(pParamsDict, "HardwareID", pObj) == -1)
-			{
-				_log.Log(LOG_ERROR, "(%s) failed to add key 'HardwareID', value '%d' to dictionary.", m_PluginKey.c_str(), m_HwdID);
-				goto Error;
-			}
-			Py_DECREF(pObj);
-
-			std::string sLanguage;
-			std::string sLang = "en";
-			m_sql.GetPreferencesVar("Language", sLanguage, sLang);
-
-			std::vector<std::vector<std::string> > result;
-			result = m_sql.safe_query("SELECT Name, Address, Port, SerialPort, Username, Password, Extra, Mode1, Mode2, Mode3, Mode4, Mode5, Mode6 FROM Hardware WHERE (ID==%d)", m_HwdID);
-			if (!result.empty())
-			{
-				std::vector<std::vector<std::string> >::const_iterator itt;
-				for (itt = result.begin(); itt != result.end(); ++itt)
-				{
-					std::vector<std::string> sd = *itt;
-					const char*	pChar = sd[0].c_str();
-					ADD_STRING_TO_DICT(pParamsDict, "HomeFolder", m_HomeFolder);
-					ADD_STRING_TO_DICT(pParamsDict, "StartupFolder", szStartupFolder);
-					ADD_STRING_TO_DICT(pParamsDict, "UserDataFolder", szUserDataFolder);
-					ADD_STRING_TO_DICT(pParamsDict, "WebRoot", szWebRoot);
-					ADD_STRING_TO_DICT(pParamsDict, "Database", dbasefile);
-					ADD_STRING_TO_DICT(pParamsDict, "Language", sLanguage);
-					ADD_STRING_TO_DICT(pParamsDict, "Version", m_Version);
-					ADD_STRING_TO_DICT(pParamsDict, "Author", m_Author);
-					ADD_STRING_TO_DICT(pParamsDict, "Name", sd[0]);
-					ADD_STRING_TO_DICT(pParamsDict, "Address", sd[1]);
-					ADD_STRING_TO_DICT(pParamsDict, "Port", sd[2]);
-					ADD_STRING_TO_DICT(pParamsDict, "SerialPort", sd[3]);
-					ADD_STRING_TO_DICT(pParamsDict, "Username", sd[4]);
-					ADD_STRING_TO_DICT(pParamsDict, "Password", sd[5]);
-					ADD_STRING_TO_DICT(pParamsDict, "Key", sd[6]);
-					ADD_STRING_TO_DICT(pParamsDict, "Mode1", sd[7]);
-					ADD_STRING_TO_DICT(pParamsDict, "Mode2", sd[8]);
-					ADD_STRING_TO_DICT(pParamsDict, "Mode3", sd[9]);
-					ADD_STRING_TO_DICT(pParamsDict, "Mode4", sd[10]);
-					ADD_STRING_TO_DICT(pParamsDict, "Mode5", sd[11]);
-					ADD_STRING_TO_DICT(pParamsDict, "Mode6", sd[12]);
-
-					ADD_STRING_TO_DICT(pParamsDict, "DomoticzVersion", szAppVersion);
-					ADD_STRING_TO_DICT(pParamsDict, "DomoticzHash", szAppHash);
-					ADD_STRING_TO_DICT(pParamsDict, "DomoticzBuildTime", szAppDate);
-				}
-			}
 
 			m_DeviceDict = PyDict_New();
 			if (PyDict_SetItemString(pModuleDict, "Devices", (PyObject*)m_DeviceDict) == -1)
 			{
-				_log.Log(LOG_ERROR, "(%s) failed to add Device dictionary.", m_PluginKey.c_str());
+				InterfaceLog(LOG_ERROR, "Failed to add Device dictionary.");
 				goto Error;
 			}
 
 			// load associated devices to make them available to python
-			result = m_sql.safe_query("SELECT Unit FROM DeviceStatus WHERE (HardwareID==%d) ORDER BY Unit ASC", m_HwdID);
+			result = m_sql.safe_query("SELECT DeviceID FROM Device WHERE (InterfaceID==%d) ORDER BY DeviceID ASC", m_InterfaceID);
 			if (!result.empty())
 			{
 				PyType_Ready(&CDeviceType);
@@ -1313,48 +1363,15 @@ Error:
 					PyObject*	pKey = PyLong_FromLong(atoi(sd[0].c_str()));
 					if (PyDict_SetItem((PyObject*)m_DeviceDict, pKey, (PyObject*)pDevice) == -1)
 					{
-						_log.Log(LOG_ERROR, "(%s) failed to add unit '%s' to device dictionary.", m_PluginKey.c_str(), sd[0].c_str());
+						InterfaceLog(LOG_ERROR, "Failed to add unit '%s' to device dictionary.", sd[0].c_str());
 						goto Error;
 					}
 					pDevice->pPlugin = this;
 					pDevice->PluginKey = PyUnicode_FromString(m_PluginKey.c_str());
-					pDevice->HwdID = m_HwdID;
+					pDevice->InterfaceID = m_InterfaceID;
 					pDevice->Unit = atoi(sd[0].c_str());
 					CDevice_refresh(pDevice);
 					Py_DECREF(pDevice);
-					Py_DECREF(pKey);
-				}
-			}
-
-			m_ImageDict = PyDict_New();
-			if (PyDict_SetItemString(pModuleDict, "Images", (PyObject*)m_ImageDict) == -1)
-			{
-				_log.Log(LOG_ERROR, "(%s) failed to add Image dictionary.", m_PluginKey.c_str());
-				goto Error;
-			}
-
-			// load associated custom images to make them available to python
-			result = m_sql.safe_query("SELECT ID, Base, Name, Description FROM CustomImages WHERE Base LIKE '%q%%' ORDER BY ID ASC", m_PluginKey.c_str());
-			if (!result.empty())
-			{
-				PyType_Ready(&CImageType);
-				// Add image objects into the image dictionary with ID as the key
-				for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
-				{
-					std::vector<std::string> sd = *itt;
-					CImage* pImage = (CImage*)CImage_new(&CImageType, (PyObject*)NULL, (PyObject*)NULL);
-
-					PyObject*	pKey = PyUnicode_FromString(sd[1].c_str());
-					if (PyDict_SetItem((PyObject*)m_ImageDict, pKey, (PyObject*)pImage) == -1)
-					{
-						_log.Log(LOG_ERROR, "(%s) failed to add ID '%s' to image dictionary.", m_PluginKey.c_str(), sd[0].c_str());
-						goto Error;
-					}
-					pImage->ImageID = atoi(sd[0].c_str()) + 100;
-					pImage->Base = PyUnicode_FromString(sd[1].c_str());
-					pImage->Name = PyUnicode_FromString(sd[2].c_str());
-					pImage->Description = PyUnicode_FromString(sd[3].c_str());
-					Py_DECREF(pImage);
 					Py_DECREF(pKey);
 				}
 			}
@@ -1367,7 +1384,7 @@ Error:
 		}
 		catch (...)
 		{
-			_log.Log(LOG_ERROR, "(%s) exception caught in '%s'.", m_PluginKey.c_str(), __func__);
+			InterfaceLog(LOG_ERROR, "Exception caught in '%s'.", __func__);
 		}
 
 Error:
@@ -1422,15 +1439,15 @@ Error:
 				return;
 			}
 			if ((sTransport == "TLS/IP") || pConnection->pProtocol->Secure())
-				pConnection->pTransport = (CPluginTransport*) new CPluginTransportTCPSecure(m_HwdID, (PyObject*)pConnection, sAddress, sPort);
+				pConnection->pTransport = (CPluginTransport*) new CPluginTransportTCPSecure(m_InterfaceID, (PyObject*)pConnection, sAddress, sPort);
 			else
-				pConnection->pTransport = (CPluginTransport*) new CPluginTransportTCP(m_HwdID, (PyObject*)pConnection, sAddress, sPort);
+				pConnection->pTransport = (CPluginTransport*) new CPluginTransportTCP(m_InterfaceID, (PyObject*)pConnection, sAddress, sPort);
 		}
 		else if (sTransport == "Serial")
 		{
 			if (pConnection->pProtocol->Secure())  _log.Log(LOG_ERROR, "(%s) Transport '%s' does not support secure connections.", m_Name.c_str(), sTransport.c_str());
 			if (m_bDebug & PDM_CONNECTION) _log.Log(LOG_NORM, "(%s) Transport set to: '%s', '%s', %d.", m_Name.c_str(), sTransport.c_str(), sAddress.c_str(), pConnection->Baud);
-			pConnection->pTransport = (CPluginTransport*) new CPluginTransportSerial(m_HwdID, (PyObject*)pConnection, sAddress, pConnection->Baud);
+			pConnection->pTransport = (CPluginTransport*) new CPluginTransportSerial(m_InterfaceID, (PyObject*)pConnection, sAddress, pConnection->Baud);
 		}
 		else
 		{
@@ -1480,23 +1497,23 @@ Error:
 			std::string	sPort = PyUnicode_AsUTF8(pConnection->Port);
 			if (m_bDebug & PDM_CONNECTION) _log.Log(LOG_NORM, "(%s) Transport set to: '%s', %s:%s.", m_Name.c_str(), sTransport.c_str(), sAddress.c_str(), sPort.c_str());
 			if (!pConnection->pProtocol->Secure())
-				pConnection->pTransport = (CPluginTransport*) new CPluginTransportTCP(m_HwdID, (PyObject*)pConnection, "", sPort);
+				pConnection->pTransport = (CPluginTransport*) new CPluginTransportTCP(m_InterfaceID, (PyObject*)pConnection, "", sPort);
 			else
-				pConnection->pTransport = (CPluginTransport*) new CPluginTransportTCPSecure(m_HwdID, (PyObject*)pConnection, "", sPort);
+				pConnection->pTransport = (CPluginTransport*) new CPluginTransportTCPSecure(m_InterfaceID, (PyObject*)pConnection, "", sPort);
 		}
 		else if (sTransport == "UDP/IP")
 		{
 			std::string	sPort = PyUnicode_AsUTF8(pConnection->Port);
 			if (pConnection->pProtocol->Secure())  _log.Log(LOG_ERROR, "(%s) Transport '%s' does not support secure connections.", m_Name.c_str(), sTransport.c_str());
 			if (m_bDebug & PDM_CONNECTION) _log.Log(LOG_NORM, "(%s) Transport set to: '%s', %s:%s.", m_Name.c_str(), sTransport.c_str(), sAddress.c_str(), sPort.c_str());
-			pConnection->pTransport = (CPluginTransport*) new CPluginTransportUDP(m_HwdID, (PyObject*)pConnection, sAddress.c_str(), sPort);
+			pConnection->pTransport = (CPluginTransport*) new CPluginTransportUDP(m_InterfaceID, (PyObject*)pConnection, sAddress.c_str(), sPort);
 		}
 		else if (sTransport == "ICMP/IP")
 		{
 			std::string	sPort = PyUnicode_AsUTF8(pConnection->Port);
 			if (pConnection->pProtocol->Secure())  _log.Log(LOG_ERROR, "(%s) Transport '%s' does not support secure connections.", m_Name.c_str(), sTransport.c_str());
 			if (m_bDebug & PDM_CONNECTION) _log.Log(LOG_NORM, "(%s) Transport set to: '%s', %s.", m_Name.c_str(), sTransport.c_str(), sAddress.c_str());
-			pConnection->pTransport = (CPluginTransport*) new CPluginTransportICMP(m_HwdID, (PyObject*)pConnection, sAddress.c_str(), sPort);
+			pConnection->pTransport = (CPluginTransport*) new CPluginTransportICMP(m_InterfaceID, (PyObject*)pConnection, sAddress.c_str(), sPort);
 		}
 		else
 		{
@@ -1561,7 +1578,7 @@ Error:
 					else
 						_log.Log(LOG_NORM, "(%s) Transport set to: '%s', %s for '%s'.", m_Name.c_str(), sTransport.c_str(), sAddress.c_str(), sConnection.c_str());
 				}
-				pConnection->pTransport = (CPluginTransport*) new CPluginTransportUDP(m_HwdID, (PyObject*)pConnection, sAddress, sPort);
+				pConnection->pTransport = (CPluginTransport*) new CPluginTransportUDP(m_InterfaceID, (PyObject*)pConnection, sAddress, sPort);
 			}
 			else
 			{
@@ -1646,7 +1663,7 @@ Error:
 		}
 		pDevice->pPlugin = this;
 		pDevice->PluginKey = PyUnicode_FromString(m_PluginKey.c_str());
-		pDevice->HwdID = m_HwdID;
+		pDevice->InterfaceID = m_InterfaceID;
 		pDevice->Unit = Unit;
 		CDevice_refresh(pDevice);
 		Py_DECREF(pDevice);
@@ -1840,7 +1857,7 @@ Error:
 
 		// load associated settings to make them available to python
 		std::vector<std::vector<std::string> > result;
-		result = m_sql.safe_query("SELECT Key, nValue, sValue FROM Preferences");
+		result = m_sql.safe_query("SELECT Name, Value FROM Preference");
 		if (!result.empty())
 		{
 			PyType_Ready(&CDeviceType);
@@ -1851,14 +1868,7 @@ Error:
 
 				PyObject*	pKey = PyUnicode_FromString(sd[0].c_str());
 				PyObject*	pValue = NULL;
-				if (!sd[2].empty())
-				{
-					pValue = PyUnicode_FromString(sd[2].c_str());
-				}
-				else
-				{
-					pValue = PyUnicode_FromString(sd[1].c_str());
-				}
+				pValue = PyUnicode_FromString(sd[1].c_str());
 				if (PyDict_SetItem((PyObject*)m_SettingsDict, pKey, pValue))
 				{
 					_log.Log(LOG_ERROR, "(%s) failed to add setting '%s' to settings dictionary.", m_PluginKey.c_str(), sd[0].c_str());

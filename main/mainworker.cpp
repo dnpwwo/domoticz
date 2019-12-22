@@ -74,9 +74,9 @@ MainWorker::~MainWorker()
 
 void MainWorker::AddAllDomoticzHardware()
 {
-	//Add Hardware devices
+	//Add Interfaces
 	std::vector<std::vector<std::string> > result;
-	result = m_sql.safe_query("SELECT InterfaceID, Name, Script, Configuration, Notifiable FROM Interface WHERE Active = 1 ORDER BY InterfaceID ASC");
+	result = m_sql.safe_query("SELECT InterfaceID, Name FROM Interface WHERE Active = 1 ORDER BY InterfaceID ASC");
 	if (!result.empty())
 	{
 		for (const auto & itt : result)
@@ -85,10 +85,18 @@ void MainWorker::AddAllDomoticzHardware()
 
 			int ID = atoi(sd[0].c_str());
 			std::string Name = sd[1];
-			std::string Parameters = sd[2];
-			std::string Configuration = sd[3];
-			bool bNotifiable = (sd[4] == "1") ? true : false;
-			//AddHardwareFromParams(ID, Name, Enabled, Type, Address, Port, SerialPort, Username, Password, Extra, mode1, mode2, mode3, mode4, mode5, mode6, DataTimeout, false);
+
+			CDomoticzHardwareBase* pHardware = NULL;
+			pHardware = m_pluginsystem.RegisterPlugin(ID, Name);
+			if (pHardware)
+			{
+				pHardware->m_Name = Name;
+				pHardware->m_ShortName = "Python Plugin";
+				pHardware->m_DataTimeout = 3600;
+				AddDomoticzHardware(pHardware);
+
+				pHardware->Start();
+			}
 		}
 		m_hardwareStartCounter = 0;
 		m_bStartHardware = true;
@@ -124,7 +132,7 @@ void MainWorker::StopDomoticzHardware()
 	for (auto & itt : OrgHardwaredevices)
 	{
 #ifdef ENABLE_PYTHON
-		m_pluginsystem.DeregisterPlugin(itt->m_HwdID);
+		m_pluginsystem.DeregisterPlugin(itt->m_InterfaceID);
 #endif
 		itt->Stop();
 		delete itt;
@@ -160,7 +168,7 @@ void MainWorker::GetAvailableWebThemes()
 
 void MainWorker::AddDomoticzHardware(CDomoticzHardwareBase *pHardware)
 {
-	int devidx = FindDomoticzHardware(pHardware->m_HwdID);
+	int devidx = FindDomoticzHardware(pHardware->m_InterfaceID);
 	if (devidx != -1) //it is already there!, remove it
 	{
 		RemoveDomoticzHardware(m_hardwaredevices[devidx]);
@@ -222,7 +230,7 @@ int MainWorker::FindDomoticzHardware(int HwdId)
 	int ii = 0;
 	for (const auto & itt : m_hardwaredevices)
 	{
-		if (itt->m_HwdID == HwdId)
+		if (itt->m_InterfaceID == HwdId)
 			return ii;
 		ii++;
 	}
@@ -234,7 +242,7 @@ CDomoticzHardwareBase* MainWorker::GetHardware(int HwdId)
 	std::lock_guard<std::mutex> l(m_devicemutex);
 	for (auto & itt : m_hardwaredevices)
 	{
-		if (itt->m_HwdID == HwdId)
+		if (itt->m_InterfaceID == HwdId)
 			return itt;
 	}
 	return NULL;
@@ -718,7 +726,7 @@ void MainWorker::Do_Work()
 				std::string idx = sstr.str();
 
 				std::vector<std::vector<std::string> > result;
-				result = m_sql.safe_query("SELECT Name FROM Hardware WHERE (ID=='%q')",
+				result = m_sql.safe_query("SELECT Name FROM Interface WHERE (ID=='%q')",
 					idx.c_str());
 				if (!result.empty())
 				{
@@ -944,11 +952,11 @@ void MainWorker::HeartbeatCheck()
 				if (diff > 60)
 				{
 					std::vector<std::vector<std::string> > result;
-					result = m_sql.safe_query("SELECT Name FROM Hardware WHERE (ID='%d')", pHardware->m_HwdID);
+					result = m_sql.safe_query("SELECT Name FROM Interface WHERE (InterfaceID='%d')", pHardware->m_InterfaceID);
 					if (result.size() == 1)
 					{
 						std::vector<std::string> sd = result[0];
-						_log.Log(LOG_ERROR, "%s hardware (%d) thread seems to have ended unexpectedly", sd[0].c_str(), pHardware->m_HwdID);
+						_log.Log(LOG_ERROR, "%s hardware (%d) thread seems to have ended unexpectedly", sd[0].c_str(), pHardware->m_InterfaceID);
 					}
 				}
 			}
@@ -960,7 +968,7 @@ void MainWorker::HeartbeatCheck()
 				if (diff > pHardware->m_DataTimeout)
 				{
 					std::vector<std::vector<std::string> > result;
-					result = m_sql.safe_query("SELECT Name FROM Hardware WHERE (ID='%d')", pHardware->m_HwdID);
+					result = m_sql.safe_query("SELECT Name FROM Interface WHERE (InterfaceID='%d')", pHardware->m_InterfaceID);
 					if (result.size() == 1)
 					{
 						std::vector<std::string> sd = result[0];
@@ -999,8 +1007,8 @@ void MainWorker::HeartbeatCheck()
 							}
 						}
 
-						_log.Log(LOG_ERROR, "%s hardware (%d) nothing received for more than %d %s!....", sd[0].c_str(), pHardware->m_HwdID, totNum, sDataTimeout.c_str());
-						m_devicestorestart.push_back(pHardware->m_HwdID);
+						_log.Log(LOG_ERROR, "%s hardware (%d) nothing received for more than %d %s!....", sd[0].c_str(), pHardware->m_InterfaceID, totNum, sDataTimeout.c_str());
+						m_devicestorestart.push_back(pHardware->m_InterfaceID);
 					}
 				}
 			}

@@ -4,7 +4,8 @@
 
 namespace Plugins {
 
-	class CPluginMessage;
+	class ReadEvent;
+	class WriteDirective;
 
 	class CPluginProtocol
 	{
