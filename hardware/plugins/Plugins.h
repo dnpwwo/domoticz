@@ -101,7 +101,7 @@ namespace Plugins {
 		void*				m_ImageDict;
 		void*				m_SettingsDict;
 		std::string			m_HomeFolder;
-		boolean				m_bDebug;
+		bool				m_bDebug;
 		bool				m_bIsStarting;
 		bool				m_bTracing;
 	};
