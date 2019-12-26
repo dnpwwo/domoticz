@@ -726,7 +726,7 @@ void MainWorker::Do_Work()
 				std::string idx = sstr.str();
 
 				std::vector<std::vector<std::string> > result;
-				result = m_sql.safe_query("SELECT Name FROM Interface WHERE (ID=='%q')",
+				result = m_sql.safe_query("SELECT Name FROM Interface WHERE (InterfaceID=='%q')",
 					idx.c_str());
 				if (!result.empty())
 				{

@@ -322,6 +322,8 @@
     <ClInclude Include="..\hardware\plugins\PluginProtocols.h" />
     <ClInclude Include="..\hardware\plugins\Plugins.h" />
     <ClInclude Include="..\hardware\plugins\PluginTransports.h" />
+    <ClInclude Include="..\hardware\plugins\PythonValues.h" />
+    <ClInclude Include="..\hardware\plugins\PythonDevices.h" />
     <ClInclude Include="..\hardware\plugins\PythonObjects.h" />
     <ClInclude Include="..\main\appversion.h" />
     <ClInclude Include="..\hardware\DomoticzHardware.h" />
@@ -346,6 +348,8 @@
     <ClCompile Include="..\hardware\plugins\PluginProtocols.cpp" />
     <ClCompile Include="..\hardware\plugins\Plugins.cpp" />
     <ClCompile Include="..\hardware\plugins\PluginTransports.cpp" />
+    <ClCompile Include="..\hardware\plugins\PythonValues.cpp" />
+    <ClCompile Include="..\hardware\plugins\PythonDevices.cpp" />
     <ClCompile Include="..\hardware\plugins\PythonObjects.cpp" />
     <ClCompile Include="..\main\CmdLine.cpp" />
     <ClCompile Include="..\hardware\DomoticzHardware.cpp" />

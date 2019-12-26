@@ -7,28 +7,15 @@ namespace Plugins {
 
 	typedef struct {
 		PyObject_HEAD
-			PyObject* PluginKey;
-		int			InterfaceID;
-		PyObject* DeviceID;
-		int			Unit;
-		int			Type;
-		int			SubType;
-		int			SwitchType;
-		int			ID;
-		int			LastLevel;
-		PyObject* Name;
-		PyObject* LastUpdate;
-		int			nValue;
-		int			SignalLevel;
-		int			BatteryLevel;
-		PyObject* sValue;
-		int			Image;
-		PyObject* Options;
-		int			Used;
-		int			TimedOut;
-		PyObject* Description;
-		PyObject* Color;
-		CPlugin* pPlugin;
+		long		DeviceID;
+		long		InterfaceID;
+		PyObject*	Name;
+		PyObject*	ExternalID;
+		bool		Debug;
+		bool		Active;
+		PyObject*	Timestamp;
+		PyObject*	Values;
+		CPlugin*	pPlugin;
 	} CDevice;
 
 	void CDevice_dealloc(CDevice* self);
@@ -36,46 +23,40 @@ namespace Plugins {
 	int CDevice_init(CDevice* self, PyObject* args, PyObject* kwds);
 	PyObject* CDevice_refresh(CDevice* self);
 	PyObject* CDevice_insert(CDevice* self);
-	PyObject* CDevice_update(CDevice* self, PyObject* args, PyObject* kwds);
+	PyObject* CDevice_update(CDevice* self);
 	PyObject* CDevice_delete(CDevice* self);
-	PyObject* CDevice_touch(CDevice* self);
 	PyObject* CDevice_str(CDevice* self);
 
+	PyObject* CDevice_debug(CDevice* self, PyObject* args, PyObject* kwds);
+	PyObject* CDevice_log(CDevice* self, PyObject* args, PyObject* kwds);
+	PyObject* CDevice_error(CDevice* self, PyObject* args, PyObject* kwds);
+
 	static PyMemberDef CDevice_members[] = {
-		{ "ID",	T_INT, offsetof(CDevice, ID), READONLY, "Domoticz internal ID" },
+		{ "DeviceID",	T_LONG, offsetof(CDevice, DeviceID), READONLY, "Internal Device Number" },
+		{ "InterfaceID", T_LONG, offsetof(CDevice, InterfaceID), READONLY, "Interface this Device relates to" },
 		{ "Name", T_OBJECT,	offsetof(CDevice, Name), READONLY, "Name" },
-		{ "DeviceID", T_OBJECT,	offsetof(CDevice, DeviceID), READONLY, "External device ID" },
-		{ "Unit",	T_INT, offsetof(CDevice, Unit), READONLY, "Numeric Unit number" },
-		{ "nValue", T_INT, offsetof(CDevice, nValue), READONLY, "Numeric device value" },
-		{ "sValue", T_OBJECT, offsetof(CDevice, sValue), READONLY, "String device value" },
-		{ "SignalLevel", T_INT, offsetof(CDevice, SignalLevel), READONLY, "Numeric signal level" },
-		{ "BatteryLevel", T_INT, offsetof(CDevice, BatteryLevel), READONLY, "Numeric battery level" },
-		{ "Image", T_INT, offsetof(CDevice, Image), READONLY, "Numeric image number" },
-		{ "Type", T_INT, offsetof(CDevice, Type), READONLY, "Numeric device type" },
-		{ "SubType", T_INT, offsetof(CDevice, SubType), READONLY, "Numeric device subtype" },
-		{ "SwitchType", T_INT, offsetof(CDevice, SwitchType), READONLY, "Numeric device switchtype" },
-		{ "LastLevel", T_INT, offsetof(CDevice, LastLevel), READONLY, "Previous device level" },
-		{ "LastUpdate", T_OBJECT, offsetof(CDevice, LastUpdate), READONLY, "Last update timestamp" },
-		{ "Options", T_OBJECT, offsetof(CDevice, Options), READONLY, "Device options" },
-		{ "Used", T_INT, offsetof(CDevice, Used), READONLY, "Numeric device Used flag" },
-		{ "TimedOut", T_INT, offsetof(CDevice, TimedOut), READONLY, "Is the device marked as timed out" },
-		{ "Description", T_OBJECT, offsetof(CDevice, Description), READONLY, "Description" },
-		{ "Color", T_OBJECT, offsetof(CDevice, Color), READONLY, "Color JSON dictionary" },
+		{ "ExternalID", T_OBJECT,	offsetof(CDevice, ExternalID), READONLY, "ExternalID" },
+		{ "Debug", T_BOOL, offsetof(CDevice, Debug), READONLY, "Debug logging status" },
+		{ "Active", T_BOOL, offsetof(CDevice, Active), 0, "Device active status" },
+		{ "Timestamp", T_OBJECT, offsetof(CDevice, Timestamp), READONLY, "Last update timestamp" },
+		{ "Values", T_OBJECT, offsetof(CDevice, Values), READONLY, "Values dictionary" },
 		{ NULL }  /* Sentinel */
 	};
 
 	static PyMethodDef CDevice_methods[] = {
-		{ "Refresh", (PyCFunction)CDevice_refresh, METH_NOARGS, "Refresh device details" },
-		{ "Create", (PyCFunction)CDevice_insert, METH_NOARGS, "Create the device in Domoticz." },
-		{ "Update", (PyCFunction)CDevice_update, METH_VARARGS | METH_KEYWORDS, "Update the device values in Domoticz." },
-		{ "Delete", (PyCFunction)CDevice_delete, METH_NOARGS, "Delete the device in Domoticz." },
-		{ "Touch", (PyCFunction)CDevice_touch, METH_NOARGS, "Notify Domoticz that device has been seen." },
+		{ "Refresh",(PyCFunction)CDevice_refresh, METH_NOARGS, "Refresh the Device from the database" },
+		{ "Insert", (PyCFunction)CDevice_insert, METH_NOARGS, "Insert the Device" },
+		{ "Update", (PyCFunction)CDevice_update, METH_NOARGS, "Update the Device" },
+		{ "Delete", (PyCFunction)CDevice_delete, METH_NOARGS, "Delete the Device" },
+		{ "Debug",	(PyCFunction)CDevice_debug,	METH_VARARGS | METH_KEYWORDS, "Write a debug message to the Device's log." },
+		{ "Log",	(PyCFunction)CDevice_log,	METH_VARARGS | METH_KEYWORDS, "Write a message to the Device's log." },
+		{ "Error",	(PyCFunction)CDevice_error,	METH_VARARGS | METH_KEYWORDS, "Write a error message to the Device's log." },
 		{ NULL }  /* Sentinel */
 	};
 
 	static PyTypeObject CDeviceType = {
 		PyVarObject_HEAD_INIT(NULL, 0)
-		"Domoticz.Device",             /* tp_name */
+		"domoticz.Device",             /* tp_name */
 		sizeof(CDevice),             /* tp_basicsize */
 		0,                         /* tp_itemsize */
 		(destructor)CDevice_dealloc, /* tp_dealloc */

@@ -17,6 +17,11 @@ namespace Plugins {
 	struct module_state {
 		CPlugin* pPlugin;
 		PyObject* error;
+		PyObject* pInterfaceClass;
+		PyObject* pDeviceClass;
+		PyObject* pValueClass;
+		PyObject* pConnectionClass;
+		long		lObjectID;
 	};
 
 	void ValueLog(CValue* self, const _eLogLevel level, const char* Message, ...)
@@ -106,7 +111,8 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		return 0;
+		Py_INCREF(Py_None);
+		return Py_None;
 	}
 
 	PyObject* CValue_log(CValue* self, PyObject* args, PyObject* kwds)
@@ -158,7 +164,8 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		return 0;
+		Py_INCREF(Py_None);
+		return Py_None;
 	}
 
 	PyObject* CValue_error(CValue* self, PyObject* args, PyObject* kwds)
@@ -210,7 +217,8 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		return 0;
+		Py_INCREF(Py_None);
+		return Py_None;
 	}
 
 	void CValue_dealloc(CValue* self)
@@ -237,11 +245,13 @@ namespace Plugins {
 					Py_DECREF(self);
 					return NULL;
 				}
+				self->UnitID = -1;
 				self->Value = PyUnicode_FromString("");
 				if (self->Value == NULL) {
 					Py_DECREF(self);
 					return NULL;
 				}
+				self->Debug = false;
 				self->Timestamp = PyUnicode_FromString("");
 				if (self->Timestamp == NULL) {
 					Py_DECREF(self);
@@ -265,8 +275,8 @@ namespace Plugins {
 	int CValue_init(CValue* self, PyObject* args, PyObject* kwds)
 	{
 		char*	szName = NULL;
-		long	lDeviceID;
-		long	lUnitID;
+		long	lDeviceID = -1;
+		long	lUnitID = -1;
 		PyObject* pValue = NULL;
 		static char* kwlist[] = { "Name", "DeviceID", "UnitID",	"Value", NULL };
 
@@ -291,27 +301,43 @@ namespace Plugins {
 				_log.Log(LOG_ERROR, "CValue:%s, illegal operation, Plugin has not started yet.", __func__);
 				return 0;
 			}
+			self->pPlugin = pModState->pPlugin;
 
-			if (PyArg_ParseTupleAndKeywords(args, kwds, "siiO", kwlist, &szName, &lDeviceID, &lUnitID, &pValue))
+			// During startup plugin sets this to signal load from database 
+			if (pModState->lObjectID)
 			{
-				self->pPlugin = pModState->pPlugin;
-				std::string	sName = szName ? szName : "";
-				if (sName.length())
-				{
-					Py_DECREF(self->Name);
-					self->Name = PyUnicode_FromString(sName.c_str());
-				}
-				self->DeviceID = lDeviceID;
-				self->UnitID = lUnitID;
-				Py_DECREF(self->Value);
-				self->Value = pValue;
+				self->ValueID = pModState->lObjectID;
+				CValue_refresh(self);
+				pModState->lObjectID = 0;
 			}
 			else
 			{
-				CPlugin* pPlugin = NULL;
-				if (pModState) pPlugin = pModState->pPlugin;
-				_log.Log(LOG_ERROR, "Expected: myValue = domoticz.Value(Name=\"myValue\", DeviceID=1, UnitID=1, Value=\"1.0\")");
-				LogPythonException(pPlugin, __func__);
+				if (PyArg_ParseTupleAndKeywords(args, kwds, "siiO", kwlist, &szName, &lDeviceID, &lUnitID, &pValue))
+				{
+					PyObject* pSafeAssign;
+					std::string	sName = szName ? szName : "";
+					if (sName.length())
+					{
+						pSafeAssign = self->Name;
+						self->Name = PyUnicode_FromString(sName.c_str());
+						Py_XDECREF(pSafeAssign);
+					}
+					self->DeviceID = lDeviceID;
+					self->UnitID = lUnitID;
+					if (pValue)
+					{
+						pSafeAssign = self->Value;
+						self->Value = pValue;
+						Py_XDECREF(pSafeAssign);
+					}
+				}
+				else
+				{
+					CPlugin* pPlugin = NULL;
+					if (pModState) pPlugin = pModState->pPlugin;
+					_log.Log(LOG_ERROR, "Expected: myValue = domoticz.Value(Name=\"myValue\", DeviceID=1, UnitID=1, Value=\"1.0\")");
+					LogPythonException(pPlugin, __func__);
+				}
 			}
 		}
 		catch (std::exception* e)
@@ -326,17 +352,73 @@ namespace Plugins {
 		return 0;
 	}
 
-	PyObject* CValue_insert(CValue* self, PyObject* args)
+	PyObject* CValue_refresh(CValue* self)
+	{
+		if (self->pPlugin)
+		{
+			if (self->ValueID >= 1)
+			{
+				std::vector<std::vector<std::string> > result;
+				result = m_sql.safe_query("SELECT DeviceID, Name, UnitID, Value, Debug, Timestamp FROM Value WHERE ValueID = %d", self->ValueID);
+
+				// Handle any data we get back
+				if (result.empty())
+				{
+					ValueLog(self, LOG_ERROR, "Refresh of 'Value' failed to read any records for ID %d", self->DeviceID);
+				}
+				else
+				{
+					ValueLog(self, LOG_DEBUG_INT, "Refresh of 'Value' succeeded for ID %d", self->DeviceID);
+					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+					{
+						std::vector<std::string> sd = *itt;
+						PyObject* pSafeAssign;
+
+						self->DeviceID = atoi(sd[0].c_str());
+
+						pSafeAssign = self->Name;
+						self->Name = PyUnicode_FromString(sd[1].c_str());
+						Py_XDECREF(pSafeAssign);
+
+						self->UnitID = atoi(sd[2].c_str());
+
+						pSafeAssign = self->Value;
+						self->Value = PyUnicode_FromString(sd[3].c_str());
+						Py_XDECREF(pSafeAssign);
+
+						self->Debug = atoi(sd[4].c_str()) ? true : false;
+
+						pSafeAssign = self->Timestamp;
+						self->Timestamp = PyUnicode_FromString(sd[5].c_str());
+						Py_XDECREF(pSafeAssign);
+					}
+				}
+			}
+			else
+			{
+				ValueLog(self, LOG_ERROR, "Invalid Value ID '%d', must not be already set.", self->DeviceID);
+			}
+		}
+		else
+		{
+			ValueLog(self, LOG_ERROR, "Value refresh failed, Value object is not associated with a plugin.");
+		}
+
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+
+	PyObject* CValue_insert(CValue* self)
 	{
 		if (self->pPlugin)
 		{
 			if (self->ValueID <= 1)
 			{
-				std::string		sSQL = "INSERT INTO Value (Name, DeviceID, UnitID, Value, RetentionDays, RetentionInterval) "
+				std::string		sSQL = "INSERT INTO Value (Name, DeviceID, UnitID, Value, RetentionDays, RetentionInterval, Debug) "
 										"VALUES (?,?,?,?,"
 												"(SELECT RetentionDays from Unit WHERE Unit.UnitID = "+ std::to_string(self->UnitID) +"), "
-												"(SELECT RetentionInterval from Unit WHERE Unit.UnitID = "+ std::to_string(self->UnitID) +") "
-												");";
+												"(SELECT RetentionInterval from Unit WHERE Unit.UnitID = "+ std::to_string(self->UnitID) +"), "
+												"?);";
 				std::vector<std::string> vValues;
 				std::string	sName = PyUnicode_AsUTF8(self->Name);
 				vValues.push_back(sName);
@@ -344,6 +426,7 @@ namespace Plugins {
 				vValues.push_back(std::to_string(self->UnitID));
 				Plugins::CPluginProtocolJSON	pJSON;
 				vValues.push_back(pJSON.PythontoJSON(self->Value));
+				vValues.push_back(std::to_string(self->Debug));
 				int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
 				// Handle any data we get back
@@ -370,31 +453,26 @@ namespace Plugins {
 		return Py_None;
 	}
 
-	PyObject* CValue_update(CValue* self, PyObject* args)
+	PyObject* CValue_update(CValue* self)
 	{
 		if (self->pPlugin)
 		{
 			if (self->ValueID <= 1)
 			{
-				std::string		sSQL = "UPDATE Value Name=?, DeviceID=?, UnitID=?, Value=?, Timestamp=CURRENT_TIMESTAMP) WHERE ValueID=" + std::to_string(self->UnitID) + ";";
+				std::string		sSQL = "UPDATE Value SET Value=?, Timestamp=CURRENT_TIMESTAMP WHERE ValueID=" + std::to_string(self->ValueID) + ";";
 				std::vector<std::string> vValues;
-				std::string	sName = PyUnicode_AsUTF8(self->Name);
-				vValues.push_back(sName);
-				vValues.push_back(std::to_string(self->DeviceID));
-				vValues.push_back(std::to_string(self->UnitID));
 				Plugins::CPluginProtocolJSON	pJSON;
 				vValues.push_back(pJSON.PythontoJSON(self->Value));
-				m_sql.safe_query(sSQL.c_str());
+				int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
 				// Handle any data we get back
-				std::vector<std::vector<std::string> >	result = m_sql.safe_query("SELECT changes();");
-				if (result.empty())
+				if (!iRowCount)
 				{
 					ValueLog(self, LOG_ERROR, "Update to 'Value' failed to update any records for ID %d", self->ValueID);
 				}
 				else
 				{
-					_log.Log(LOG_NORM, "Update to 'Value' succeeded, %s records updated.", result[0][0].c_str());
+					_log.Log(LOG_NORM, "Update to 'Value' succeeded, %d records updated.", iRowCount);
 				}
 			}
 			else
@@ -411,7 +489,7 @@ namespace Plugins {
 		return Py_None;
 	}
 
-	PyObject* CValue_delete(CValue* self, PyObject* args)
+	PyObject* CValue_delete(CValue* self)
 	{
 		if (self->pPlugin)
 		{

@@ -36,9 +36,6 @@ namespace Plugins {
 		void*			m_PyInterpreter;
 		void*			m_PyModule;
 
-		std::string		m_Version;
-		std::string		m_Author;
-
 		CPluginNotifier*	m_Notifier;
 
 		std::mutex	m_TransportsMutex;
@@ -86,21 +83,10 @@ namespace Plugins {
 		//void	SendCommand(const int Unit, const std::string &command, const int level, const _tColor color);
 		//void	SendCommand(const int Unit, const std::string &command, const float level);
 
-		void	onDeviceAdded(int Unit);
-		void	onDeviceModified(int Unit);
-		void	onDeviceRemoved(int Unit);
 		void	MessagePlugin(CPluginMessageBase *pMessage);
-		void	DeviceAdded(int Unit);
-		void	DeviceModified(int Unit);
-		void	DeviceRemoved(int Unit);
 
-		bool	HasNodeFailed(const int Unit);
-
-		std::string			m_PluginKey;
 		void*				m_DeviceDict;
-		void*				m_ImageDict;
 		void*				m_SettingsDict;
-		std::string			m_HomeFolder;
 		bool				m_bDebug;
 		bool				m_bIsStarting;
 		bool				m_bTracing;

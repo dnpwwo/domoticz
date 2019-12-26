@@ -52,8 +52,13 @@ namespace Plugins {
 	//	Holds per plugin state details, specifically plugin object, read using PyModule_GetState(PyObject *module)
 	//
 	struct module_state {
-		CPlugin*	pPlugin;
-		PyObject*	error;
+		CPlugin* pPlugin;
+		PyObject* error;
+		PyObject* pInterfaceClass;
+		PyObject* pDeviceClass;
+		PyObject* pValueClass;
+		PyObject* pConnectionClass;
+		long		lObjectID;
 	};
 
 	void LogPythonException(CPlugin* pPlugin, const std::string &sHandler)
@@ -122,6 +127,40 @@ namespace Plugins {
 		if (pExcept) Py_XDECREF(pExcept);
 		if (pValue) Py_XDECREF(pValue);
 		if (pTraceback) Py_XDECREF(pTraceback);
+	}
+
+	static PyObject* PyDomoticz_Register(PyObject* self, PyObject* args, PyObject* kwds)
+	{
+		static char* kwlist[] = { "Interface", "Device", "Value", "Connection", NULL };
+		module_state* pModState = ((struct module_state*)PyModule_GetState(self));
+		if (!pModState)
+		{
+			_log.Log(LOG_ERROR, "CPlugin:PyDomoticz_Log, unable to obtain module state.");
+		}
+		else
+		{
+			PyObject* pInterfaceClass = NULL;
+			PyObject* pDeviceClass = NULL;
+			PyObject* pValueClass = NULL;
+			PyObject* pConnectionClass = NULL;
+			if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OOO", kwlist, &pInterfaceClass, &pDeviceClass, &pValueClass, &pConnectionClass))
+			{
+				_log.Log(LOG_ERROR, "(%s) PyDomoticz_Log failed to parse parameters: string expected.", pModState->pPlugin->m_Name.c_str());
+				LogPythonException(pModState->pPlugin, std::string(__func__));
+			}
+			else
+			{
+				if (pInterfaceClass)	pModState->pInterfaceClass = pInterfaceClass;
+				if (pDeviceClass)		pModState->pDeviceClass = pDeviceClass;
+				if (pValueClass)		pModState->pValueClass = pValueClass;
+				if (pConnectionClass)	pModState->pConnectionClass = pConnectionClass;
+
+				_log.Log((_eLogLevel)LOG_NORM, "Registered.");
+			}
+		}
+
+		Py_INCREF(Py_None);
+		return Py_None;
 	}
 
 	int PyDomoticz_ProfileFunc(PyObject *self, PyFrameObject *frame, int what, PyObject *arg)
@@ -550,6 +589,7 @@ namespace Plugins {
 	}
 
 	static PyMethodDef DomoticzMethods[] = {
+		{ "Register", (PyCFunction)PyDomoticz_Register, METH_VARARGS | METH_KEYWORDS, "Register Interface,Device and Value override classes." },
 		{ "Debug", PyDomoticz_Debug, METH_VARARGS, "Write a message to Domoticz log only if verbose logging is turned on." },
 		{ "Log", PyDomoticz_Log, METH_VARARGS, "Write a message to Domoticz log." },
 		{ "Status", PyDomoticz_Status, METH_VARARGS, "Write a status message to Domoticz log." },
@@ -615,27 +655,17 @@ namespace Plugins {
 		Py_INCREF((PyObject *)&CConnectionType);
 		PyModule_AddObject(pModule, "Connection", (PyObject *)&CConnectionType);
 
-		if (PyType_Ready(&CImageType) < 0)
-		{
-			_log.Log(LOG_ERROR, "%s, Image Type not ready.", __func__);
-			return pModule;
-		}
-		Py_INCREF((PyObject *)&CImageType);
-		PyModule_AddObject(pModule, "Image", (PyObject *)&CImageType);
-
 		return pModule;
 	}
 
 
 	CPlugin::CPlugin(const int InterfaceID, const std::string &sName) :
-		m_PluginKey("RemoveMe"),
 		m_iPollInterval(10),
 		m_Notifier(NULL),
 		m_bDebug(PDM_NONE),
 		m_PyInterpreter(NULL),
 		m_PyModule(NULL),
 		m_DeviceDict(NULL),
-		m_ImageDict(NULL),
 		m_SettingsDict(NULL)
 	{
 		m_InterfaceID = InterfaceID;
@@ -1227,7 +1257,6 @@ namespace Plugins {
 				if (!m_PyModule)
 				{
 					InterfaceLog(LOG_ERROR, "Failed to load API library, Python Path used was '%S'.", sPath.c_str());
-					LogPythonException();
 					goto Error;
 				}
 			}
@@ -1244,14 +1273,12 @@ namespace Plugins {
 				if (!m_PyModule)
 				{
 					InterfaceLog(LOG_ERROR, "Failed to create module to host plugin.");
-					LogPythonException();
 					goto Error;
 				}
 
 				if (PyModule_AddStringConstant((PyObject*)m_PyModule, "__file__", ""))
 				{
 					InterfaceLog(LOG_ERROR, "Failed to set empty filename for plugin module.");
-					LogPythonException();
 					goto Error;
 				}
 
@@ -1259,7 +1286,6 @@ namespace Plugins {
 				if (!localDict)
 				{
 					InterfaceLog(LOG_ERROR, "Local dictionary not returned, module intialisation failed.");
-					LogPythonException();
 					goto Error;
 				}
 
@@ -1267,46 +1293,54 @@ namespace Plugins {
 				if (!builtins)
 				{
 					InterfaceLog(LOG_ERROR, "Builtins not returned, module intialisation failed.");
-					LogPythonException();
 					goto Error;
 				}
 
 				if (PyDict_SetItemString(localDict, "__builtins__", builtins))
 				{
 					InterfaceLog(LOG_ERROR, "Failed to add builtins to local dictionary for plugin module.");
-					LogPythonException();
 					goto Error;
 				}
+
+				// Domoticz callbacks need state so they know which plugin to act on
+				PyObject* pMod = PyState_FindModule(&DomoticzModuleDef);
+				if (!pMod)
+				{
+					InterfaceLog(LOG_ERROR, "Start up failed, module not found in interpreter.");
+					goto Error;
+				}
+				module_state* pModState = ((struct module_state*)PyModule_GetState(pMod));
+				pModState->pPlugin = this;
+				pModState->pInterfaceClass = (PyObject*)NULL;
+				pModState->pDeviceClass = (PyObject*)&CDeviceType;
+				pModState->pValueClass = (PyObject*)&CValueType;
+				pModState->pConnectionClass = (PyObject*)&CConnectionType;
+				pModState->lObjectID = 0;
 
 				// Define code in the newly created module
 				PyObject* pyValue = PyRun_String(result[0][0].c_str(), Py_file_input, localDict, localDict);
 				if (!pyValue)
 				{
 					InterfaceLog(LOG_ERROR, "Module load failed.");
-					LogPythonException();
 					goto Error;
 				}
 			}
 			catch (...)
 			{
-				InterfaceLog(LOG_ERROR, "Exception loading 'plugin.py', Python Path used was '%S'.", sPath.c_str());
+				InterfaceLog(LOG_ERROR, "Exception loading interface module, Python Path used was '%S'.", sPath.c_str());
 				PyErr_Clear();
 			}
 
-			// Domoticz callbacks need state so they know which plugin to act on
-			PyObject* pMod = PyState_FindModule(&DomoticzModuleDef);
-			if (!pMod)
-			{
-				InterfaceLog(LOG_ERROR, "Start up failed, Domoticz module not found in interpreter.");
-				goto Error;
-			}
-			module_state*	pModState = ((struct module_state*)PyModule_GetState(pMod));
-			pModState->pPlugin = this;
-
 			//Start worker thread
 			m_thread = std::make_shared<std::thread>(&CPlugin::Do_Work, this);
-			std::string plugin_name = "Plugin_" + m_PluginKey;
+			std::string plugin_name = "Plugin_" + std::to_string(m_InterfaceID);
 			SetThreadName(m_thread->native_handle(), plugin_name.c_str());
+
+			if (PyErr_Occurred())
+			{
+				InterfaceLog(LOG_ERROR, "Uncaught error during initialisation.");
+				goto Error;
+			}
 
 			if (!m_thread)
 			{
@@ -1329,6 +1363,10 @@ namespace Plugins {
 		}
 
 Error:
+		if (PyErr_Occurred())
+		{
+			LogPythonException();
+		}
 		PyEval_SaveThread();
 		m_bIsStarting = false;
 		return false;
@@ -1336,11 +1374,30 @@ Error:
 
 	bool CPlugin::Start()
 	{
-		std::vector<std::vector<std::string> > result;
-
 		try
 		{
+			if (PyErr_Occurred())
+			{
+				InterfaceLog(LOG_ERROR, "Error already set at beggining of Start.");
+				goto Error;
+			}
+
+			PyObject* pMod = PyState_FindModule(&DomoticzModuleDef);
+			if (!pMod)
+			{
+				InterfaceLog(LOG_ERROR, "CPlugin:%s, unable to find module for current interpreter.", __func__);
+				goto Error;
+			}
+
+			module_state* pModState = ((struct module_state*)PyModule_GetState(pMod));
+
 			PyObject* pModuleDict = PyModule_GetDict((PyObject*)m_PyModule);  // returns a borrowed referece to the __dict__ object for the module
+			if (!pModuleDict)
+			{
+				InterfaceLog(LOG_ERROR, "Module dictionary not returned.");
+				goto Error;
+			}
+
 
 			m_DeviceDict = PyDict_New();
 			if (PyDict_SetItemString(pModuleDict, "Devices", (PyObject*)m_DeviceDict) == -1)
@@ -1350,29 +1407,92 @@ Error:
 			}
 
 			// load associated devices to make them available to python
+			std::vector<std::vector<std::string> > result;
 			result = m_sql.safe_query("SELECT DeviceID FROM Device WHERE (InterfaceID==%d) ORDER BY DeviceID ASC", m_InterfaceID);
 			if (!result.empty())
 			{
 				PyType_Ready(&CDeviceType);
-				// Add device objects into the device dictionary with Unit as the key
+				// Add device objects into the device dictionary with DeviceID as the key
 				for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 				{
 					std::vector<std::string> sd = *itt;
-					CDevice* pDevice = (CDevice*)CDevice_new(&CDeviceType, (PyObject*)NULL, (PyObject*)NULL);
+					long lDeviceID = atoi(sd[0].c_str());
 
-					PyObject*	pKey = PyLong_FromLong(atoi(sd[0].c_str()));
-					if (PyDict_SetItem((PyObject*)m_DeviceDict, pKey, (PyObject*)pDevice) == -1)
+					// Pass values in, needs to be a tuple and signal CDevice_init to load from the database
+					pModState->lObjectID = lDeviceID;
+					PyObject* argList = Py_BuildValue("(ss)", "", "");
+					if (!argList)
 					{
-						InterfaceLog(LOG_ERROR, "Failed to add unit '%s' to device dictionary.", sd[0].c_str());
+						InterfaceLog(LOG_ERROR, "Building Device argument list failed for Device %d.", lDeviceID);
 						goto Error;
 					}
-					pDevice->pPlugin = this;
-					pDevice->PluginKey = PyUnicode_FromString(m_PluginKey.c_str());
-					pDevice->InterfaceID = m_InterfaceID;
-					pDevice->Unit = atoi(sd[0].c_str());
-					CDevice_refresh(pDevice);
-					Py_DECREF(pDevice);
+
+					// Call the class object, this will call new followed by init
+					PyObject* pDevice = PyObject_CallObject(pModState->pDeviceClass, argList);
+					Py_DECREF(argList);
+					if (!pDevice)
+					{
+						InterfaceLog(LOG_ERROR, "Device object creation failed for Device %d.", lDeviceID);
+						goto Error;
+					}
+
+					PyObject*	pKey = PyLong_FromLong(lDeviceID);
+					if (PyDict_SetItem((PyObject*)m_DeviceDict, pKey, (PyObject*)pDevice) == -1)
+					{
+						InterfaceLog(LOG_ERROR, "Failed to add device number '%d' to device dictionary.", lDeviceID);
+						goto Error;
+					}
 					Py_DECREF(pKey);
+
+					// Set Device as inactive during startup
+					if (((CDevice*)pDevice)->Active)
+					{
+						((CDevice*)pDevice)->Active = false;
+						CDevice_update(((CDevice*)pDevice));
+					}
+
+					// Load Values associated with the device
+					std::vector<std::vector<std::string> > result;
+					result = m_sql.safe_query("SELECT ValueID FROM Value WHERE (DeviceID==%d) ORDER BY DeviceID ASC", lDeviceID);
+					if (!result.empty())
+					{
+						PyType_Ready(&CValueType);
+						// Create Value objects and add o the Values dictionary with ValueID as the key
+						for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+						{
+							std::vector<std::string> sd = *itt;
+
+							// Pass values in, needs to be a tuple and signal CValue_init to load from the database
+							pModState->lObjectID = atoi(sd[0].c_str());
+							PyObject* argList = Py_BuildValue("(siiO)", "", -1, -1, PyUnicode_FromString(""));
+							if (!argList)
+							{
+								InterfaceLog(LOG_ERROR, "Building Value argument list failed for Value %s.", sd[0].c_str());
+								goto Error;
+							}
+
+							// Call the class object, this will call new followed by init
+							PyObject* pValue = PyObject_CallObject(pModState->pValueClass, argList);
+							Py_DECREF(argList);
+							if (!pValue)
+							{
+								InterfaceLog(LOG_ERROR, "Value object creation failed for Value %s.", sd[0].c_str());
+								goto Error;
+							}
+
+							// And insert it into the Device's Values dictionary
+							PyObject* pKey = PyLong_FromLong(atoi(sd[0].c_str()));
+							if (PyDict_SetItem(((CDevice*)pDevice)->Values, pKey, pValue) == -1)
+							{
+								InterfaceLog(LOG_ERROR, "Failed to add value number '%s' to Values dictionary for Device %d.", sd[0].c_str(), lDeviceID);
+								goto Error;
+							}
+							Py_DECREF(pValue);
+							Py_DECREF(pKey);
+						}
+					}
+
+					Py_DECREF(pDevice);
 				}
 			}
 
@@ -1388,6 +1508,10 @@ Error:
 		}
 
 Error:
+		if (PyErr_Occurred())
+		{
+			LogPythonException("Start");
+		}
 		m_bIsStarting = false;
 		return false;
 	}
@@ -1651,49 +1775,6 @@ Error:
 		}
 	}
 
-	void CPlugin::onDeviceAdded(int Unit)
-	{
-		CDevice* pDevice = (CDevice*)CDevice_new(&CDeviceType, (PyObject*)NULL, (PyObject*)NULL);
-
-		PyObject*	pKey = PyLong_FromLong(Unit);
-		if (PyDict_SetItem((PyObject*)m_DeviceDict, pKey, (PyObject*)pDevice) == -1)
-		{
-			_log.Log(LOG_ERROR, "(%s) failed to add unit '%d' to device dictionary.", m_PluginKey.c_str(), Unit);
-			return;
-		}
-		pDevice->pPlugin = this;
-		pDevice->PluginKey = PyUnicode_FromString(m_PluginKey.c_str());
-		pDevice->InterfaceID = m_InterfaceID;
-		pDevice->Unit = Unit;
-		CDevice_refresh(pDevice);
-		Py_DECREF(pDevice);
-		Py_DECREF(pKey);
-	}
-
-	void CPlugin::onDeviceModified(int Unit)
-	{
-		PyObject*	pKey = PyLong_FromLong(Unit);
-
-		CDevice* pDevice = (CDevice*)PyDict_GetItem((PyObject*)m_DeviceDict, pKey);
-
-		if (!pDevice)
-		{
-			_log.Log(LOG_ERROR, "(%s) failed to refresh unit '%u' in device dictionary.", m_PluginKey.c_str(), Unit);
-			return;
-		}
-
-		CDevice_refresh(pDevice);
-	}
-
-	void CPlugin::onDeviceRemoved(int Unit)
-	{
-		PyObject*	pKey = PyLong_FromLong(Unit);
-		if (PyDict_DelItem((PyObject*)m_DeviceDict, pKey) == -1)
-		{
-			_log.Log(LOG_ERROR, "(%s) failed to remove unit '%u' from device dictionary.", m_PluginKey.c_str(), Unit);
-		}
-	}
-
 	void CPlugin::MessagePlugin(CPluginMessageBase *pMessage)
 	{
 		if (m_bDebug & PDM_QUEUE)
@@ -1704,24 +1785,6 @@ Error:
 		// Add message to queue
 		std::lock_guard<std::mutex> l(PluginMutex);
 		PluginMessageQueue.push(pMessage);
-	}
-
-	void CPlugin::DeviceAdded(int Unit)
-	{
-		CPluginMessageBase*	pMessage = new onDeviceAddedCallback(this, Unit);
-		MessagePlugin(pMessage);
-	}
-
-	void CPlugin::DeviceModified(int Unit)
-	{
-		CPluginMessageBase*	pMessage = new onDeviceModifiedCallback(this, Unit);
-		MessagePlugin(pMessage);
-	}
-
-	void CPlugin::DeviceRemoved(int Unit)
-	{
-		CPluginMessageBase*	pMessage = new onDeviceRemovedCallback(this, Unit);
-		MessagePlugin(pMessage);
 	}
 
 	void CPlugin::DisconnectEvent(CEventBase * pMess)
@@ -1821,7 +1884,6 @@ Error:
 
 			// Stop Python
 			if (m_DeviceDict) Py_XDECREF(m_DeviceDict);
-			if (m_ImageDict) Py_XDECREF(m_ImageDict);
 			if (m_SettingsDict) Py_XDECREF(m_SettingsDict);
 			if (m_PyInterpreter) Py_EndInterpreter((PyThreadState*)m_PyInterpreter);
 			Py_XDECREF(m_PyModule);
@@ -1838,7 +1900,6 @@ Error:
 		ClearMessageQueue();
 		m_PyModule = NULL;
 		m_DeviceDict = NULL;
-		m_ImageDict = NULL;
 		m_SettingsDict = NULL;
 		m_PyInterpreter = NULL;
 		m_bIsStarted = false;
@@ -1851,7 +1912,7 @@ Error:
 		m_SettingsDict = PyDict_New();
 		if (PyDict_SetItemString(pModuleDict, "Settings", (PyObject*)m_SettingsDict) == -1)
 		{
-			_log.Log(LOG_ERROR, "(%s) failed to add Settings dictionary.", m_PluginKey.c_str());
+			InterfaceLog(LOG_ERROR, "Failed to add Settings dictionary.");
 			return false;
 		}
 
@@ -1871,7 +1932,7 @@ Error:
 				pValue = PyUnicode_FromString(sd[1].c_str());
 				if (PyDict_SetItem((PyObject*)m_SettingsDict, pKey, pValue))
 				{
-					_log.Log(LOG_ERROR, "(%s) failed to add setting '%s' to settings dictionary.", m_PluginKey.c_str(), sd[0].c_str());
+					InterfaceLog(LOG_ERROR, "Failed to add setting '%s' to settings dictionary.", sd[0].c_str());
 					return false;
 				}
 				Py_XDECREF(pValue);
@@ -1935,31 +1996,6 @@ Error:
 		MessagePlugin(new onCommandCallback(this, Unit, command, level));
 	}
 */
-	bool CPlugin::HasNodeFailed(const int Unit)
-	{
-		if (!m_DeviceDict)	return true;
-
-		PyObject *key, *value;
-		Py_ssize_t pos = 0;
-		while (PyDict_Next((PyObject*)m_DeviceDict, &pos, &key, &value))
-		{
-			long iKey = PyLong_AsLong(key);
-			if (iKey == -1 && PyErr_Occurred())
-			{
-				PyErr_Clear();
-				return false;
-			}
-
-			if (iKey == Unit)
-			{
-				CDevice*	pDevice = (CDevice*)value;
-				return (pDevice->TimedOut != 0);
-			}
-		}
-
-		return false;
-	}
-
 	CPluginNotifier::CPluginNotifier(CPlugin* pPlugin, const std::string &NotifierName) //: CNotificationBase(NotifierName, OPTIONS_NONE), m_pPlugin(pPlugin)
 	{
 //		m_notifications.AddNotifier(this);
