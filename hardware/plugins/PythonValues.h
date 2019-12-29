@@ -39,7 +39,7 @@ namespace Plugins {
 		{ "DeviceID", T_LONG, offsetof(CValue, DeviceID), READONLY, "Device this Value relates to" },
 		{ "UnitID",	T_LONG, offsetof(CValue, UnitID), READONLY, "Unit ID this Value is constrained by" },
 		{ "Value", T_OBJECT, offsetof(CValue, Value), 0, "Value" },
-		{ "Debug", T_BOOL, offsetof(CValue, Debug), READONLY, "Debug logging status" },
+		{ "Debugging", T_BOOL, offsetof(CValue, Debug), READONLY, "Debug logging status" },
 		{ "Timestamp", T_OBJECT, offsetof(CValue, Timestamp), READONLY, "Last update timestamp" },
 		{ NULL }  /* Sentinel */
 	};

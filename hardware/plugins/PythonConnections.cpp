@@ -10,7 +10,7 @@
 #include "../main/localtime_r.h"
 #include "../main/mainstructs.h"
 #include "../main/mainworker.h"
-#include "PythonObjects.h"
+#include "PythonConnections.h"
 #include "PluginMessages.h"
 #include "PluginProtocols.h"
 #include "PluginTransports.h"
@@ -20,11 +20,6 @@ namespace Plugins {
 
 	extern struct PyModuleDef DomoticzModuleDef;
 	extern void LogPythonException(CPlugin* pPlugin, const std::string &sHandler);
-
-	struct module_state {
-		CPlugin*	pPlugin;
-		PyObject*	error;
-	};
 
 	void CConnection_dealloc(CConnection * self)
 	{

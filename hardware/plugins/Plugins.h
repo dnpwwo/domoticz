@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../DomoticzHardware.h"
+#include "DelayedLink.h"
 
 #ifndef byte
 typedef unsigned char byte;
@@ -36,8 +37,6 @@ namespace Plugins {
 		void*			m_PyInterpreter;
 		void*			m_PyModule;
 
-		CPluginNotifier*	m_Notifier;
-
 		std::mutex	m_TransportsMutex;
 		std::vector<CPluginTransport*>	m_Transports;
 
@@ -50,15 +49,16 @@ namespace Plugins {
 
 		void InterfaceLog(const _eLogLevel level, const char* Message, ...);
 		void LogPythonException();
-		void LogPythonException(const std::string &);
 
 	public:
 		CPlugin(const int InterfaceID, const std::string &Name);
 		~CPlugin(void);
 
+		void* m_Interface;
+
 		int		PollInterval(int Interval = -1);
 		void*	PythonModule() { return m_PyModule; };
-		void	Notifier(std::string Notifier = "");
+
 		void	AddConnection(CPluginTransport*);
 		void	RemoveConnection(CPluginTransport*);
 
@@ -72,10 +72,12 @@ namespace Plugins {
 		void	ConnectionWrite(CDirectiveBase*);
 		void	ConnectionDisconnect(CDirectiveBase*);
 		void	DisconnectEvent(CEventBase*);
-		void	Callback(std::string sHandler, void* pParams);
+		void	Callback(void*, std::string, void*);
 		void	RestoreThread();
 		void	ReleaseThread();
 		void	Stop();
+
+		void LogPythonException(const std::string&);
 
 		void	WriteDebugBuffer(const std::vector<byte>& Buffer, bool Incoming);
 
@@ -85,34 +87,23 @@ namespace Plugins {
 
 		void	MessagePlugin(CPluginMessageBase *pMessage);
 
-		void*				m_DeviceDict;
 		void*				m_SettingsDict;
 		bool				m_bDebug;
 		bool				m_bIsStarting;
 		bool				m_bTracing;
 	};
 
-	class CNotificationBase {
-	};
-
-	class CPluginNotifier : public CNotificationBase
-	{
-	private:
-		CPlugin*	m_pPlugin;
-	public:
-		CPluginNotifier(CPlugin* pPlugin, const std::string & );
-		~CPluginNotifier();
-		virtual bool IsConfigured();
-	protected:
-		virtual bool SendMessageImplementation(
-			const uint64_t Idx,
-			const std::string &Name,
-			const std::string &Subject,
-			const std::string &Text,
-			const std::string &ExtraData,
-			const int Priority,
-			const std::string &Sound,
-			const bool bFromNotification);
+	//
+	//	Holds per plugin state details, specifically plugin object, read using PyModule_GetState(PyObject *module)
+	//
+	struct module_state {
+		CPlugin* pPlugin;
+		PyObject* error;
+		PyObject* pInterfaceClass;
+		PyObject* pDeviceClass;
+		PyObject* pValueClass;
+		PyObject* pConnectionClass;
+		long	  lObjectID;
 	};
 
 }

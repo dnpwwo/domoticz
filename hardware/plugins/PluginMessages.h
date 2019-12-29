@@ -19,12 +19,11 @@ namespace Plugins {
 		CPlugin*	m_pPlugin;
 		std::string	m_Name;
 		int			m_InterfaceID;
-		int			m_Unit;
 		bool		m_Delay;
 		time_t		m_When;
 
 	protected:
-		CPluginMessageBase(CPlugin* pPlugin) : m_pPlugin(pPlugin), m_InterfaceID(pPlugin->m_InterfaceID), m_Unit(-1), m_Delay(false)
+		CPluginMessageBase(CPlugin* pPlugin) : m_pPlugin(pPlugin), m_InterfaceID(pPlugin->m_InterfaceID), m_Delay(false)
 		{
 			m_Name = __func__;
 			m_When = time(0);
@@ -73,11 +72,21 @@ namespace Plugins {
 	class CCallbackBase : public CPluginMessageBase
 	{
 	protected:
+		PyObject* m_Target;
 		std::string	m_Callback;
 		virtual void ProcessLocked() = 0;
 	public:
-		CCallbackBase(CPlugin* pPlugin, const std::string &Callback) : CPluginMessageBase(pPlugin), m_Callback(Callback) {};
-		virtual void Callback(PyObject* pParams) { if (m_Callback.length()) m_pPlugin->Callback(m_Callback, pParams); };
+		CCallbackBase(CPlugin* pPlugin, const std::string& Callback) : CPluginMessageBase(pPlugin), m_Callback(Callback), m_Target(NULL) {};
+		CCallbackBase(CPlugin* pPlugin, PyObject* pTarget, const std::string& Callback) : CPluginMessageBase(pPlugin), m_Callback(Callback), m_Target(pTarget) {};
+		virtual void Callback(PyObject* pParams)
+		{
+			if (!m_Target) m_Target = (PyObject*)m_pPlugin->m_Interface;
+			if (m_Callback.length()) m_pPlugin->Callback(m_Target, m_Callback, pParams);
+		};
+		virtual void Callback(PyObject* pTarget, PyObject* pParams)
+		{
+			if (m_Callback.length()) m_pPlugin->Callback(pTarget, m_Callback, pParams);
+		};
 		virtual const char* PythonName() { return m_Callback.c_str(); };
 	};
 
@@ -101,6 +110,18 @@ namespace Plugins {
 		virtual void ProcessLocked()
 		{
 			Callback(NULL);
+		};
+	};
+
+	class onStopCallback : public CCallbackBase
+	{
+	public:
+		onStopCallback(CPlugin* pPlugin) : CCallbackBase(pPlugin, "onStop") { m_Name = __func__; };
+	protected:
+		virtual void ProcessLocked()
+		{
+			Callback(NULL);
+			m_pPlugin->Stop();
 		};
 	};
 
@@ -131,23 +152,106 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 }
 #endif
 
-	class onConnectCallback : public CCallbackBase, public CHasConnection
+
+	// onCreate, onUpdate, onDelete can apply to Interface, Device or Values objects
+	class onCreateCallback : public CCallbackBase
 	{
 	public:
-		onConnectCallback(CPlugin* pPlugin, PyObject* Connection) : CCallbackBase(pPlugin, "onConnect"), CHasConnection(Connection) { m_Name = __func__; };
-		onConnectCallback(CPlugin* pPlugin, PyObject* Connection, const int Code, const std::string &Text) : CCallbackBase(pPlugin, "onConnect"), CHasConnection(Connection), m_Status(Code), m_Text(Text) { m_Name = __func__; };
-		int						m_Status;
-		std::string				m_Text;
+		onCreateCallback(CPlugin* pPlugin, PyObject* pTarget) : CCallbackBase(pPlugin, pTarget, "onCreate") { };
 	protected:
 		virtual void ProcessLocked()
 		{
-#ifdef _WIN32
-			std::string textUTF8 = get_utf8_from_ansi(m_Text, GetACP());
-#else
-			std::string textUTF8 = m_Text; // TODO: Is it safe to assume non-Windows will always be UTF-8?
-#endif
-			Callback(Py_BuildValue("Ois", m_pConnection, m_Status, textUTF8.c_str()));  // 0 is success else socket failure code
+			Callback(NULL);
+			Py_DECREF(m_Target);
 		};
+	};
+
+	class onUpdateCallback : public CCallbackBase
+	{
+	public:
+		onUpdateCallback(CPlugin* pPlugin, PyObject* pTarget) : CCallbackBase(pPlugin, pTarget, "onUpdate") { };
+	protected:
+		virtual void ProcessLocked()
+		{
+			Callback(NULL);
+			Py_DECREF(m_Target);
+		};
+	};
+
+	class onDeleteCallback : public CCallbackBase
+	{
+	public:
+		onDeleteCallback(CPlugin* pPlugin, PyObject* pTarget) : CCallbackBase(pPlugin, pTarget, "onDelete") { };
+	protected:
+		virtual void ProcessLocked()
+		{
+			Callback(NULL);
+			Py_DECREF(m_Target);
+		};
+	};
+
+
+	class onConnectCallback : public CCallbackBase, public CHasConnection
+		{
+		public:
+			onConnectCallback(CPlugin* pPlugin, PyObject* Connection) : CCallbackBase(pPlugin, "onConnect"), CHasConnection(Connection) { m_Name = __func__; };
+			onConnectCallback(CPlugin* pPlugin, PyObject* Connection, const int Code, const std::string &Text) : CCallbackBase(pPlugin, "onConnect"), CHasConnection(Connection), m_Status(Code), m_Text(Text) { m_Name = __func__; };
+			int						m_Status;
+			std::string				m_Text;
+		protected:
+			virtual void ProcessLocked()
+			{
+	#ifdef _WIN32
+				std::string textUTF8 = get_utf8_from_ansi(m_Text, GetACP());
+	#else
+				std::string textUTF8 = m_Text; // TODO: Is it safe to assume non-Windows will always be UTF-8?
+	#endif
+				Callback(m_pConnection, Py_BuildValue("is", m_Status, textUTF8.c_str()));  // 0 is success else socket failure code
+			};
+		};
+
+	class onMessageCallback : public CCallbackBase, public CHasConnection
+	{
+	public:
+		onMessageCallback(CPlugin* pPlugin, PyObject* Connection, const std::string& Buffer) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection), m_Data(NULL)
+		{
+			m_Name = __func__;
+			m_Buffer.reserve(Buffer.length());
+			m_Buffer.assign((const byte*)Buffer.c_str(), (const byte*)Buffer.c_str() + Buffer.length());
+		};
+		onMessageCallback(CPlugin* pPlugin, PyObject* Connection, const std::vector<byte>& Buffer) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection), m_Data(NULL)
+		{
+			m_Name = __func__;
+			m_Buffer = Buffer;
+		};
+		onMessageCallback(CPlugin* pPlugin, PyObject* Connection, PyObject* pData) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection)
+		{
+			m_Name = __func__;
+			m_Data = pData;
+		};
+		std::vector<byte>		m_Buffer;
+		PyObject* m_Data;
+
+	protected:
+		virtual void ProcessLocked()
+		{
+			PyObject* pParams = NULL;
+
+			// Data is stored in a single vector of bytes
+			if (m_Buffer.size())
+			{
+				pParams = Py_BuildValue("y#", &m_Buffer[0], m_Buffer.size());
+				Callback(m_pConnection, pParams);
+			}
+
+			// Data is in a dictionary
+			if (m_Data)
+			{
+				pParams = Py_BuildValue("O", m_Data);
+				Callback(m_pConnection, pParams);
+				Py_XDECREF(m_Data);
+			}
+		}
 	};
 
 	class onDisconnectCallback : public CCallbackBase, public CHasConnection
@@ -157,26 +261,25 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 	protected:
 		virtual void ProcessLocked()
 		{
-			Callback(Py_BuildValue("(O)", m_pConnection));  // 0 is success else socket failure code
+			Callback(m_pConnection, NULL);  // 0 is success else socket failure code
 		};
 	};
+
 
 	class onCommandCallback : public CCallbackBase
 	{
 	public:
-		onCommandCallback(CPlugin* pPlugin, int Unit, const std::string& Command, const int level, const std::string &color) : CCallbackBase(pPlugin, "onCommand")
+		onCommandCallback(CPlugin* pPlugin, const std::string& Command, const int level, const std::string &color) : CCallbackBase(pPlugin, "onCommand")
 		{
 			m_Name = __func__;
-			m_Unit = Unit;
 			m_fLevel = -273.15f;
 			m_Command = Command;
 			m_iLevel = level;
 			m_iColor = color;
 		};
-		onCommandCallback(CPlugin* pPlugin, int Unit, const std::string& Command, const float level) : CCallbackBase(pPlugin, "onCommand")
+		onCommandCallback(CPlugin* pPlugin, const std::string& Command, const float level) : CCallbackBase(pPlugin, "onCommand")
 		{
 			m_Name = __func__;
-			m_Unit = Unit;
 			m_fLevel = level;
 			m_Command = Command;
 			m_iLevel = -1;
@@ -193,11 +296,11 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 			PyObject*	pParams;
 			if (m_fLevel != -273.15f)
 			{
-				pParams = Py_BuildValue("isfs", m_Unit, m_Command.c_str(), m_fLevel, "");
+				pParams = Py_BuildValue("sfs",  m_Command.c_str(), m_fLevel, "");
 			}
 			else
 			{
-				pParams = Py_BuildValue("isis", m_Unit, m_Command.c_str(), m_iLevel, m_iColor.c_str());
+				pParams = Py_BuildValue("sis", m_Command.c_str(), m_iLevel, m_iColor.c_str());
 			}
 			Callback(pParams);
 		};
@@ -206,10 +309,9 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 	class onSecurityEventCallback : public CCallbackBase
 	{
 	public:
-		onSecurityEventCallback(CPlugin* pPlugin, int Unit, const int level, const std::string& Description) : CCallbackBase(pPlugin, "onSecurityEvent")
+		onSecurityEventCallback(CPlugin* pPlugin, const int level, const std::string& Description) : CCallbackBase(pPlugin, "onSecurityEvent")
 		{
 			m_Name = __func__;
-			m_Unit = Unit;
 			m_iLevel = level;
 			m_Description = Description;
 		};
@@ -219,53 +321,9 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 	protected:
 		virtual void ProcessLocked()
 		{
-			PyObject*	pParams = Py_BuildValue("iis", m_Unit, m_iLevel, m_Description.c_str());
+			PyObject*	pParams = Py_BuildValue("is", m_iLevel, m_Description.c_str());
 			Callback(pParams);
 		};
-	};
-
-	class onMessageCallback : public CCallbackBase, public CHasConnection
-	{
-	public:
-		onMessageCallback(CPlugin* pPlugin, PyObject* Connection, const std::string& Buffer) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection), m_Data(NULL)
-		{
-			m_Name = __func__;
-			m_Buffer.reserve(Buffer.length());
-			m_Buffer.assign((const byte*)Buffer.c_str(), (const byte*)Buffer.c_str()+Buffer.length());
-		};
-		onMessageCallback(CPlugin* pPlugin, PyObject* Connection, const std::vector<byte>& Buffer) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection), m_Data(NULL)
-		{
-			m_Name = __func__;
-			m_Buffer = Buffer;
-		};
-		onMessageCallback(CPlugin* pPlugin, PyObject* Connection, PyObject*	pData) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection)
-		{
-			m_Name = __func__;
-			m_Data = pData;
-		};
-		std::vector<byte>		m_Buffer;
-		PyObject*				m_Data;
-
-	protected:
-		virtual void ProcessLocked()
-		{
-			PyObject*	pParams = NULL;
-
-			// Data is stored in a single vector of bytes
-			if (m_Buffer.size())
-			{
-				pParams = Py_BuildValue("Oy#", m_pConnection, &m_Buffer[0], m_Buffer.size());
-				Callback(pParams);
-			}
-
-			// Data is in a dictionary
-			if (m_Data)
-			{
-				pParams = Py_BuildValue("OO", m_pConnection, m_Data);
-				Callback(pParams);
-				Py_XDECREF(m_Data);
-			}
-		}
 	};
 
 	class onNotificationCallback : public CCallbackBase
@@ -303,18 +361,6 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 		{
 			PyObject*	pParams = Py_BuildValue("ssssiss", m_SuppliedName.c_str(), m_Subject.c_str(), m_Text.c_str(), m_Status.c_str(), m_Priority, m_Sound.c_str(), m_ImageFile.c_str());
 			Callback(pParams);
-		};
-	};
-
-	class onStopCallback : public CCallbackBase
-	{
-	public:
-		onStopCallback(CPlugin* pPlugin) : CCallbackBase(pPlugin, "onStop") { m_Name = __func__; };
-	protected:
-		virtual void ProcessLocked()
-		{
-			Callback(NULL);
-			m_pPlugin->Stop();
 		};
 	};
 
@@ -399,14 +445,6 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 		PollIntervalDirective(CPlugin* pPlugin, const int PollInterval) : CDirectiveBase(pPlugin), m_Interval(PollInterval) { m_Name = __func__; };
 		int						m_Interval;
 		virtual void ProcessLocked() {m_pPlugin->PollInterval(m_Interval); };
-	};
-
-	class NotifierDirective : public CDirectiveBase
-	{
-	public:
-		NotifierDirective(CPlugin* pPlugin, const char* Name) : CDirectiveBase(pPlugin), m_NotifierName(Name) { m_Name = __func__; };
-		std::string		m_NotifierName;
-		virtual void ProcessLocked() { m_pPlugin->Notifier(m_NotifierName); };
 	};
 
 	// Base event message class

@@ -14,16 +14,6 @@ namespace Plugins {
 	extern struct PyModuleDef DomoticzModuleDef;
 	extern void LogPythonException(CPlugin* pPlugin, const std::string& sHandler);
 
-	struct module_state {
-		CPlugin* pPlugin;
-		PyObject* error;
-		PyObject* pInterfaceClass;
-		PyObject* pDeviceClass;
-		PyObject* pValueClass;
-		PyObject* pConnectionClass;
-		long		lObjectID;
-	};
-
 	void ValueLog(CValue* self, const _eLogLevel level, const char* Message, ...)
 	{
 		va_list argList;
@@ -396,7 +386,7 @@ namespace Plugins {
 			}
 			else
 			{
-				ValueLog(self, LOG_ERROR, "Invalid Value ID '%d', must not be already set.", self->DeviceID);
+				ValueLog(self, LOG_ERROR, "Invalid Value ID '%d', must be already set.", (long)self->DeviceID);
 			}
 		}
 		else
@@ -441,7 +431,7 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), self->ValueID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), (long)self->ValueID);
 			}
 		}
 		else
@@ -477,7 +467,7 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), self->ValueID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), (long)self->ValueID);
 			}
 		}
 		else

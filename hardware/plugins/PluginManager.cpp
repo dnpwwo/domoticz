@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 //
-//	Domoticz Plugin System - Dnpwwo, 2016
+//	Domoticz Plugin System - Dnpwwo, 2016 - 2020
 //
 #ifdef ENABLE_PYTHON
 
@@ -13,6 +13,7 @@
 #include "Plugins.h"
 #include "PluginMessages.h"
 #include "PluginTransports.h"
+#include "PythonDevices.h"
 
 #include "../main/Helper.h"
 #include "../main/Logger.h"
@@ -51,6 +52,8 @@ extern std::string szPyVersion;
 #define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
 
 namespace Plugins {
+
+	extern struct PyModuleDef DomoticzModuleDef;
 
 	PyMODINIT_FUNC PyInit_Domoticz(void);
 
@@ -345,11 +348,13 @@ namespace Plugins {
 					// Just restart if it is is supposed to be active
 					else if (bActive)
 					{
+						// Actually should check what has changed and only restart if the Python script has changed, otherwise queue an 'onChanged' event
 						m_pPlugins.find(InterfaceID)->second->Stop();
 						m_pPlugins.find(InterfaceID)->second->Start();
 					}
 				}
 				else if (pEntry->m_Action == "Delete") {
+					// Stop and de-register interface
 					if (!bActive && m_pPlugins.count(InterfaceID))
 					{
 						m_pPlugins.find(InterfaceID)->second->Stop();
@@ -361,12 +366,175 @@ namespace Plugins {
 					_log.Log(LOG_STATUS, "PluginSystem: Interface change event on '%s', ignored.", pEntry->m_Values[1].c_str());
 				}
 			}
-			else if (sTable == "Devices") {
-				_log.Log(LOG_STATUS, "PluginSystem: Device change event, ignored.");
-				//pPlugin->DeviceModified(atoi(Unit.c_str()));
+			else if (sTable == "Devices")
+			{
+				CPlugin* pPlugin = NULL;
+				PyObject* pDevice = NULL;
+				long lDeviceID = pEntry->m_RowIdx;
+				long lInterfaceID = atoi(GetFieldValue("InterfaceID", pEntry).c_str());
+
+				try
+				{
+					std::lock_guard<std::mutex> l(PythonMutex);
+
+					// locate the Plugin related to the Device
+					if (lInterfaceID)
+					{
+						pPlugin = (CPlugin*)m_pPlugins.find(lInterfaceID)->second;
+					}
+					else
+					{
+						// Only detail available is the DeviceID so cycle through plugins and find it
+						for (std::map<int, CDomoticzHardwareBase*>::iterator it = m_pPlugins.begin(); it != m_pPlugins.end(); it++)
+						{
+							pPlugin = (CPlugin*)it->second;
+
+							pPlugin->RestoreThread();
+							PyObject* pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
+							if (!pDevicesDict)
+							{
+								pPlugin->ReleaseThread();
+								continue; // Should never happen
+							}
+
+							PyObject* pKey = PyLong_FromLong(lDeviceID);
+							pDevice = PyDict_GetItem(pDevicesDict, pKey);
+							Py_DECREF(pKey);
+							Py_DECREF(pDevicesDict);
+							if (pDevice)
+							{
+								Py_INCREF(pDevice);
+								pPlugin->ReleaseThread();
+								break; // This one
+							}
+							pPlugin->ReleaseThread();
+							pPlugin = NULL;
+						}
+					}
+
+					// Sanity check
+					if (!pPlugin)
+					{
+						_log.Log(LOG_ERROR, "PluginSystem:%s, unable to find Plugin for Device %s event.", __func__, pEntry->m_Action.c_str());
+						return;
+					}
+
+					pPlugin->RestoreThread();
+
+					PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
+					if (!pModule)
+					{
+						_log.Log(LOG_ERROR, "PluginSystem:%s, unable to find module for current interpreter.", __func__);
+						return;
+					}
+
+					module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+					if (!pModState)
+					{
+						_log.Log(LOG_ERROR, "PluginSystem:%s, unable to obtain module state.", __func__);
+						return;
+					}
+
+					if (pEntry->m_Action == "Insert") {
+						// Pass values in, needs to be a tuple and signal CDevice_init to load from the database
+						pModState->lObjectID = lDeviceID;
+						PyObject* argList = Py_BuildValue("(ss)", "", "");
+						if (!argList)
+						{
+							_log.Log(LOG_ERROR, "Building Device argument list failed for Device %d.", lDeviceID);
+							return;
+						}
+
+						// Call the class object, this will call new followed by init
+						pDevice = PyObject_CallObject(pModState->pDeviceClass, argList);
+						Py_DECREF(argList);
+						if (!pDevice)
+						{
+							_log.Log(LOG_ERROR, "Device object creation failed for Device %d.", lDeviceID);
+							return;
+						}
+
+						// And insert it into the Interface's Devices dictionary
+						PyObject* pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
+						if (!pDevicesDict)
+						{
+							_log.Log(LOG_ERROR, "PluginSystem:%s, unable to obtain Interface Devices dictionary.", __func__);
+							return;
+						}
+
+						PyObject* pKey = PyLong_FromLong(lDeviceID);
+						if (PyDict_SetItem(pDevicesDict, pKey, (PyObject*)pDevice) == -1)
+						{
+							_log.Log(LOG_ERROR, "Failed to add device number '%d' to Devices dictionary.", lDeviceID);
+							return;
+						}
+						Py_DECREF(pKey);
+						Py_DECREF(pDevicesDict);
+
+						// Notify new device that it has been created, event handler must decref the device
+						pPlugin->MessagePlugin(new onCreateCallback(pPlugin, pDevice));
+					}
+					else if (pEntry->m_Action == "Update") 
+					{
+						// And locate it in the Interface's Devices dictionary
+						PyObject* pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
+						if (!pDevicesDict)
+						{
+							_log.Log(LOG_ERROR, "PluginSystem:%s, unable to obtain Interface Devices dictionary.", __func__);
+							return;
+						}
+
+						PyObject* pKey = PyLong_FromLong(lDeviceID);
+						pDevice = PyDict_GetItem(pDevicesDict, pKey);
+						Py_DECREF(pKey);
+						Py_DECREF(pDevicesDict);
+						if (!pDevice)
+						{
+							_log.Log(LOG_ERROR, "Failed to get device entry number '%d' in Devices dictionary.", lDeviceID);
+							return;
+						}
+						Py_INCREF(pDevice);
+
+						// Force Device object to have new values
+						CDevice_refresh((CDevice*)pDevice);
+
+						// Notify new device that it has been created, event handler must decref the Device
+						pPlugin->MessagePlugin(new onUpdateCallback(pPlugin, pDevice));
+					}
+					else if (pEntry->m_Action == "Delete") 
+					{
+						// Sanity check
+						if (!pDevice)
+						{
+							_log.Log(LOG_ERROR, "PluginSystem:%s, NULL Device pointer for %s event.", __func__, pEntry->m_Action.c_str());
+							return;
+						}
+
+						// Notify new device that it has been created, event handler must decref the Device
+						pPlugin->MessagePlugin(new onDeleteCallback(pPlugin, pDevice));
+					}
+					else
+					{
+						_log.Log(LOG_STATUS, "PluginSystem: Device change event on '%s', ignored.", pEntry->m_Values[1].c_str());
+					}
+				}
+				catch (...)
+				{
+					_log.Log(LOG_ERROR, "Exception caught in '%s'.", __func__);
+				}
+				pPlugin->ReleaseThread();
 			}
 			else if (sTable == "Values") {
-				_log.Log(LOG_STATUS, "PluginSystem: Value change event, ignored.");
+				if (pEntry->m_Action == "Insert") {
+				}
+				else if (pEntry->m_Action == "Update") {
+				}
+				else if (pEntry->m_Action == "Delete") {
+				}
+				else
+				{
+					_log.Log(LOG_STATUS, "PluginSystem: Value change event on '%s', ignored.", pEntry->m_Values[1].c_str());
+				}
 			}
 			else if (sTable == "Preferences") {
 				_log.Log(LOG_STATUS, "PluginSystem: Preference change event on '%s', ignored.", pEntry->m_Values[1].c_str());

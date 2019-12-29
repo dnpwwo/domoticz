@@ -2,6 +2,7 @@
 
 #include "PythonDevices.h"
 #include "PluginProtocols.h"
+#include "PythonValues.h"
 
 //
 //	Domoticz Plugin System - Dnpwwo, 2016 - 2020
@@ -13,16 +14,6 @@ namespace Plugins {
 
 	extern struct PyModuleDef DomoticzModuleDef;
 	extern void LogPythonException(CPlugin* pPlugin, const std::string& sHandler);
-
-	struct module_state {
-		CPlugin* pPlugin;
-		PyObject* error;
-		PyObject* pInterfaceClass;
-		PyObject* pDeviceClass;
-		PyObject* pValueClass;
-		PyObject* pConnectionClass;
-		long		lObjectID;
-	};
 
 	void DeviceLog(CDevice* self, const _eLogLevel level, const char* Message, ...)
 	{
@@ -310,6 +301,55 @@ namespace Plugins {
 				self->DeviceID = pModState->lObjectID;
 				CDevice_refresh(self);
 				pModState->lObjectID = 0;
+
+				// Set Device as inactive during startup
+				if (self->Active)
+				{
+					self->Active = false;
+					CDevice_update(self);
+				}
+
+				// Load Values associated with the device
+				std::vector<std::vector<std::string> > result;
+				result = m_sql.safe_query("SELECT ValueID FROM Value WHERE (DeviceID==%d) ORDER BY DeviceID ASC", self->DeviceID);
+				if (!result.empty())
+				{
+					PyType_Ready(&CValueType);
+					// Create Value objects and add o the Values dictionary with ValueID as the key
+					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+					{
+						std::vector<std::string> sd = *itt;
+
+						// Pass values in, needs to be a tuple and signal CValue_init to load from the database
+						pModState->lObjectID = atoi(sd[0].c_str());
+						PyObject* argList = Py_BuildValue("(siiO)", "", -1, -1, PyUnicode_FromString(""));
+						if (!argList)
+						{
+							DeviceLog(self, LOG_ERROR, "Building Value argument list failed for Value %s.", sd[0].c_str());
+							goto Error;
+						}
+
+						// Call the class object, this will call new followed by init
+						PyObject* pValue = PyObject_CallObject(pModState->pValueClass, argList);
+						Py_DECREF(argList);
+						if (!pValue)
+						{
+							DeviceLog(self, LOG_ERROR, "Value object creation failed for Value %s.", sd[0].c_str());
+							goto Error;
+						}
+
+						// And insert it into the Device's Values dictionary
+						PyObject* pKey = PyLong_FromLong(atoi(sd[0].c_str()));
+						if (PyDict_SetItem(self->Values, pKey, pValue) == -1)
+						{
+							DeviceLog(self, LOG_ERROR, "Failed to add value number '%s' to Values dictionary for Device %d.", sd[0].c_str(), self->DeviceID);
+							goto Error;
+						}
+						Py_DECREF(pValue);
+						Py_DECREF(pKey);
+					}
+				}
+
 			}
 			else
 			{
@@ -347,6 +387,11 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
+	Error:
+		if (PyErr_Occurred())
+		{
+			self->pPlugin->LogPythonException("Start");
+		}
 		return 0;
 	}
 
@@ -370,21 +415,30 @@ namespace Plugins {
 					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
+						PyObject* pSafeAssign;
+
 						self->InterfaceID = atoi(sd[0].c_str());
-						Py_XDECREF(self->Name);
+
+						pSafeAssign = self->Name;
 						self->Name = PyUnicode_FromString(sd[1].c_str());
-						Py_XDECREF(self->ExternalID);
+						Py_XDECREF(pSafeAssign);
+
+						pSafeAssign = self->ExternalID;
 						self->ExternalID = PyUnicode_FromString(sd[2].c_str());
+						Py_XDECREF(pSafeAssign);
+
 						self->Debug = atoi(sd[3].c_str()) ? true : false;
 						self->Active = atoi(sd[4].c_str()) ? true : false;
-						Py_XDECREF(self->Timestamp);
+
+						pSafeAssign = self->Timestamp;
 						self->Timestamp = PyUnicode_FromString(sd[5].c_str());
+						Py_XDECREF(pSafeAssign);
 					}
 				}
 			}
 			else
 			{
-				DeviceLog(self, LOG_ERROR, "Invalid Device ID '%d', must not be already set.", self->DeviceID);
+				DeviceLog(self, LOG_ERROR, "Invalid Device ID '%d', must be already set.", (long)self->DeviceID);
 			}
 		}
 		else
@@ -425,7 +479,7 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Device ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), self->DeviceID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Device ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), (long)self->DeviceID);
 			}
 		}
 		else
@@ -460,7 +514,7 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Device ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), self->DeviceID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Device ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), (long)self->DeviceID);
 			}
 		}
 		else
@@ -510,7 +564,7 @@ namespace Plugins {
 
 	PyObject* CDevice_str(CDevice* self)
 	{
-		PyObject* pRetVal = PyUnicode_FromFormat("ID: %d, Name: %U, InterfaceID: %d, ExternalID: %U, Active: '%s', Timestamp: %U",
+		PyObject* pRetVal = PyUnicode_FromFormat("DeviceID: %d, Name: %U, InterfaceID: %d, ExternalID: %U, Active: '%s', Timestamp: %U",
 			self->DeviceID, self->Name, self->InterfaceID, self->ExternalID, (self->Active?"True":"False"), self->Timestamp);
 		return pRetVal;
 	}

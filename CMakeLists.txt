@@ -245,9 +245,10 @@ hardware/plugins/Plugins.cpp
 hardware/plugins/PluginManager.cpp
 hardware/plugins/PluginProtocols.cpp
 hardware/plugins/PluginTransports.cpp
-hardware/plugins/PythonObjects.cpp
+hardware/plugins/PythonInterfaces.cpp
 hardware/plugins/PythonDevices.cpp
 hardware/plugins/PythonValues.cpp
+hardware/plugins/PythonConnections.cpp
 web/webserver/Base64.cpp
 web/webserver/connection.cpp
 web/webserver/connection_manager.cpp

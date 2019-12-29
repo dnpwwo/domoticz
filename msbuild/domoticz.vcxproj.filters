@@ -832,9 +832,6 @@
     <ClInclude Include="..\hardware\plugins\PluginTransports.h">
       <Filter>Devices\Plugins</Filter>
     </ClInclude>
-    <ClInclude Include="..\hardware\plugins\PythonObjects.h">
-      <Filter>Devices\Plugins</Filter>
-    </ClInclude>
     <ClInclude Include="..\web\DataAccess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -842,6 +839,12 @@
       <Filter>Devices\Plugins</Filter>
     </ClInclude>
     <ClInclude Include="..\hardware\plugins\PythonValues.h">
+      <Filter>Devices\Plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\hardware\plugins\PythonInterfaces.h">
+      <Filter>Devices\Plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\hardware\plugins\PythonConnections.h">
       <Filter>Devices\Plugins</Filter>
     </ClInclude>
   </ItemGroup>
@@ -951,9 +954,6 @@
     <ClCompile Include="..\hardware\plugins\PluginTransports.cpp">
       <Filter>Devices\Plugins</Filter>
     </ClCompile>
-    <ClCompile Include="..\hardware\plugins\PythonObjects.cpp">
-      <Filter>Devices\Plugins</Filter>
-    </ClCompile>
     <ClCompile Include="..\web\WebServer.cpp">
       <Filter>Web</Filter>
     </ClCompile>
@@ -1012,6 +1012,12 @@
       <Filter>Devices\Plugins</Filter>
     </ClCompile>
     <ClCompile Include="..\hardware\plugins\PythonValues.cpp">
+      <Filter>Devices\Plugins</Filter>
+    </ClCompile>
+    <ClCompile Include="..\hardware\plugins\PythonInterfaces.cpp">
+      <Filter>Devices\Plugins</Filter>
+    </ClCompile>
+    <ClCompile Include="..\hardware\plugins\PythonConnections.cpp">
       <Filter>Devices\Plugins</Filter>
     </ClCompile>
   </ItemGroup>

@@ -84,6 +84,14 @@ const char* sqlInterfaceAfterUpdateTrigger =
 					"); "
 			"END;";
 
+// Override cascading delete to force Devices to be deleted BEFORE Interface, make event processing logic work
+const char* sqlInterfaceBeforeDeleteTrigger =
+		"CREATE TRIGGER IF NOT EXISTS [InterfaceBeforeDeleteTrigger] BEFORE DELETE ON Interface "
+			"FOR EACH ROW "
+			"BEGIN "
+				"DELETE FROM Device WHERE InterfaceID = OLD.InterfaceID; "
+			"END;";
+
 const char* sqlCreateDevice =
 		"CREATE TABLE IF NOT EXISTS [Device] ("
 			"[DeviceID] INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -126,6 +134,14 @@ const char* sqlDeviceAfterUpdateTrigger =
 							"'Device \"' || New.Name || '\" updated, ID '||New.DeviceID||', ExternalID \"'||New.ExternalID||'\".' "
 					"END "
 				"); "
+			"END;";
+
+// Override cascading delete to force Values to be deleted BEFORE Device, make event processing logic work
+const char* sqlDeviceBeforeDeleteTrigger =
+		"CREATE TRIGGER IF NOT EXISTS [DeviceBeforeDeleteTrigger] BEFORE DELETE ON Device "
+			"FOR EACH ROW "
+			"BEGIN "
+				"DELETE FROM Value WHERE DeviceID = OLD.DeviceID; "
 			"END;";
 
 const char* sqlCreateUnit =
@@ -416,10 +432,12 @@ bool CSQLHelper::OpenDatabase()
 	query(sqlCreateInterfaceLog);
 	query(sqlInterfaceAfterInsertTrigger);
 	query(sqlInterfaceAfterUpdateTrigger);
+	query(sqlInterfaceBeforeDeleteTrigger);
 	query(sqlCreateDevice);
 	query(sqlCreateDeviceLog);
 	query(sqlDeviceAfterInsertTrigger);
 	query(sqlDeviceAfterUpdateTrigger);
+	query(sqlDeviceBeforeDeleteTrigger);
 	query(sqlCreateUnit);
 	query(sqlCreateValue);
 	query(sqlCreateValueHistory);

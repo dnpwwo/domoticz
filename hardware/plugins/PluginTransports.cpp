@@ -7,7 +7,7 @@
 
 #include "PluginMessages.h"
 #include "PluginTransports.h"
-#include "PythonObjects.h"
+#include "PythonConnections.h"
 
 #include "../main/Logger.h"
 #include "icmp_header.hpp"
