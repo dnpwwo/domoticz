@@ -34,8 +34,8 @@ namespace Plugins {
 	private:
 		int				m_iPollInterval;
 
-		void*			m_PyInterpreter;
-		void*			m_PyModule;
+		PyThreadState*	m_PyInterpreter;
+		PyObject*		m_PyModule;
 
 		std::mutex	m_TransportsMutex;
 		std::vector<CPluginTransport*>	m_Transports;
@@ -54,10 +54,10 @@ namespace Plugins {
 		CPlugin(const int InterfaceID, const std::string &Name);
 		~CPlugin(void);
 
-		void* m_Interface;
-
 		int		PollInterval(int Interval = -1);
-		void*	PythonModule() { return m_PyModule; };
+
+		PyObject* PythonModule() { return m_PyModule; };
+		PyThreadState* PythonInterpreter() { return m_PyInterpreter; };
 
 		void	AddConnection(CPluginTransport*);
 		void	RemoveConnection(CPluginTransport*);
@@ -72,9 +72,7 @@ namespace Plugins {
 		void	ConnectionWrite(CDirectiveBase*);
 		void	ConnectionDisconnect(CDirectiveBase*);
 		void	DisconnectEvent(CEventBase*);
-		void	Callback(void*, std::string, void*);
-		void	RestoreThread();
-		void	ReleaseThread();
+		void	Callback(PyObject*, std::string, void*);
 		void	Stop();
 
 		void LogPythonException(const std::string&);
@@ -87,7 +85,9 @@ namespace Plugins {
 
 		void	MessagePlugin(CPluginMessageBase *pMessage);
 
-		void*				m_SettingsDict;
+		PyObject* m_Interface;
+
+		PyObject*			m_SettingsDict;
 		bool				m_bDebug;
 		bool				m_bIsStarting;
 		bool				m_bTracing;
@@ -97,13 +97,28 @@ namespace Plugins {
 	//	Holds per plugin state details, specifically plugin object, read using PyModule_GetState(PyObject *module)
 	//
 	struct module_state {
-		CPlugin* pPlugin;
-		PyObject* error;
-		PyObject* pInterfaceClass;
-		PyObject* pDeviceClass;
-		PyObject* pValueClass;
-		PyObject* pConnectionClass;
-		long	  lObjectID;
+		CPlugin*		pPlugin;
+		PyObject*		error;
+		PyTypeObject*	pInterfaceClass;
+		PyTypeObject*	pDeviceClass;
+		PyTypeObject*	pValueClass;
+		PyTypeObject*	pConnectionClass;
+		long			lObjectID;
 	};
 
+	//
+	//	Controls access to Python (single threads it)
+	//
+	class AccessPython
+	{
+	private:
+		static	std::mutex	PythonMutex;
+		static  volatile bool		m_bHasThreadState;
+		std::unique_lock<std::mutex>*	m_Lock;
+		PyThreadState* m_Python;
+
+	public:
+		AccessPython(CPlugin* pPlugin);
+		~AccessPython();
+	};
 }

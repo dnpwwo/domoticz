@@ -233,13 +233,13 @@ namespace Plugins {
 	{
 		Json::Reader	jReader;
 		Json::Value		root;
-		PyObject*		pRetVal = Py_None;
+		PyObject*		pRetVal = NULL;
 
 		bool bRet = jReader.parse(sData, root);
 		if ((!bRet) || (!root.isObject()))
 		{
 			_log.Log(LOG_ERROR, "JSON Protocol: Parse Error on '%s'", sData.c_str());
-			Py_INCREF(Py_None);
+			pRetVal = PyDict_New();
 		}
 		else
 		{

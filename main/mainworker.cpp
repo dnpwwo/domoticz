@@ -101,6 +101,11 @@ void MainWorker::AddAllDomoticzHardware()
 		m_hardwareStartCounter = 0;
 		m_bStartHardware = true;
 	}
+	else
+	{
+		// Even if there is no hardware tell the Plugin Framework it is okay to start
+		m_pluginsystem.AllPluginsStarted();
+	}
 }
 
 void MainWorker::StartDomoticzHardware()
@@ -113,6 +118,7 @@ void MainWorker::StartDomoticzHardware()
 			itt->Start();
 		}
 	}
+	m_pluginsystem.AllPluginsStarted();
 }
 
 void MainWorker::StopDomoticzHardware()
@@ -369,32 +375,9 @@ bool MainWorker::GetSunSettings()
 	return true;
 }
 
-bool MainWorker::RestartHardware(const std::string &idx)
+bool MainWorker::RestartHardware(const std::string &idx, const std::string& Name)
 {
-	std::vector<std::vector<std::string> > result;
-	result = m_sql.safe_query(
-		"SELECT Name, Enabled, Type, Address, Port, SerialPort, Username, Password, Extra, Mode1, Mode2, Mode3, Mode4, Mode5, Mode6, DataTimeout FROM Hardware WHERE (ID=='%q')",
-		idx.c_str());
-	if (result.empty())
-		return false;
-	std::vector<std::string> sd = result[0];
-	std::string Name = sd[0];
-	std::string senabled = (sd[1] == "1") ? "true" : "false";
-	std::string address = sd[3];
-	uint16_t port = (uint16_t)atoi(sd[4].c_str());
-	std::string serialport = sd[5];
-	std::string username = sd[6];
-	std::string password = sd[7];
-	std::string extra = sd[8];
-	int Mode1 = atoi(sd[9].c_str());
-	int Mode2 = atoi(sd[10].c_str());
-	int Mode3 = atoi(sd[11].c_str());
-	int Mode4 = atoi(sd[12].c_str());
-	int Mode5 = atoi(sd[13].c_str());
-	int Mode6 = atoi(sd[14].c_str());
-	int DataTimeout = atoi(sd[15].c_str());
-	//return AddHardwareFromParams(atoi(idx.c_str()), Name, (senabled == "true") ? true : false, htype, address, port, serialport, username, password, extra, Mode1, Mode2, Mode3, Mode4, Mode5, Mode6, DataTimeout, true);
-	return true;
+	return m_pluginsystem.RestartPlugin(atoi(idx.c_str()));
 }
 
 bool MainWorker::Start()
@@ -711,9 +694,6 @@ void MainWorker::Do_Work()
 			{
 				m_bStartHardware = false;
 				StartDomoticzHardware();
-#ifdef ENABLE_PYTHON
-				m_pluginsystem.AllPluginsStarted();
-#endif
 			}
 		}
 		if (m_devicestorestart.size() > 0)
@@ -733,7 +713,7 @@ void MainWorker::Do_Work()
 					std::vector<std::string> sd = result[0];
 					std::string Name = sd[0];
 					_log.Log(LOG_ERROR, "Restarting: %s", Name.c_str());
-					RestartHardware(idx);
+					RestartHardware(idx, Name);
 				}
 			}
 			m_devicestorestart.clear();
@@ -907,6 +887,7 @@ void MainWorker::HeartbeatCheck()
 {
 	std::lock_guard<std::mutex> l(m_heartbeatmutex);
 	std::lock_guard<std::mutex> l2(m_devicemutex);
+
 
 	m_devicestorestart.clear();
 

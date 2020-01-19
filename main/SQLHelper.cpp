@@ -33,6 +33,12 @@ extern std::string szWWWFolder;
 // Always create a integer primary key for tables if you can 'walk it' to another table.
 // SQLite will create one anyway so it might as well have a name
 
+const char* sqlCreateBackupLog =
+		"CREATE TABLE IF NOT EXISTS [BackupLog] ("
+			"[BackupLogID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[Name] TEXT DEFAULT \"\","
+			"[Number] INTEGER DEFAULT 0);";
+
 const char* sqlCreatePreference =
 		"CREATE TABLE IF NOT EXISTS [Preference] ("
 			"[PreferenceID] INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -427,6 +433,7 @@ bool CSQLHelper::OpenDatabase()
 	}
 
 	//create database (if not exists)
+	query(sqlCreateBackupLog);
 	query(sqlCreatePreference);
 	query(sqlCreateInterface);
 	query(sqlCreateInterfaceLog);
@@ -500,7 +507,8 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Celsius', -25, 100, 'temp48.png', '°C')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Temperature', 0, 6, 'temp-0-5.png,temp-5-10.png,temp-10-15.png,temp-15-20.png,temp-20-25.png,temp-25-30.png,temp-gt-30.png', 'Cold,Chilly,Cool,Mild,Warm,Hot,Baking')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Wind Direction', 0, 15, 'WindN.png,WindNNE.png,WindNE.png,WindENE.png,WindE.png,WindESE.png,WindSE.png,WindSSE.png,WindS.png,WindSSW.png,WindSW.png,WindWSW.png,WindW.png,WindWNW.png,WindNW.png,WindNNW.png', 'N,NNE,NE,ENE,E,ESE,SE,SSE,S,SSW,SW,WSW,W,WNW,NW,NNW')");
-		query("INSERT INTO Unit (Name, Minimum, Maximum, RetentionDays, RetentionInterval, IconList, TextLabels) VALUES ('Volume On/Muted', 0, 100, 1, 300, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,On')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, RetentionDays, RetentionInterval, IconList, TextLabels) VALUES ('Audible', 0, 1, 1, 300, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,On')");
+		query("INSERT INTO Unit (Name, RetentionDays, RetentionInterval) VALUES ('Text', 7, 900)");
 
 		sqlite3_wal_checkpoint(m_dbase, NULL);
 	}
@@ -901,7 +909,7 @@ int CSQLHelper::GetLastBackupNo(const char *Name, int &nValue)
 		return false;
 
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT nValue FROM BackupLog WHERE (Name='%q')", Name);
+	result = safe_query("SELECT Number FROM BackupLog WHERE (Name='%q')", Name);
 	if (result.empty())
 		return -1;
 	std::vector<std::string> sd = result[0];
@@ -915,12 +923,12 @@ void CSQLHelper::SetLastBackupNo(const char *Name, const int nValue)
 		return;
 
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT ROWID FROM BackupLog WHERE (Name='%q')", Name);
+	result = safe_query("SELECT BackupLogID FROM BackupLog WHERE (Name='%q')", Name);
 	if (result.empty())
 	{
 		//Insert
 		safe_query(
-			"INSERT INTO BackupLog (Name, nValue) "
+			"INSERT INTO BackupLog (Name, Number) "
 			"VALUES ('%q','%d')",
 			Name,
 			nValue);
@@ -931,7 +939,7 @@ void CSQLHelper::SetLastBackupNo(const char *Name, const int nValue)
 		uint64_t ID = std::strtoull(result[0][0].c_str(), nullptr, 10);
 
 		safe_query(
-			"UPDATE BackupLog SET Name='%q', nValue=%d "
+			"UPDATE BackupLog SET Name='%q', Number=%d "
 			"WHERE (ROWID = %" PRIu64 ")",
 			Name,
 			nValue,

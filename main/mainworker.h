@@ -35,7 +35,7 @@ public:
 
 	void ForceLogNotificationCheck();
 
-	bool RestartHardware(const std::string &idx);
+	bool RestartHardware(const std::string &idx, const std::string& Name);
 
 	boost::signals2::signal<void(const int m_HwdID, const uint64_t DeviceRowIdx, const std::string &DeviceName, const uint8_t *pRXCommand)> sOnDeviceReceived;
 	boost::signals2::signal<void(const uint64_t SceneIdx, const std::string &SceneName)> sOnSwitchScene;

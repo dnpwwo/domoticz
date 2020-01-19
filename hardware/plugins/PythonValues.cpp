@@ -414,8 +414,37 @@ namespace Plugins {
 				vValues.push_back(sName);
 				vValues.push_back(std::to_string(self->DeviceID));
 				vValues.push_back(std::to_string(self->UnitID));
-				Plugins::CPluginProtocolJSON	pJSON;
-				vValues.push_back(pJSON.PythontoJSON(self->Value));
+
+				if (PyUnicode_Check(self->Value))
+				{
+					vValues.push_back(std::string(PyUnicode_AsUTF8(self->Value)));
+				}
+				else if (self->Value->ob_type->tp_name == std::string("bool"))
+				{
+					vValues.push_back((PyObject_IsTrue(self->Value) ? "true" : "false"));
+				}
+				else if (PyLong_Check(self->Value))
+				{
+					vValues.push_back(std::to_string(PyLong_AsLong(self->Value)));
+				}
+				else if (PyBytes_Check(self->Value))
+				{
+					vValues.push_back(std::string(PyBytes_AsString(self->Value)));
+				}
+				else if (self->Value->ob_type->tp_name == std::string("bytearray"))
+				{
+					vValues.push_back(std::string(PyByteArray_AsString(self->Value)));
+				}
+				else if (self->Value->ob_type->tp_name == std::string("float"))
+				{
+					vValues.push_back(std::to_string(PyFloat_AsDouble(self->Value)));
+				}
+				else
+				{
+					_log.Log(LOG_ERROR, "(%s) Invalid data type for Value", self->pPlugin->m_Name.c_str());
+					vValues.push_back(std::string(""));
+				}
+
 				vValues.push_back(std::to_string(self->Debug));
 				int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
@@ -447,12 +476,39 @@ namespace Plugins {
 	{
 		if (self->pPlugin)
 		{
-			if (self->ValueID <= 1)
+			if (self->ValueID != -1)
 			{
 				std::string		sSQL = "UPDATE Value SET Value=?, Timestamp=CURRENT_TIMESTAMP WHERE ValueID=" + std::to_string(self->ValueID) + ";";
 				std::vector<std::string> vValues;
-				Plugins::CPluginProtocolJSON	pJSON;
-				vValues.push_back(pJSON.PythontoJSON(self->Value));
+				if (PyUnicode_Check(self->Value))
+				{
+					vValues.push_back(std::string(PyUnicode_AsUTF8(self->Value)));
+				}
+				else if (self->Value->ob_type->tp_name == std::string("bool"))
+				{
+					vValues.push_back((PyObject_IsTrue(self->Value) ? "true" : "false"));
+				}
+				else if (PyLong_Check(self->Value))
+				{
+					vValues.push_back(std::to_string(PyLong_AsLong(self->Value)));
+				}
+				else if (PyBytes_Check(self->Value))
+				{
+					vValues.push_back(std::string(PyBytes_AsString(self->Value)));
+				}
+				else if (self->Value->ob_type->tp_name == std::string("bytearray"))
+				{
+					vValues.push_back(std::string(PyByteArray_AsString(self->Value)));
+				}
+				else if (self->Value->ob_type->tp_name == std::string("float"))
+				{
+					vValues.push_back(std::to_string(PyFloat_AsDouble(self->Value)));
+				}
+				else
+				{
+					_log.Log(LOG_ERROR, "(%s) Invalid data type for Value", self->pPlugin->m_Name.c_str());
+					vValues.push_back(std::string(""));
+				}
 				int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
 				// Handle any data we get back
@@ -467,7 +523,7 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), (long)self->ValueID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%d', must already be set.", self->pPlugin->m_Name.c_str(), (long)self->ValueID);
 			}
 		}
 		else

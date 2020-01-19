@@ -217,6 +217,10 @@ namespace Plugins {
 	{
 		Py_XDECREF(self->Name);
 		Py_XDECREF(self->Configuration);
+		if (PyDict_Size(self->Devices))
+		{
+			PyDict_Clear(self->Devices);
+		}
 		Py_XDECREF(self->Devices);
 		Py_TYPE(self)->tp_free((PyObject*)self);
 	}
@@ -318,7 +322,7 @@ namespace Plugins {
 						}
 
 						// Call the class object, this will call new followed by init
-						PyObject* pDevice = PyObject_CallObject(pModState->pDeviceClass, argList);
+						PyObject* pDevice = PyObject_CallObject((PyObject*)pModState->pDeviceClass, argList);
 						Py_DECREF(argList);
 						if (!pDevice)
 						{
@@ -328,7 +332,7 @@ namespace Plugins {
 
 						// And insert it into the Interface's Devices dictionary
 						PyObject* pKey = PyLong_FromLong(lDeviceID);
-						if (PyDict_SetItem(self->Devices, pKey, (PyObject*)pDevice) == -1)
+						if (PyDict_SetItem(self->Devices, pKey, pDevice) == -1)
 						{
 							InterfaceLog(self, LOG_ERROR, "Failed to add device number '%d' to device dictionary.", lDeviceID);
 							goto Error;
@@ -391,6 +395,11 @@ namespace Plugins {
 						pSafeAssign = self->Configuration;
 						CPluginProtocolJSON	pJSON;
 						self->Configuration = pJSON.JSONtoPython(sd[2]);
+						Py_ssize_t iSize = PyDict_Size(self->Configuration);
+						if (!iSize)
+						{
+							InterfaceLog(self, LOG_DEBUG_INT, "No configuration loaded or parse error.");
+						}
 						Py_XDECREF(pSafeAssign);
 
 						self->Debug = atoi(sd[3].c_str()) ? true : false;

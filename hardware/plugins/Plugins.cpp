@@ -45,8 +45,6 @@ namespace Plugins {
 	extern std::mutex PluginMutex;	// controls access to the message queue
 	extern std::queue<CPluginMessageBase*>	PluginMessageQueue;
 
-	std::mutex PythonMutex;			// controls access to Python
-
 	void LogPythonException(CPlugin* pPlugin, const std::string &sHandler)
 	{
 		PyTracebackObject	*pTraceback;
@@ -125,10 +123,10 @@ namespace Plugins {
 		}
 		else
 		{
-			PyObject* pInterfaceClass = NULL;
-			PyObject* pDeviceClass = NULL;
-			PyObject* pValueClass = NULL;
-			PyObject* pConnectionClass = NULL;
+			PyTypeObject* pInterfaceClass = NULL;
+			PyTypeObject* pDeviceClass = NULL;
+			PyTypeObject* pValueClass = NULL;
+			PyTypeObject* pConnectionClass = NULL;
 			if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OOO", kwlist, &pInterfaceClass, &pDeviceClass, &pValueClass, &pConnectionClass))
 			{
 				_log.Log(LOG_ERROR, "(%s) PyDomoticz_Log failed to parse parameters: string expected.", pModState->pPlugin->m_Name.c_str());
@@ -217,8 +215,70 @@ namespace Plugins {
 		Py_INCREF((PyObject *)&CConnectionType);
 		PyModule_AddObject(pModule, "Connection", (PyObject *)&CConnectionType);
 
+		module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+		pModState->pInterfaceClass = &CInterfaceType;
+		pModState->pDeviceClass = &CDeviceType;
+		pModState->pValueClass = &CValueType;
+		pModState->pConnectionClass = &CConnectionType;
+		pModState->lObjectID = 0;
+
 		return pModule;
 	}
+
+	std::mutex	AccessPython::PythonMutex;
+	volatile bool	AccessPython::m_bHasThreadState = false;
+
+	AccessPython::AccessPython(CPlugin* pPlugin) : m_Python(NULL)
+	{
+		m_Lock = new std::unique_lock<std::mutex>(PythonMutex, std::defer_lock);
+		if (!m_Lock->try_lock())
+		{
+			_log.Log(LOG_NORM, "Python lock in use, will wait.");
+			m_Lock->lock();
+		}
+
+
+		if (pPlugin)
+		{
+			m_Python = pPlugin->PythonInterpreter();
+			if (m_Python)
+			{
+				PyEval_RestoreThread(m_Python);
+				m_bHasThreadState = true;
+			}
+			else
+			{
+				_log.Log(LOG_ERROR, "Attempt to aquire the GIL with NULL Interpreter details.");
+			}
+		}
+		else
+		{
+			_log.Log(LOG_ERROR, "Attempt to aquire the GIL with NULL Plugin details.");
+		}
+
+		if (PyErr_Occurred())
+		{
+			_log.Log(LOG_NORM, "Clearing Python error during Thread Restore.");
+			PyErr_Clear();
+		}
+	}
+
+	AccessPython::~AccessPython()
+	{
+		if (m_Python)
+		{
+			m_bHasThreadState = false;
+			if (!PyEval_SaveThread())
+			{
+				_log.Log(LOG_ERROR, "Python Save state returned NULL value.");
+			}
+		}
+		if (m_Lock)
+		{
+			delete m_Lock;
+		}
+	}
+
 
 	CPlugin::CPlugin(const int InterfaceID, const std::string &sName) :
 		m_iPollInterval(10),
@@ -599,8 +659,6 @@ namespace Plugins {
 				// If we have connections queue disconnects
 				if (m_Transports.size())
 				{
-					std::lock_guard<std::mutex> lPython(PythonMutex); // Take mutex to guard access to CPluginTransport::m_pConnection
-					                                                  // TODO: Must take before m_TransportsMutex to avoid deadlock, try to improve to allow only taking when needed
 					std::lock_guard<std::mutex> lTransports(m_TransportsMutex);
 					for (std::vector<CPluginTransport*>::iterator itt = m_Transports.begin(); itt != m_Transports.end(); itt++)
 					{
@@ -647,7 +705,6 @@ namespace Plugins {
 	void CPlugin::Do_Work()
 	{
 		InterfaceLog(LOG_STATUS, "(%s) Entering work loop.", m_Name.c_str());
-		m_LastHeartbeat = mytime(NULL);
 		int scounter = m_iPollInterval * 2;
 		while (!IsStopRequested(500))
 		{
@@ -662,8 +719,6 @@ namespace Plugins {
 			// Check all connections are still valid, vector could be affected by a disconnect on another thread
 			try
 			{
-				std::lock_guard<std::mutex> lPython(PythonMutex); // Take mutex to guard access to CPluginTransport::m_pConnection
-				                                                  // TODO: Must take before m_TransportsMutex to avoid deadlock, try to improve to allow only taking when needed
 				std::lock_guard<std::mutex> lTransports(m_TransportsMutex);
 				if (m_Transports.size())
 				{
@@ -686,6 +741,7 @@ namespace Plugins {
 
 	bool CPlugin::Initialise()
 	{
+		
 		m_bIsStarted = false;
 
 		// Load details from database
@@ -855,11 +911,6 @@ namespace Plugins {
 				}
 				module_state* pModState = ((struct module_state*)PyModule_GetState(pMod));
 				pModState->pPlugin = this;
-				pModState->pInterfaceClass = (PyObject*)NULL;
-				pModState->pDeviceClass = (PyObject*)&CDeviceType;
-				pModState->pValueClass = (PyObject*)&CValueType;
-				pModState->pConnectionClass = (PyObject*)&CConnectionType;
-				pModState->lObjectID = 0;
 
 				// Define code in the newly created module
 				PyObject* pyValue = PyRun_String(result[0][0].c_str(), Py_file_input, localDict, localDict);
@@ -920,6 +971,12 @@ Error:
 	{
 		try
 		{
+			// Reset heartbeats in case plugin is restarting
+			m_LastHeartbeat = mytime(NULL);
+			m_LastHeartbeatReceive = mytime(NULL);
+
+			AccessPython	Guard(this);
+
 			if (PyErr_Occurred())
 			{
 				_log.Log(LOG_ERROR, "Error already set at beggining of Start.");
@@ -950,7 +1007,7 @@ Error:
 				pModState->lObjectID = m_InterfaceID;
 
 				// Call the class object, this will call new followed by init
-				m_Interface = (PyObject*)PyObject_CallObject(pModState->pInterfaceClass, NULL);
+				m_Interface = (PyObject*)PyObject_CallObject((PyObject*)pModState->pInterfaceClass, NULL);
 				if (!m_Interface)
 				{
 					_log.Log(LOG_ERROR, "Interface object creation failed for Interface %d.", m_InterfaceID);
@@ -1291,41 +1348,35 @@ Error:
 		}
 	}
 
-	void CPlugin::RestoreThread()
-	{
-		if (m_PyInterpreter)
-			PyEval_RestoreThread((PyThreadState*)m_PyInterpreter);
-	}
-
-	void CPlugin::ReleaseThread()
-	{
-		if (m_PyInterpreter)
-			PyEval_SaveThread();
-	}
-
-	void CPlugin::Callback(void* pTarget, std::string sHandler, void * pParams)
+	void CPlugin::Callback(PyObject* pTarget, std::string sHandler, void * pParams)
 	{
 		try
 		{
+			AccessPython	Guard(this);
+
+			// Signal that plugin is still servicing events
+			m_LastHeartbeat = mytime(NULL);
+
 			// Should never happen but default to module if no target object specified
 			if (!pTarget)
 			{
-				pTarget = m_PyModule;
+				_log.Log(LOG_ERROR, "%s No target specified for '%s'.", __func__, sHandler.c_str());
+				return;
 			}
 
 			// Callbacks MUST already have taken the PythonMutex lock otherwise bad things will happen
 			if (m_PyModule && !sHandler.empty())
 			{
-				PyObject*	pFunc = PyObject_GetAttrString((PyObject*)pTarget, sHandler.c_str());
+				PyObject*	pFunc = PyObject_GetAttrString(pTarget, sHandler.c_str());
 				if (pFunc && PyCallable_Check(pFunc))
 				{
 					// if object has debugging set then log this calback
-					PyObject* pDebugging = PyObject_GetAttrString((PyObject*)pTarget, "Debugging");
+					PyObject* pDebugging = PyObject_GetAttrString(pTarget, "Debugging");
 					if (pDebugging)
 					{
 						if (PyObject_IsTrue(pDebugging))
 						{
-							PyObject* pDebug = PyObject_GetAttrString((PyObject*)pTarget, "Debug");
+							PyObject* pDebug = PyObject_GetAttrString(pTarget, "Debug");
 							if (pDebug && PyCallable_Check(pDebug))
 							{
 								PyObject* argList = Py_BuildValue("(s)", std::string("Calling message handler '"+sHandler+"'.").c_str());
@@ -1372,14 +1423,16 @@ Error:
 	{
 		try
 		{
-			PyErr_Clear();
+			if (PyErr_Occurred())
+			{
+				PyErr_Clear();
+			}
 
 			// Stop Python
-			if (m_SettingsDict) Py_XDECREF(m_SettingsDict);
+			PyEval_RestoreThread(m_PyInterpreter);
 			if (m_Interface) Py_XDECREF(m_Interface);
-			sleep_milliseconds(250); // Make sure GC has a chance to run
+			if (m_PyModule) Py_XDECREF(m_PyModule);
 			if (m_PyInterpreter) Py_EndInterpreter((PyThreadState*)m_PyInterpreter);
-			Py_XDECREF(m_PyModule);
 			PyEval_ReleaseLock();
 		}
 		catch (std::exception *e)
@@ -1400,30 +1453,29 @@ Error:
 
 	bool CPlugin::LoadSettings()
 	{
-		PyObject* pModuleDict = PyModule_GetDict((PyObject*)m_PyModule);  // returns a borrowed referece to the __dict__ object for the module
+		PyObject* pModuleDict = PyModule_GetDict(m_PyModule);  // returns a borrowed referece to the __dict__ object for the module
 		if (m_SettingsDict) Py_XDECREF(m_SettingsDict);
 		m_SettingsDict = PyDict_New();
-		if (PyDict_SetItemString(pModuleDict, "Settings", (PyObject*)m_SettingsDict) == -1)
+		if (PyDict_SetItemString(pModuleDict, "Settings", m_SettingsDict) == -1)
 		{
 			InterfaceLog(LOG_ERROR, "Failed to add Settings dictionary.");
 			return false;
 		}
+		Py_DECREF(m_SettingsDict);
 
 		// load associated settings to make them available to python
 		std::vector<std::vector<std::string> > result;
 		result = m_sql.safe_query("SELECT Name, Value FROM Preference");
 		if (!result.empty())
 		{
-			PyType_Ready(&CDeviceType);
 			// Add settings strings into the settings dictionary with Unit as the key
 			for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 			{
 				std::vector<std::string> sd = *itt;
 
 				PyObject*	pKey = PyUnicode_FromString(sd[0].c_str());
-				PyObject*	pValue = NULL;
-				pValue = PyUnicode_FromString(sd[1].c_str());
-				if (PyDict_SetItem((PyObject*)m_SettingsDict, pKey, pValue))
+				PyObject*	pValue = PyUnicode_FromString(sd[1].c_str());
+				if (PyDict_SetItem(m_SettingsDict, pKey, pValue))
 				{
 					InterfaceLog(LOG_ERROR, "Failed to add setting '%s' to settings dictionary.", sd[0].c_str());
 					return false;

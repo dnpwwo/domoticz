@@ -9,8 +9,6 @@ typedef unsigned char byte;
 
 namespace Plugins {
 
-	extern std::mutex PythonMutex;			// controls access to Python
-
 	class CPluginMessageBase
 	{
 	public:
@@ -34,10 +32,7 @@ namespace Plugins {
 		virtual const CPlugin*	Plugin() { return m_pPlugin; };
 		virtual void Process()
 		{
-			std::lock_guard<std::mutex> l(PythonMutex);
-			m_pPlugin->RestoreThread();
 			ProcessLocked();
-			m_pPlugin->ReleaseThread();
 		};
 	};
 
@@ -62,7 +57,6 @@ namespace Plugins {
 		InitializeMessage(CPlugin* pPlugin) : CPluginMessageBase(pPlugin) { m_Name = __func__; };
 		virtual void Process()
 		{
-			std::lock_guard<std::mutex> l(PythonMutex);
 			m_pPlugin->Initialise();
 		};
 		virtual void ProcessLocked() {};
@@ -80,7 +74,6 @@ namespace Plugins {
 		CCallbackBase(CPlugin* pPlugin, PyObject* pTarget, const std::string& Callback) : CPluginMessageBase(pPlugin), m_Callback(Callback), m_Target(pTarget) {};
 		virtual void Callback(PyObject* pParams)
 		{
-			if (!m_Target) m_Target = (PyObject*)m_pPlugin->m_Interface;
 			if (m_Callback.length()) m_pPlugin->Callback(m_Target, m_Callback, pParams);
 		};
 		virtual void Callback(PyObject* pTarget, PyObject* pParams)
@@ -98,6 +91,7 @@ namespace Plugins {
 		virtual void ProcessLocked()
 		{
 			m_pPlugin->Start();
+			m_Target = m_pPlugin->m_Interface;
 			Callback(NULL);
 		};
 	};
@@ -109,6 +103,7 @@ namespace Plugins {
 	protected:
 		virtual void ProcessLocked()
 		{
+			m_Target = m_pPlugin->m_Interface;
 			Callback(NULL);
 		};
 	};
@@ -120,6 +115,7 @@ namespace Plugins {
 	protected:
 		virtual void ProcessLocked()
 		{
+			m_Target = (PyObject*)m_pPlugin->m_Interface;
 			Callback(NULL);
 			m_pPlugin->Stop();
 		};
@@ -162,6 +158,7 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 		virtual void ProcessLocked()
 		{
 			Callback(NULL);
+			AccessPython	Guard(m_pPlugin);
 			Py_DECREF(m_Target);
 		};
 	};
@@ -174,6 +171,7 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 		virtual void ProcessLocked()
 		{
 			Callback(NULL);
+			AccessPython	Guard(m_pPlugin);
 			Py_DECREF(m_Target);
 		};
 	};
@@ -186,6 +184,7 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 		virtual void ProcessLocked()
 		{
 			Callback(NULL);
+			AccessPython	Guard(m_pPlugin);
 			Py_DECREF(m_Target);
 		};
 	};
@@ -372,10 +371,8 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 	public:
 		CDirectiveBase(CPlugin* pPlugin) : CPluginMessageBase(pPlugin) {};
 		virtual void Process() {
-			std::lock_guard<std::mutex> l(PythonMutex);
-			m_pPlugin->RestoreThread();
+			AccessPython	Guard(m_pPlugin);
 			ProcessLocked();
-			m_pPlugin->ReleaseThread();
 		};
 	};
 

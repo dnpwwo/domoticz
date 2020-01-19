@@ -37,6 +37,7 @@ namespace Plugins {
 		bool StartPluginSystem();
 		std::map<int, CDomoticzHardwareBase*>* GetHardware() { return &m_pPlugins; };
 		CDomoticzHardwareBase* RegisterPlugin(const int HwdID, const std::string &Name);
+		bool	 RestartPlugin(const int InterfaceID);
 		void	 DeregisterPlugin(const int HwdID);
 		bool	StopPluginSystem();
 		void	AllPluginsStarted() { m_bAllPluginsStarted = true; };

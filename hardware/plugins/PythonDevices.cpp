@@ -217,6 +217,10 @@ namespace Plugins {
 		Py_XDECREF(self->Name);
 		Py_XDECREF(self->ExternalID);
 		Py_XDECREF(self->Timestamp);
+		if (PyDict_Size(self->Values))
+		{
+			PyDict_Clear(self->Values);
+		}
 		Py_XDECREF(self->Values);
 		Py_TYPE(self)->tp_free((PyObject*)self);
 	}
@@ -311,7 +315,7 @@ namespace Plugins {
 
 				// Load Values associated with the device
 				std::vector<std::vector<std::string> > result;
-				result = m_sql.safe_query("SELECT ValueID FROM Value WHERE (DeviceID==%d) ORDER BY DeviceID ASC", self->DeviceID);
+				result = m_sql.safe_query("SELECT ValueID FROM Value WHERE (DeviceID==%d) ORDER BY ValueID ASC", self->DeviceID);
 				if (!result.empty())
 				{
 					PyType_Ready(&CValueType);
@@ -330,7 +334,7 @@ namespace Plugins {
 						}
 
 						// Call the class object, this will call new followed by init
-						PyObject* pValue = PyObject_CallObject(pModState->pValueClass, argList);
+						PyObject* pValue = PyObject_CallObject((PyObject*)pModState->pValueClass, argList);
 						Py_DECREF(argList);
 						if (!pValue)
 						{
