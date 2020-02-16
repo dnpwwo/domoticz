@@ -26,9 +26,6 @@ namespace Plugins {
 	PyObject* CValue_delete(CValue* self);
 	PyObject* CValue_str(CValue* self);
 
-	PyObject* CValue_getValueID(CValue* self, void* closure);
-	int		  CValue_setValueID(CValue* self, PyObject* value, void* closure);
-
 	PyObject* CValue_debug(CValue* self, PyObject* args, PyObject* kwds);
 	PyObject* CValue_log(CValue* self, PyObject* args, PyObject* kwds);
 	PyObject* CValue_error(CValue* self, PyObject* args, PyObject* kwds);

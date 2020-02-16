@@ -213,6 +213,101 @@ namespace Plugins {
 		return Py_None;
 	}
 
+	PyObject* CInterface_AddDeviceToDict(CInterface* self, long lDeviceID)
+	{
+		PyObject* pDevice = NULL;
+
+		try
+		{
+			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!pModule)
+			{
+				InterfaceLog(self, LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
+				return 0;
+			}
+
+			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			if (!pModState)
+			{
+				InterfaceLog(self, LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
+				return 0;
+			}
+
+			// Pass values in, needs to be a tuple and signal CDevice_init to load from the database
+			pModState->lObjectID = lDeviceID;
+			PyObject* argList = Py_BuildValue("(ss)", "", "");
+			if (!argList)
+			{
+				InterfaceLog(self, LOG_ERROR, "Building Device argument list failed for Device %d.", lDeviceID);
+				goto Error;
+			}
+
+			// Call the class object, this will call new followed by init
+			PyType_Ready(&CDeviceType);
+			pDevice = PyObject_CallObject((PyObject*)pModState->pDeviceClass, argList);
+			Py_DECREF(argList);
+			if (!pDevice)
+			{
+				InterfaceLog(self, LOG_ERROR, "Device object creation failed for Device %d.", lDeviceID);
+				goto Error;
+			}
+
+			// And insert it into the Interface's Devices dictionary
+			PyObject* pKey = PyLong_FromLong(lDeviceID);
+			if (PyDict_SetItem(self->Devices, pKey, pDevice) == -1)
+			{
+				InterfaceLog(self, LOG_ERROR, "Failed to add device number '%d' to device dictionary.", lDeviceID);
+				goto Error;
+			}
+			Py_DECREF(pKey);
+		}
+		catch (std::exception* e)
+		{
+			InterfaceLog(self, LOG_ERROR, "CInterface:%s, Execption thrown: %s", __func__, e->what());
+		}
+		catch (...)
+		{
+			InterfaceLog(self, LOG_ERROR, "CInterface:%s, Unknown execption thrown", __func__);
+		}
+
+	Error:
+		if (PyErr_Occurred())
+		{
+			self->pPlugin->LogPythonException("CInterface_AddDeviceToDict");
+		}
+
+		// If not NULL the caller will need to decref
+		return pDevice;
+	}
+
+	PyObject* CInterface_FindDevice(CInterface* self, long lDeviceID)
+	{
+		PyObject* pDevice = NULL;
+
+		try
+		{
+			// If the key is in the dictionary then return a pointer to it
+			PyObject* pKey = PyLong_FromLong(lDeviceID);
+			pDevice = PyDict_GetItem(self->Devices, pKey);
+			if (pDevice)
+			{
+				Py_INCREF(pDevice);
+			}
+			Py_DECREF(pKey);
+		}
+		catch (std::exception* e)
+		{
+			InterfaceLog(self, LOG_ERROR, "CInterface:%s, Execption thrown: %s", __func__, e->what());
+		}
+		catch (...)
+		{
+			InterfaceLog(self, LOG_ERROR, "CInterface:%s, Unknown execption thrown", __func__);
+		}
+
+		// If not NULL the caller will need to decref
+		return pDevice;
+	}
+
 	void CInterface_dealloc(CInterface* self)
 	{
 		Py_XDECREF(self->Name);
@@ -305,40 +400,12 @@ namespace Plugins {
 				result = m_sql.safe_query("SELECT DeviceID FROM Device WHERE (InterfaceID==%d) ORDER BY DeviceID ASC", self->InterfaceID);
 				if (!result.empty())
 				{
-					PyType_Ready(&CDeviceType);
 					// Add device objects into the device dictionary with DeviceID as the key
 					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
-						long lDeviceID = atoi(sd[0].c_str());
-
-						// Pass values in, needs to be a tuple and signal CDevice_init to load from the database
-						pModState->lObjectID = lDeviceID;
-						PyObject* argList = Py_BuildValue("(ss)", "", "");
-						if (!argList)
-						{
-							InterfaceLog(self, LOG_ERROR, "Building Device argument list failed for Device %d.", lDeviceID);
-							goto Error;
-						}
-
-						// Call the class object, this will call new followed by init
-						PyObject* pDevice = PyObject_CallObject((PyObject*)pModState->pDeviceClass, argList);
-						Py_DECREF(argList);
-						if (!pDevice)
-						{
-							InterfaceLog(self, LOG_ERROR, "Device object creation failed for Device %d.", lDeviceID);
-							goto Error;
-						}
-
-						// And insert it into the Interface's Devices dictionary
-						PyObject* pKey = PyLong_FromLong(lDeviceID);
-						if (PyDict_SetItem(self->Devices, pKey, pDevice) == -1)
-						{
-							InterfaceLog(self, LOG_ERROR, "Failed to add device number '%d' to device dictionary.", lDeviceID);
-							goto Error;
-						}
-						Py_DECREF(pKey);
-						Py_DECREF(pDevice);
+						PyObject* pDevice = CInterface_AddDeviceToDict(self, atoi(sd[0].c_str()));
+						Py_XDECREF(pDevice);
 					}
 				}
 			}
@@ -357,7 +424,6 @@ namespace Plugins {
 			InterfaceLog(self, LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-	Error:
 		if (PyErr_Occurred())
 		{
 			self->pPlugin->LogPythonException("Start");

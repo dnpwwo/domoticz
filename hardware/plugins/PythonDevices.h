@@ -95,4 +95,8 @@ namespace Plugins {
 		0,                         /* tp_alloc */
 		CDevice_new                 /* tp_new */
 	};
+
+	// Interface functions NOT exposed to Python
+	PyObject* CDevice_AddValueToDict(CDevice* self, long lValueID);
+	PyObject* CDevice_FindDevice(CDevice* self, long lValueID);
 }

@@ -412,99 +412,34 @@ namespace Plugins {
 						}
 					}
 
-					PyObject* pModule = NULL;
-					module_state* pModState = NULL;
-					if (pPlugin)
-					{
-						AccessPython	Guard(pPlugin);
-
-						pModule = PyState_FindModule(&DomoticzModuleDef);
-						if (!pModule)
-						{
-							_log.Log(LOG_ERROR, "PluginSystem:%s, unable to find module for current interpreter.", __func__);
-							return;
-						}
-
-						pModState = ((struct module_state*)PyModule_GetState(pModule));
-						if (!pModState)
-						{
-							_log.Log(LOG_ERROR, "PluginSystem:%s, unable to obtain module state.", __func__);
-							return;
-						}
-					}
-
 					if (pEntry->m_Action == "Insert") 
 					{
 						AccessPython	Guard(pPlugin);
 
-						PyType_Ready(&CDeviceType);
-
-						// Pass values in, needs to be a tuple and signal CDevice_init to load from the database
-						pModState->lObjectID = lDeviceID;
-						PyObject* argList = Py_BuildValue("(ss)", "", "");
-						if (!argList)
+						pDevice = CInterface_AddDeviceToDict((CInterface*)pPlugin->m_Interface, lDeviceID);
+						if (pDevice)
 						{
-							_log.Log(LOG_ERROR, "Building Device argument list failed for Device %d.", lDeviceID);
-							return;
+							pPlugin->MessagePlugin(new onCreateCallback(pPlugin, pDevice));
 						}
-
-						// Call the class object, this will call new followed by init
-						pDevice = PyObject_CallObject((PyObject*)pModState->pDeviceClass, argList);
-						Py_DECREF(argList);
-						if (!pDevice)
+						else
 						{
-							_log.Log(LOG_ERROR, "Device object creation failed for Device %d.", lDeviceID);
-							return;
+							_log.Log(LOG_ERROR, "PluginSystem:%s, failed to add device %d to interface's device dictionary.", __func__, lDeviceID);
 						}
-
-						// And insert it into the Interface's Devices dictionary
-						PyObject* pDevicesDict = PyObject_GetAttrString(pPlugin->m_Interface, "Devices");
-						if (!pDevicesDict)
-						{
-							_log.Log(LOG_ERROR, "PluginSystem:%s, unable to obtain Interface Devices dictionary.", __func__);
-							return;
-						}
-
-						PyObject* pKey = PyLong_FromLong(lDeviceID);
-						if (PyDict_SetItem(pDevicesDict, pKey, pDevice) == -1)
-						{
-							_log.Log(LOG_ERROR, "Failed to add device number '%d' to Devices dictionary.", lDeviceID);
-							return;
-						}
-						Py_DECREF(pKey);
-						Py_DECREF(pDevicesDict);
-
-						// Notify new device that it has been created, event handler must decref the device
-						pPlugin->MessagePlugin(new onCreateCallback(pPlugin, pDevice));
 					}
 					else if (pEntry->m_Action == "Update") 
 					{
 						AccessPython	Guard(pPlugin);
 
-						// And locate it in the Interface's Devices dictionary
-						PyObject* pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
-						if (!pDevicesDict)
+						pDevice = CInterface_FindDevice((CInterface*)pPlugin->m_Interface, lDeviceID);
+						if (pDevice)
 						{
-							_log.Log(LOG_ERROR, "PluginSystem:%s, unable to obtain Interface Devices dictionary.", __func__);
-							return;
+							CDevice_refresh((CDevice*)pDevice);
+							pPlugin->MessagePlugin(new onUpdateCallback(pPlugin, pDevice));
 						}
-
-						PyObject* pKey = PyLong_FromLong(lDeviceID);
-						pDevice = PyDict_GetItem(pDevicesDict, pKey);
-						Py_DECREF(pKey);
-						Py_DECREF(pDevicesDict);
-						if (!pDevice)
+						else
 						{
-							_log.Log(LOG_ERROR, "Failed to get device entry number '%d' in Devices dictionary.", lDeviceID);
-							return;
+							_log.Log(LOG_ERROR, "PluginSystem:%s, failed to find device %d in interface's device dictionary.", __func__, lDeviceID);
 						}
-						Py_INCREF(pDevice);
-
-						// Force Device object to have new values
-						CDevice_refresh((CDevice*)pDevice);
-
-						// Notify new device that it has been created, event handler must decref the Device
-						pPlugin->MessagePlugin(new onUpdateCallback(pPlugin, pDevice));
 					}
 					else if (pEntry->m_Action == "Delete") 
 					{
@@ -514,28 +449,18 @@ namespace Plugins {
 							pPlugin = (CPlugin*)it->second;
 							AccessPython	Guard(pPlugin);
 
-							PyObject* pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
-							if (!pDevicesDict || !PyDict_Check(pDevicesDict))
-							{
-								_log.Log(LOG_ERROR, "PluginSystem:%s, Interface's Devices was not a dictionary.", __func__);
-								continue;
-							}
-
-							PyObject* pKey = PyLong_FromLong(lDeviceID);
-							pDevice = PyDict_GetItem(pDevicesDict, pKey);
-							Py_DECREF(pKey);
-							Py_DECREF(pDevicesDict);
+							CInterface* pInterface = (CInterface*)pPlugin->m_Interface;
+							pDevice = CInterface_FindDevice(pInterface, lDeviceID);
 							if (pDevice)
 							{
-								Py_INCREF(pDevice);
-								if (PyDict_DelItem(pDevicesDict, pKey))
+								PyObject* pKey = PyLong_FromLong(lDeviceID);
+								if (PyDict_DelItem(pInterface->Devices, pKey))
 								{
 									_log.Log(LOG_ERROR, "PluginSystem:%s, failed to delete Device from dictionary.", __func__);
 								}
+								Py_DECREF(pKey);
 
-								// Notify new device that it has been created, event handler must decref the Device
 								pPlugin->MessagePlugin(new onDeleteCallback(pPlugin, pDevice));
-
 								break; // This one
 							}
 						}
@@ -559,81 +484,31 @@ namespace Plugins {
 
 				if (pEntry->m_Action == "Insert")
 				{
-					long lDeviceID = atoi(GetFieldValue("DeviceID", pEntry).c_str());
 					try
 					{
+						long lDeviceID = atoi(GetFieldValue("DeviceID", pEntry).c_str());
 						// Iterate through all Plugins (Interfaces)
 						for (std::map<int, CDomoticzHardwareBase*>::iterator it = m_pPlugins.begin(); it != m_pPlugins.end(); it++)
 						{
 							pPlugin = (CPlugin*)it->second;
 							AccessPython	Guard(pPlugin);
 
-							PyObject* pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
-							if (!pDevicesDict || !PyDict_Check(pDevicesDict))
-							{
-								continue; // Should never happen
-							}
-
-							// Devices dictionary located, now find the Value
 							PyObject* pKey = PyLong_FromLong(lDeviceID);
-							pDevice = PyDict_GetItem(pDevicesDict, pKey);
+							pDevice = PyDict_GetItem(((CInterface*)pPlugin->m_Interface)->Devices, pKey);
 							Py_DECREF(pKey);
-							Py_DECREF(pDevicesDict);
 							if (pDevice) // This the Device the Value has been added to
 							{
-								PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-								if (!pModule)
+								pValue = CDevice_AddValueToDict((CDevice*)pDevice, lValueID);
+								if (pValue)
 								{
-									_log.Log(LOG_ERROR, "PluginSystem:%s, unable to find module for current interpreter.", __func__);
-									return;
+									pPlugin->MessagePlugin(new onCreateCallback(pPlugin, pValue));
+									break; 
 								}
-
-								module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
-								if (!pModState)
+								else
 								{
-									_log.Log(LOG_ERROR, "PluginSystem:%s, unable to obtain module state.", __func__);
-									return;
+									_log.Log(LOG_ERROR, "PluginSystem:%s, failed to add value %d to device's Values dictionary.", __func__, lValueID);
 								}
-
-								// Instruct Init to load from database
-								pModState->lObjectID = lValueID;
-								PyObject* argList = Py_BuildValue("(siiO)", "", -1, -1, PyUnicode_FromString(""));
-								if (!argList)
-								{
-									_log.Log(LOG_ERROR, "Building Device argument list failed for Value %d.", lDeviceID);
-									return;
-								}
-
-								// Call the class object, this will call new followed by init
-								pValue = PyObject_CallObject((PyObject*)pModState->pValueClass, argList);
-								Py_DECREF(argList);
-								if (!pValue)
-								{
-									_log.Log(LOG_ERROR, "Value object creation failed for Value %d.", lDeviceID);
-									return;
-								}
-
-								// And insert it into the Device's Values dictionary
-								PyObject* pValuesDict = PyObject_GetAttrString(pDevice, "Values");
-								if (!pValuesDict)
-								{
-									_log.Log(LOG_ERROR, "PluginSystem:%s, unable to obtain Device's Values dictionary.", __func__);
-									return;
-								}
-
-								PyObject* pKey = PyLong_FromLong(lValueID);
-								if (PyDict_SetItem(pValuesDict, pKey, (PyObject*)pValue) == -1)
-								{
-									_log.Log(LOG_ERROR, "Failed to add device number '%d' to Values dictionary.", lValueID);
-									return;
-								}
-								Py_DECREF(pKey);
-								Py_DECREF(pValuesDict);
-
-								// Notify new Value that it has been created, event handler must decref the Value
-								pPlugin->MessagePlugin(new onCreateCallback(pPlugin, pValue));
 							}
-							pPlugin = NULL;
 						}
 					}
 					catch (...)
@@ -653,45 +528,23 @@ namespace Plugins {
 							pPlugin = (CPlugin*)it->second;
 							AccessPython	Guard(pPlugin);
 
-							PyObject* pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
-							if (!pDevicesDict || !PyDict_Check(pDevicesDict))
-							{
-								continue; // Should never happen
-							}
-
-							// Devices dictionary located, now find the Value
 							PyObject* pKey = PyLong_FromLong(lDeviceID);
-							pDevice = PyDict_GetItem(pDevicesDict, pKey);
+							pDevice = PyDict_GetItem(((CInterface*)pPlugin->m_Interface)->Devices, pKey);
 							Py_DECREF(pKey);
-							Py_DECREF(pDevicesDict);
 							if (pDevice) // This the Device the Value has been added to
 							{
-								// And locate it into the Device's Values dictionary
-								PyObject* pValuesDict = PyObject_GetAttrString(pDevice, "Values");
-								if (!pValuesDict || !PyDict_Check(pValuesDict))
+								pValue = CDevice_FindDevice((CDevice*)pDevice, lValueID);
+								if (pValue)
 								{
-									_log.Log(LOG_ERROR, "PluginSystem:%s, unable to obtain Device's Values dictionary.", __func__);
-									return;
+									CValue_refresh((CValue*)pValue);
+									pPlugin->MessagePlugin(new onUpdateCallback(pPlugin, pValue));
+									break;
 								}
-
-								PyObject* pKey = PyLong_FromLong(lValueID);
-								pValue = PyDict_GetItem(pValuesDict, pKey);
-								Py_DECREF(pKey);
-								Py_DECREF(pValuesDict);
-								if (!pValue)
+								else
 								{
-									_log.Log(LOG_ERROR, "Failed to get value entry number '%d' in Values dictionary.", lDeviceID);
-									return;
+									_log.Log(LOG_ERROR, "PluginSystem:%s, Failed to get value entry number '%d' in Values dictionary.", __func__, lDeviceID);
 								}
-								Py_INCREF(pValue);
-
-								// Force Value object to have new values
-								CValue_refresh((CValue*)pValue);
-
-								// Notify  Value that it has been updated, event handler must decref the Value
-								pPlugin->MessagePlugin(new onUpdateCallback(pPlugin, pValue));
 							}
-							pPlugin = NULL;
 						}
 					}
 					catch (...)

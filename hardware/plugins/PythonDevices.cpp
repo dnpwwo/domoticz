@@ -212,6 +212,99 @@ namespace Plugins {
 		return Py_None;
 	}
 
+	PyObject* CDevice_AddValueToDict(CDevice* self, long lValueID)
+	{
+		PyObject* pValue = NULL;
+
+		try
+		{
+			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!pModule)
+			{
+				_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
+				return 0;
+			}
+
+			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			if (!pModState)
+			{
+				_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
+				return 0;
+			}
+
+			PyObject* argList = Py_BuildValue("(siiO)", "", -1, -1, PyUnicode_FromString(""));
+			if (!argList)
+			{
+				DeviceLog(self, LOG_ERROR, "Building Value argument list failed for Value %d.", lValueID);
+				goto Error;
+			}
+
+			// Pass values in, needs to be a tuple and signal CValue_init to load from the database
+			pModState->lObjectID = lValueID;
+			pValue = PyObject_CallObject((PyObject*)pModState->pValueClass, argList);
+			Py_DECREF(argList);
+			if (!pValue)
+			{
+				DeviceLog(self, LOG_ERROR, "Value object creation failed for Value %d.", lValueID);
+				goto Error;
+			}
+
+			// And insert it into the Device's Values dictionary
+			PyObject* pKey = PyLong_FromLong(lValueID);
+			if (PyDict_SetItem(self->Values, pKey, pValue) == -1)
+			{
+				DeviceLog(self, LOG_ERROR, "Failed to add value number '%d' to Values dictionary for Device %d.", lValueID, self->DeviceID);
+				goto Error;
+			}
+			Py_DECREF(pKey);
+		}
+		catch (std::exception* e)
+		{
+			_log.Log(LOG_ERROR, "CDevice:%s, Execption thrown: %s", __func__, e->what());
+		}
+		catch (...)
+		{
+			_log.Log(LOG_ERROR, "CDevice:%s, Unknown execption thrown", __func__);
+		}
+
+	Error:
+		if (PyErr_Occurred())
+		{
+			self->pPlugin->LogPythonException("CDevice_AddValueToDict");
+		}
+
+		// If not NULL the caller will need to decref
+		return pValue;
+	}
+
+	PyObject* CDevice_FindDevice(CDevice* self, long lValueID)
+	{
+		PyObject* pValue = NULL;
+
+		try
+		{
+			// If the key is in the dictionary then return a pointer to it
+			PyObject* pKey = PyLong_FromLong(lValueID);
+			pValue = PyDict_GetItem(self->Values, pKey);
+			if (pValue)
+			{
+				Py_INCREF(pValue);
+			}
+			Py_DECREF(pKey);
+		}
+		catch (std::exception* e)
+		{
+			_log.Log(LOG_ERROR, "CDevice:%s, Execption thrown: %s", __func__, e->what());
+		}
+		catch (...)
+		{
+			_log.Log(LOG_ERROR, "CDevice:%s, Unknown execption thrown", __func__);
+		}
+
+		// If not NULL the caller will need to decref
+		return pValue;
+	}
+
 	void CDevice_dealloc(CDevice* self)
 	{
 		Py_XDECREF(self->Name);
@@ -323,37 +416,9 @@ namespace Plugins {
 					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
-
-						// Pass values in, needs to be a tuple and signal CValue_init to load from the database
-						pModState->lObjectID = atoi(sd[0].c_str());
-						PyObject* argList = Py_BuildValue("(siiO)", "", -1, -1, PyUnicode_FromString(""));
-						if (!argList)
-						{
-							DeviceLog(self, LOG_ERROR, "Building Value argument list failed for Value %s.", sd[0].c_str());
-							goto Error;
-						}
-
-						// Call the class object, this will call new followed by init
-						PyObject* pValue = PyObject_CallObject((PyObject*)pModState->pValueClass, argList);
-						Py_DECREF(argList);
-						if (!pValue)
-						{
-							DeviceLog(self, LOG_ERROR, "Value object creation failed for Value %s.", sd[0].c_str());
-							goto Error;
-						}
-
-						// And insert it into the Device's Values dictionary
-						PyObject* pKey = PyLong_FromLong(atoi(sd[0].c_str()));
-						if (PyDict_SetItem(self->Values, pKey, pValue) == -1)
-						{
-							DeviceLog(self, LOG_ERROR, "Failed to add value number '%s' to Values dictionary for Device %d.", sd[0].c_str(), self->DeviceID);
-							goto Error;
-						}
-						Py_DECREF(pValue);
-						Py_DECREF(pKey);
+						CDevice_AddValueToDict(self, atoi(sd[0].c_str()));
 					}
 				}
-
 			}
 			else
 			{
@@ -394,7 +459,7 @@ namespace Plugins {
 	Error:
 		if (PyErr_Occurred())
 		{
-			self->pPlugin->LogPythonException("Start");
+			self->pPlugin->LogPythonException("CDevice_init");
 		}
 		return 0;
 	}

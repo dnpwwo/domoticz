@@ -192,6 +192,11 @@ void CUpdateManager::callback(int iAction, char const* pDB, char const* pTable, 
 		// Put it in the queue to be published
 		std::lock_guard<std::mutex> l(QueueMutex);
 		UpdateEntryQueue.push(pEntry);
+
+		if (UpdateEntryQueue.size() > 1)
+		{
+			_log.Log(LOG_NORM, "[%s]: Database update queue size is now: %d", __func__, UpdateEntryQueue.size());
+		}
 	}
 }
 

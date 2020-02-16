@@ -87,4 +87,8 @@ namespace Plugins {
 		0,                         /* tp_alloc */
 		CInterface_new                 /* tp_new */
 	};
+
+	// Interface functions NOT exposed to Python
+	PyObject* CInterface_AddDeviceToDict(CInterface* self, long lDeviceID);
+	PyObject* CInterface_FindDevice(CInterface* self, long lDeviceID);
 }

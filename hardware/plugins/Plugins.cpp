@@ -1395,11 +1395,19 @@ Error:
 						Py_XDECREF(pDebugging);
 					}
 
-					PyErr_Clear();
+					if (PyErr_Occurred())
+					{
+						_log.Log(LOG_ERROR, "Python exception set prior to callback '%s'.", sHandler.c_str());
+						PyErr_Clear();
+					}
 					PyObject*	pReturnValue = PyObject_CallObject(pFunc, (PyObject*)pParams);
-					if (!pReturnValue)
+					if (!pReturnValue || PyErr_Occurred())
 					{
 						LogPythonException(sHandler);
+						if (PyErr_Occurred())
+						{
+							PyErr_Clear();
+						}
 					}
 					Py_XDECREF(pReturnValue);
 					Py_XDECREF(pFunc);

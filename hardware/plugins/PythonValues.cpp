@@ -230,6 +230,7 @@ namespace Plugins {
 			}
 			else {
 				self->ValueID = -1;
+				self->DeviceID = -1;
 				self->Name = PyUnicode_FromString("");
 				if (self->Name == NULL) {
 					Py_DECREF(self);
@@ -276,24 +277,24 @@ namespace Plugins {
 			if (!pModule)
 			{
 				_log.Log(LOG_ERROR, "CValue:%s, unable to find module for current interpreter.", __func__);
-				return 0;
+				goto Error;
 			}
 
 			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CValue:%s, unable to obtain module state.", __func__);
-				return 0;
+				goto Error;
 			}
 
 			if (!pModState->pPlugin)
 			{
 				_log.Log(LOG_ERROR, "CValue:%s, illegal operation, Plugin has not started yet.", __func__);
-				return 0;
+				goto Error;
 			}
 			self->pPlugin = pModState->pPlugin;
 
-			// During startup plugin sets this to signal load from database 
+			// During startup plugin sets this to signal load from database
 			if (pModState->lObjectID)
 			{
 				self->ValueID = pModState->lObjectID;
@@ -317,8 +318,16 @@ namespace Plugins {
 					if (pValue)
 					{
 						pSafeAssign = self->Value;
-						self->Value = pValue;
-						Py_XDECREF(pSafeAssign);
+						PyObject* pStringObj = PyObject_Str(pValue);
+						if (pStringObj)
+						{
+							self->Value = pStringObj;
+							Py_DECREF(pSafeAssign);
+						}
+						else
+						{
+							_log.Log(LOG_ERROR, "(%s) Unable to derive string for Value", self->pPlugin->m_Name.c_str());
+						}
 					}
 				}
 				else
@@ -329,6 +338,7 @@ namespace Plugins {
 					LogPythonException(pPlugin, __func__);
 				}
 			}
+
 		}
 		catch (std::exception* e)
 		{
@@ -339,6 +349,11 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
+		Error:
+		if (PyErr_Occurred())
+		{
+			self->pPlugin->LogPythonException("CValue_init");
+		}
 		return 0;
 	}
 
@@ -419,32 +434,21 @@ namespace Plugins {
 				{
 					vValues.push_back(std::string(PyUnicode_AsUTF8(self->Value)));
 				}
-				else if (self->Value->ob_type->tp_name == std::string("bool"))
-				{
-					vValues.push_back((PyObject_IsTrue(self->Value) ? "true" : "false"));
-				}
-				else if (PyLong_Check(self->Value))
-				{
-					vValues.push_back(std::to_string(PyLong_AsLong(self->Value)));
-				}
-				else if (PyBytes_Check(self->Value))
-				{
-					vValues.push_back(std::string(PyBytes_AsString(self->Value)));
-				}
-				else if (self->Value->ob_type->tp_name == std::string("bytearray"))
-				{
-					vValues.push_back(std::string(PyByteArray_AsString(self->Value)));
-				}
-				else if (self->Value->ob_type->tp_name == std::string("float"))
-				{
-					vValues.push_back(std::to_string(PyFloat_AsDouble(self->Value)));
-				}
 				else
 				{
-					_log.Log(LOG_ERROR, "(%s) Invalid data type for Value", self->pPlugin->m_Name.c_str());
-					vValues.push_back(std::string(""));
+					PyObject* pStringObj = PyObject_Str(self->Value);
+					if (pStringObj)
+					{
+						vValues.push_back(PyUnicode_AsUTF8(pStringObj));
+						Py_DECREF(pStringObj);
+					}
+					else
+					{
+						_log.Log(LOG_ERROR, "(%s) Unable to derive string for Value", self->pPlugin->m_Name.c_str());
+						vValues.push_back(std::string(""));
+					}
 				}
-
+				
 				vValues.push_back(std::to_string(self->Debug));
 				int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
@@ -455,7 +459,7 @@ namespace Plugins {
 				}
 				else
 				{
-					_log.Log(LOG_NORM, "Insert into 'Value' succeeded, %d records created.", iRowCount);
+					_log.Log(LOG_NORM, "Insert into 'Value' succeeded, %d record(s) created.", iRowCount);
 				}
 			}
 			else
@@ -484,31 +488,21 @@ namespace Plugins {
 				{
 					vValues.push_back(std::string(PyUnicode_AsUTF8(self->Value)));
 				}
-				else if (self->Value->ob_type->tp_name == std::string("bool"))
-				{
-					vValues.push_back((PyObject_IsTrue(self->Value) ? "true" : "false"));
-				}
-				else if (PyLong_Check(self->Value))
-				{
-					vValues.push_back(std::to_string(PyLong_AsLong(self->Value)));
-				}
-				else if (PyBytes_Check(self->Value))
-				{
-					vValues.push_back(std::string(PyBytes_AsString(self->Value)));
-				}
-				else if (self->Value->ob_type->tp_name == std::string("bytearray"))
-				{
-					vValues.push_back(std::string(PyByteArray_AsString(self->Value)));
-				}
-				else if (self->Value->ob_type->tp_name == std::string("float"))
-				{
-					vValues.push_back(std::to_string(PyFloat_AsDouble(self->Value)));
-				}
 				else
 				{
-					_log.Log(LOG_ERROR, "(%s) Invalid data type for Value", self->pPlugin->m_Name.c_str());
-					vValues.push_back(std::string(""));
+					PyObject* pStringObj = PyObject_Str(self->Value);
+					if (pStringObj)
+					{
+						vValues.push_back(PyUnicode_AsUTF8(pStringObj));
+						Py_DECREF(pStringObj);
+					}
+					else
+					{
+						ValueLog(self, LOG_ERROR, "(%s) Unable to derive string for Value", self->pPlugin->m_Name.c_str());
+						vValues.push_back(std::string(""));
+					}
 				}
+
 				int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
 				// Handle any data we get back
@@ -518,7 +512,7 @@ namespace Plugins {
 				}
 				else
 				{
-					_log.Log(LOG_NORM, "Update to 'Value' succeeded, %d records updated.", iRowCount);
+					ValueLog(self, LOG_NORM, "Update to 'Value' succeeded, %d records updated.", iRowCount);
 				}
 			}
 			else
@@ -528,7 +522,7 @@ namespace Plugins {
 		}
 		else
 		{
-			_log.Log(LOG_ERROR, "Value creation failed, Value object is not associated with a plugin.");
+			_log.Log(LOG_ERROR, "Value update failed, Value object is not associated with a plugin.");
 		}
 
 		Py_INCREF(Py_None);
