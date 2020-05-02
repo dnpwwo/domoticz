@@ -11,6 +11,7 @@ namespace Plugins {
 	typedef struct {
 		PyObject_HEAD
 		PyObject*			Name;
+		PyObject*			Target;
 		PyObject*			Address;
 		PyObject*			Port;
 		int					Baud;

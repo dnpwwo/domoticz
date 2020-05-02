@@ -2,6 +2,7 @@
 
 #include "DelayedLink.h"
 #include "Plugins.h"
+#include "PythonConnections.h"
 
 #ifndef byte
 typedef unsigned char byte;
@@ -205,7 +206,7 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 	#else
 				std::string textUTF8 = m_Text; // TODO: Is it safe to assume non-Windows will always be UTF-8?
 	#endif
-				Callback(m_pConnection, Py_BuildValue("is", m_Status, textUTF8.c_str()));  // 0 is success else socket failure code
+				Callback(((CConnection*)m_pConnection)->Target, Py_BuildValue("Ois", m_pConnection, m_Status, textUTF8.c_str()));  // 0 is success else socket failure code
 			};
 		};
 
@@ -239,15 +240,14 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 			// Data is stored in a single vector of bytes
 			if (m_Buffer.size())
 			{
-				pParams = Py_BuildValue("y#", &m_Buffer[0], m_Buffer.size());
-				Callback(m_pConnection, pParams);
+				Callback(((CConnection*)m_pConnection)->Target, Py_BuildValue("Oy#", m_pConnection, &m_Buffer[0], m_Buffer.size()));
 			}
 
 			// Data is in a dictionary
 			if (m_Data)
 			{
-				pParams = Py_BuildValue("O", m_Data);
-				Callback(m_pConnection, pParams);
+				Callback(((CConnection*)m_pConnection)->Target, Py_BuildValue("OO", m_pConnection, m_Data));
+				AccessPython	Guard(m_pPlugin);
 				Py_XDECREF(m_Data);
 			}
 		}
@@ -260,7 +260,7 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 	protected:
 		virtual void ProcessLocked()
 		{
-			Callback(m_pConnection, NULL);  // 0 is success else socket failure code
+			Callback(((CConnection*)m_pConnection)->Target, Py_BuildValue("(O)", m_pConnection));  // 0 is success else socket failure code
 		};
 	};
 

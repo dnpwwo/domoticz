@@ -318,7 +318,7 @@ namespace http {
 						// Add to the response
 						Json::FastWriter	jWriter;
 						std::string response = jWriter.write(root);
-						_log.Log(LOG_NORM, "CWebsocket::%s Called, Message: %s", __func__, response.c_str());
+						//_log.Log(LOG_NORM, "CWebsocket::%s Called, Message: %s", __func__, response.c_str());
 						WsWrite(response);
 						break;
 					}

@@ -491,10 +491,17 @@ namespace Plugins {
 	{
 		if (self->pPlugin)
 		{
-			if (self->InterfaceID <= 1)
+			if (self->InterfaceID != -1)
 			{
-				std::string		sSQL = "UPDATE Interface SET Active=? WHERE InterfaceID=" + std::to_string(self->InterfaceID) + ";";
+				std::string		sSQL = "UPDATE Interface SET Configuration=?, Active=? WHERE InterfaceID=" + std::to_string(self->InterfaceID) + ";";
 				std::vector<std::string> vValues;
+
+				//  Convert configuration to JSON
+				CPluginProtocolJSON* pProtocol = (CPluginProtocolJSON*)CPluginProtocol::Create("JSON");
+				std::string	sConfig = pProtocol->PythontoJSON(self->Configuration);
+				vValues.push_back(sConfig);
+
+				// Extact current Active value
 				vValues.push_back(std::to_string(self->Active));
 				int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
@@ -510,7 +517,7 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Interface ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), (long)self->InterfaceID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Interface ID '%d', must already set.", self->pPlugin->m_Name.c_str(), (long)self->InterfaceID);
 			}
 		}
 		else

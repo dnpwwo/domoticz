@@ -24,12 +24,6 @@ namespace http {
 			m_ParentKey = iParentKey;
 		};
 
-		void	CDataAccess::setOptions(std::string sOrder, std::string sFilter)
-		{
-			m_Order = sOrder;
-			m_Filter = sFilter;
-		}
-
 		bool	CDataAccess::UserHasAccess()
 		{
 			// Check user has access to the table for the requested HTTP verb

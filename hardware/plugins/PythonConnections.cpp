@@ -3,7 +3,6 @@
 //
 //	Domoticz Plugin System - Dnpwwo, 2016
 //
-#ifdef ENABLE_PYTHON
 
 #include "../main/Logger.h"
 #include "../main/SQLHelper.h"
@@ -28,6 +27,8 @@ namespace Plugins {
 			_log.Log(LOG_NORM, "(%s) Deallocating connection object '%s' (%s:%s).", self->pPlugin->m_Name.c_str(), PyUnicode_AsUTF8(self->Name), PyUnicode_AsUTF8(self->Address), PyUnicode_AsUTF8(self->Port));
 		}
 
+		Py_XDECREF(self->Name);
+		Py_XDECREF(self->Target);
 		Py_XDECREF(self->Address);
 		Py_XDECREF(self->Port);
 		Py_XDECREF(self->LastSeen);
@@ -74,26 +75,34 @@ namespace Plugins {
 					Py_DECREF(self);
 					return NULL;
 				}
+
+				self->Target = Py_None;
+				Py_INCREF(Py_None);
+
 				self->Address = PyUnicode_FromString("");
 				if (self->Address == NULL) {
 					Py_DECREF(self);
 					return NULL;
 				}
+
 				self->Port = PyUnicode_FromString("");
 				if (self->Port == NULL) {
 					Py_DECREF(self);
 					return NULL;
 				}
+
 				self->LastSeen = PyUnicode_FromString("");
 				if (self->LastSeen == NULL) {
 					Py_DECREF(self);
 					return NULL;
 				}
+
 				self->Transport = PyUnicode_FromString("");
 				if (self->Transport == NULL) {
 					Py_DECREF(self);
 					return NULL;
 				}
+
 				self->Protocol = PyUnicode_FromString("None");
 				if (self->Protocol == NULL) {
 					Py_DECREF(self);
@@ -123,12 +132,13 @@ namespace Plugins {
 	int CConnection_init(CConnection * self, PyObject * args, PyObject * kwds)
 	{
 		char*		pName = NULL;
+		PyObject*	pTarget = NULL;
 		char*		pTransport = NULL;
 		char*		pProtocol = NULL;
 		char*		pAddress = NULL;
 		char*		pPort = NULL;
 		int			iBaud = -1;
-		static char *kwlist[] = { "Name", "Transport", "Protocol", "Address", "Port", "Baud", NULL };
+		static char *kwlist[] = { "Target", "Name", "Transport", "Protocol", "Address", "Port", "Baud", NULL };
 
 		try
 		{
@@ -152,9 +162,14 @@ namespace Plugins {
 				return 0;
 			}
 
-			if (PyArg_ParseTupleAndKeywords(args, kwds, "ss|sssi", kwlist, &pName, &pTransport, &pProtocol, &pAddress, &pPort, &iBaud))
+			if (PyArg_ParseTupleAndKeywords(args, kwds, "Oss|sssi", kwlist, &pTarget, &pName, &pTransport, &pProtocol, &pAddress, &pPort, &iBaud))
 			{
 				self->pPlugin = pModState->pPlugin;
+				if (pTarget) {
+					Py_XDECREF(self->Target);
+					self->Target = pTarget;
+					Py_INCREF(pTarget);
+				}
 				if (pName) {
 					Py_XDECREF(self->Name);
 					self->Name = PyUnicode_FromString(pName);
@@ -184,7 +199,7 @@ namespace Plugins {
 			{
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
-				_log.Log(LOG_ERROR, "Expected: myVar = Domoticz.Connection(Name=\"<Name>\", Transport=\"<Transport>\", Protocol=\"<Protocol>\", Address=\"<IP-Address>\", Port=\"<Port>\", Baud=0)");
+				_log.Log(LOG_ERROR, "Expected: myVar = domoticz.Connection(Target=\"<Object>\", Name=\"<Name>\", Transport=\"<Transport>\", Protocol=\"<Protocol>\", Address=\"<IP-Address>\", Port=\"<Port>\", Baud=0)");
 				LogPythonException(pPlugin, __func__);
 			}
 		}
@@ -394,4 +409,3 @@ namespace Plugins {
 	}
 
 }
-#endif

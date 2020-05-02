@@ -114,49 +114,61 @@ namespace Plugins {
 	static void AddBytesToDict(PyObject* pDict, const char* key, const std::string &value)
 	{
 		PyObject*	pObj = Py_BuildValue("y#", value.c_str(), value.length());
-		if (PyDict_SetItemString(pDict, key, pObj) == -1)
+		PyObject*	pKey = PyUnicode_FromString(key);
+		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
 			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, key, value.c_str());
 		Py_DECREF(pObj);
+		Py_DECREF(pKey);
 	}
 
 	static void AddStringToDict(PyObject* pDict, const char* key, const std::string &value)
 	{
 		PyObject*	pObj = Py_BuildValue("s#", value.c_str(), value.length());
-		if (PyDict_SetItemString(pDict, key, pObj) == -1)
+		PyObject*	pKey = PyUnicode_FromString(key);
+		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
 			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, key, value.c_str());
 		Py_DECREF(pObj);
+		Py_DECREF(pKey);
 	}
 
 	static void AddIntToDict(PyObject* pDict, const char* key, const int value)
 	{
 		PyObject*	pObj = Py_BuildValue("i", value);
-		if (PyDict_SetItemString(pDict, key, pObj) == -1)
+		PyObject*	pKey = PyUnicode_FromString(key);
+		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
 			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%d' to dictionary.", __func__, key, value);
 		Py_DECREF(pObj);
+		Py_DECREF(pKey);
 	}
 
 	static void AddUIntToDict(PyObject* pDict, const char* key, const unsigned int value)
 	{
 		PyObject*	pObj = Py_BuildValue("I", value);
-		if (PyDict_SetItemString(pDict, key, pObj) == -1)
+		PyObject*	pKey = PyUnicode_FromString(key);
+		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
 			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%d' to dictionary.", __func__, key, value);
 		Py_DECREF(pObj);
+		Py_DECREF(pKey);
 	}
 
 	static void AddDoubleToDict(PyObject* pDict, const char* key, const double value)
 	{
 		PyObject*	pObj = Py_BuildValue("d", value);
-		if (PyDict_SetItemString(pDict, key, pObj) == -1)
+		PyObject*	pKey = PyUnicode_FromString(key);
+		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
 			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%f' to dictionary.", __func__, key, value);
 		Py_DECREF(pObj);
+		Py_DECREF(pKey);
 	}
 
 	static void AddBoolToDict(PyObject* pDict, const char* key, const bool value)
 	{
 		PyObject* pObj = Py_BuildValue("N", PyBool_FromLong(value));
-		if (PyDict_SetItemString(pDict, key, pObj) == -1)
+		PyObject* pKey = PyUnicode_FromString(key);
+		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
 			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%d' to dictionary.", __func__, key, value);
 		Py_DECREF(pObj);
+		Py_DECREF(pKey);
 	}
 
 	PyObject*	CPluginProtocolJSON::JSONtoPython(Json::Value*	pJSON)
@@ -215,8 +227,10 @@ namespace Plugins {
 				if (it->isArray() || it->isObject())
 				{
 					PyObject*	pObj = JSONtoPython(&pRef);
-					if (!pObj || (PyDict_SetItemString(pRetVal, KeyName.c_str(), pObj) == -1))
+					PyObject*	pKey = PyUnicode_FromString(KeyName.c_str());
+					if (!pObj || (PyDict_SetItem(pRetVal, pKey, pObj) == -1))
 						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', to dictionary for object.", __func__, KeyName.c_str());
+					Py_DECREF(pKey);
 				}
 				else if (it->isUInt()) AddUIntToDict(pRetVal, KeyName.c_str(), it->asUInt());
 				else if (it->isInt()) AddIntToDict(pRetVal, KeyName.c_str(), it->asInt());
@@ -284,7 +298,9 @@ namespace Plugins {
 			Py_ssize_t pos = 0;
 			while (PyDict_Next(pObject, &pos, &key, &value))
 			{
-				sJson += PythontoJSON(key) + ':' + PythontoJSON(value) + ',';
+				PyObject* pKeyString = PyObject_Str(key);
+				sJson += '"' + std::string(PyUnicode_AsUTF8(pKeyString)) + "\" :" + PythontoJSON(value) + ',';
+				Py_DECREF(pKeyString);
 			}
 			sJson[sJson.length()-1] = '}';
 		}

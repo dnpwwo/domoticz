@@ -40,9 +40,7 @@ public:
 	boost::signals2::signal<void(const int m_HwdID, const uint64_t DeviceRowIdx, const std::string &DeviceName, const uint8_t *pRXCommand)> sOnDeviceReceived;
 	boost::signals2::signal<void(const uint64_t SceneIdx, const std::string &SceneName)> sOnSwitchScene;
 
-#ifdef ENABLE_PYTHON
 	Plugins::CPluginSystem m_pluginsystem;
-#endif
 	CUpdateManager	m_UpdateManager;
 
 	bool m_bIgnoreUsernamePassword;

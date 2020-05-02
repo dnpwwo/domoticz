@@ -369,13 +369,6 @@ namespace Plugins {
 						m_pPlugins.find(InterfaceID)->second->Stop();
 						DeregisterPlugin(InterfaceID);
 					}
-					// Just restart if it is is supposed to be active
-					else if (bActive)
-					{
-						// Actually should check what has changed and only restart if the Python script has changed, otherwise queue an 'onChanged' event
-						m_pPlugins.find(InterfaceID)->second->Stop();
-						m_pPlugins.find(InterfaceID)->second->Start();
-					}
 				}
 				else if (pEntry->m_Action == "Delete") {
 					// Stop and de-register interface
@@ -403,7 +396,11 @@ namespace Plugins {
 					// locate the Plugin related to the Device
 					if (lInterfaceID)
 					{
-						pPlugin = (CPlugin*)m_pPlugins.find(lInterfaceID)->second;
+						std::map<int, CDomoticzHardwareBase*>::const_iterator it = m_pPlugins.find(lInterfaceID);
+						if (it != m_pPlugins.end())
+						{
+							pPlugin = (CPlugin*)it->second;
+						}
 						// Sanity check
 						if (!pPlugin)
 						{

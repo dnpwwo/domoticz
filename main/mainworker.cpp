@@ -224,9 +224,7 @@ void MainWorker::RemoveDomoticzHardware(int HwdId)
 	int dpos = FindDomoticzHardware(HwdId);
 	if (dpos == -1)
 		return;
-#ifdef ENABLE_PYTHON
 	m_pluginsystem.DeregisterPlugin(HwdId);
-#endif
 	RemoveDomoticzHardware(m_hardwaredevices[dpos]);
 }
 
@@ -917,10 +915,11 @@ void MainWorker::HeartbeatCheck()
 	}
 
 	//Check hardware heartbeats
-	std::vector<CDomoticzHardwareBase*>::const_iterator itt;
-	for (itt = m_hardwaredevices.begin(); itt != m_hardwaredevices.end(); ++itt)
+	std::map<int, CDomoticzHardwareBase*>* pPlugins = m_pluginsystem.GetHardware();
+	std::map<int, CDomoticzHardwareBase*>::const_iterator itt;
+	for (itt = pPlugins->begin(); itt != pPlugins->end(); ++itt)
 	{
-		CDomoticzHardwareBase *pHardware = (CDomoticzHardwareBase *)(*itt);
+		CDomoticzHardwareBase* pHardware = itt->second;
 		if (!pHardware->m_bSkipReceiveCheck)
 		{
 			//Skip Dummy Hardware

@@ -456,7 +456,6 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-	Error:
 		if (PyErr_Occurred())
 		{
 			self->pPlugin->LogPythonException("CDevice_init");
@@ -543,7 +542,15 @@ namespace Plugins {
 				}
 				else
 				{
-					_log.Log(LOG_NORM, "Insert into 'Device' succeeded, %d records created.", iRowCount);
+					// Read DeviceID of new device and update the object
+					std::vector<std::vector<std::string>> result = m_sql.safe_query("SELECT DeviceID FROM Device WHERE InterfaceID = %d AND Name = '%q'", self->InterfaceID, sName.c_str());
+					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+					{
+						std::vector<std::string> sd = *itt;
+						self->DeviceID = atoi(sd[0].c_str());
+					}
+
+					_log.Log(LOG_NORM, "Insert into 'Device' succeeded with ID %d, %d record(s) created.", self->DeviceID, iRowCount);
 				}
 			}
 			else
@@ -564,7 +571,7 @@ namespace Plugins {
 	{
 		if (self->pPlugin)
 		{
-			if (self->DeviceID <= 1)
+			if (self->DeviceID != -1)
 			{
 				std::string		sSQL = "UPDATE Device SET Active=?, Timestamp=CURRENT_TIMESTAMP WHERE DeviceID=" + std::to_string(self->DeviceID) + ";";
 				std::vector<std::string> vValues;
@@ -583,12 +590,12 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Device ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), (long)self->DeviceID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Device ID '%d', must already be set.", self->pPlugin->m_Name.c_str(), (long)self->DeviceID);
 			}
 		}
 		else
 		{
-			_log.Log(LOG_ERROR, "Device creation failed, Device object is not associated with a plugin.");
+			_log.Log(LOG_ERROR, "Device creation failed, Device object is not associated with an interface.");
 		}
 
 		Py_INCREF(Py_None);

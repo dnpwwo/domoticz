@@ -459,7 +459,15 @@ namespace Plugins {
 				}
 				else
 				{
-					_log.Log(LOG_NORM, "Insert into 'Value' succeeded, %d record(s) created.", iRowCount);
+					// Read ValueID of new value and update the object
+					std::vector<std::vector<std::string>> result = m_sql.safe_query("SELECT ValueID FROM Value WHERE DeviceID = %d AND Name = '%q'", self->DeviceID, sName.c_str());
+					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+					{
+						std::vector<std::string> sd = *itt;
+						self->ValueID = atoi(sd[0].c_str());
+					}
+
+					_log.Log(LOG_NORM, "Insert into 'Value' succeeded with ID %d, %d record(s) created.", self->ValueID, iRowCount);
 				}
 			}
 			else

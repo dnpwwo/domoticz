@@ -12,9 +12,6 @@ namespace http {
 			std::string		m_Parent;
 			int				m_ParentKey = 0;
 
-			std::string		m_Order;
-			std::string		m_Filter;
-
 			std::string		m_DontGETFields;
 			std::string		m_PUTFields;
 			std::string		m_PATCHFields;
@@ -28,7 +25,6 @@ namespace http {
 
 			virtual	void	setTable(std::string sTable, int iTableKey);
 			virtual	void	setParent(std::string sParent, int iParentKey);
-			virtual	void	setOptions(std::string sOrder, std::string sFilter);
 
 			virtual bool	UserHasAccess();
 

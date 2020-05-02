@@ -60,7 +60,7 @@ const char* sqlCreateInterfaceLog =
 			"[InterfaceLogID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[InterfaceID] INTEGER NOT NULL, "
 			"[Message] TEXT DEFAULT \"\","
-			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP,"
+			"[Timestamp] TEXT DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),"
 		"FOREIGN KEY(InterfaceID) REFERENCES Interface(InterfaceID) ON DELETE CASCADE);";
 
 const char* sqlInterfaceAfterInsertTrigger =
@@ -114,7 +114,7 @@ const char* sqlCreateDeviceLog =
 			"[DeviceLogID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[DeviceID] INTEGER NOT NULL, "
 			"[Message] TEXT DEFAULT \"\","
-			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP,"
+			"[Timestamp] TEXT DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),"
 		"FOREIGN KEY(DeviceID) REFERENCES Device(DeviceID) ON DELETE CASCADE);";
 
 const char* sqlDeviceAfterInsertTrigger =
@@ -180,7 +180,7 @@ const char* sqlCreateValueLog =
 			"[ValueLogID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[ValueID] INTEGER NOT NULL, "
 			"[Message] TEXT DEFAULT \"\","
-			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP, "
+			"[Timestamp] TEXT DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),"
 		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID) ON DELETE CASCADE);";
 
 const char* sqlCreateValueHistory =
@@ -314,11 +314,75 @@ const char* sqlCreateTableAccess =
 		"FOREIGN KEY(RoleID) REFERENCES Role(RoleID) ON DELETE CASCADE);";
 
 const char* sqlCreateStandardScript =
-		"CREATE TABLE IF NOT EXISTS [StandardScript] ("
+	"CREATE TABLE IF NOT EXISTS [StandardScript] ("
 			"[StandardScriptID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Name] TEXT UNIQUE DEFAULT Unknown, "
 			"[Script] TEXT DEFAULT \"\","
 			"[Active] INTEGER DEFAULT 0);";
+
+const char* sqlCreateLayout =
+	"CREATE TABLE IF NOT EXISTS [Layout] ("
+			"[LayoutID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[Name] TEXT UNIQUE DEFAULT Unknown, "
+			"[MinimumWidth] INTEGER DEFAULT 0, "
+			"[Active] INTEGER DEFAULT 0);";
+
+const char* sqlCreateTab =
+	"CREATE TABLE IF NOT EXISTS [Tab] ("
+			"[TabID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[LayoutID] INTEGER NOT NULL, "
+			"[Name] TEXT DEFAULT Unknown, "
+			"[DisplayOrder] INTEGER DEFAULT 0, "
+			"[Icon] TEXT DEFAULT '', "
+			"[Background] TEXT DEFAULT '', "
+			"[RowHeight] INTEGER DEFAULT 100, "
+			"[MinColumns] INTEGER DEFAULT 4, "
+			"[MaxColumns] INTEGER DEFAULT 8, "
+			"[MinColWidth] INTEGER DEFAULT 90, "
+			"[MaxColWidth] INTEGER DEFAULT 180, "
+			"[GutterSize] INTEGER DEFAULT 5, "
+		"FOREIGN KEY(LayoutID) REFERENCES Layout(LayoutID) ON DELETE CASCADE);";
+
+const char* sqlCreateTile =
+	"CREATE TABLE IF NOT EXISTS [Tile] ("
+			"[TileID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[TabID] INTEGER NOT NULL, "
+			"[Name] TEXT UNIQUE DEFAULT Unknown, "
+			"[DisplayOrder] INTEGER DEFAULT 0, "
+			"[RowSpan] INTEGER DEFAULT 1, "
+			"[ColumnSpan] INTEGER DEFAULT 1, "
+			"[BorderRadius] TEXT DEFAULT '', "
+			"[Background] TEXT DEFAULT '', "
+		"FOREIGN KEY(TabID) REFERENCES Tab(TabID) ON DELETE CASCADE);";
+
+const char* sqlCreateElement =
+	"CREATE TABLE IF NOT EXISTS [Element] ("
+			"[ElementID] INTEGER PRIMARY KEY AUTOINCREMENT, "
+			"[TabID] INTEGER NOT NULL, "
+			"[Name] TEXT DEFAULT Unknown, "
+			"[ValueID] INTEGER NOT NULL, "
+			"[Type] TEXT DEFAULT Unknown, "
+			"[Class] TEXT DEFAULT '', "
+			"[ContainingElementID] INTEGER DEFAULT 0, "
+			"[RelativePosition] INTEGER DEFAULT 1, "
+			"[OffsetX] INTEGER DEFAULT -1, "
+			"[OffsetY] INTEGER DEFAULT -1, "
+			"[Height] INTEGER DEFAULT -1, "
+			"[Width] INTEGER DEFAULT -1, "
+			"[ScreenUnits] TEXT DEFAULT 'px', "
+			"[BorderRadius] INTEGER DEFAULT 0, "
+			"[Padding] TEXT DEFAULT '', "
+			"[Margin] TEXT DEFAULT '', "
+			"[Colour] TEXT DEFAULT '', "
+			"[Transparency] INTEGER DEFAULT 0, "
+			"[ZIndex] INTEGER DEFAULT 0, "
+			"[URL] TEXT DEFAULT '', "
+			"[Javascript] TEXT DEFAULT '', "
+			"[Action] TEXT DEFAULT '', "
+			"[RefreshSeconds] INTEGER DEFAULT -1, "
+		"FOREIGN KEY(ContainingElementID) REFERENCES Element(ElementID) ON DELETE CASCADE,"
+		"FOREIGN KEY(ValueID) REFERENCES Value(ValueID),"
+		"FOREIGN KEY(TileID) REFERENCES Tile(TileID) ON DELETE CASCADE);";
 
 extern std::string szUserDataFolder;
 
@@ -449,7 +513,6 @@ bool CSQLHelper::OpenDatabase()
 	query(sqlCreateValue);
 	query(sqlCreateValueHistory);
 	query(sqlCreateValueLog);
-	query(sqlCreateValueHistory);
 	query(sqlValueAfterInsertTrigger);
 	query(sqlValueAfterUpdateTrigger);
 	query(sqlCreateValueScript);
@@ -466,6 +529,11 @@ bool CSQLHelper::OpenDatabase()
 	query(sqlCreateUser);
 	query(sqlCreateSession);
 	query(sqlCreateTableAccess);
+
+	query(sqlCreateLayout);
+	query(sqlCreateTab);
+	query(sqlCreateTile);
+	query(sqlCreateElement);
 
 	//Add indexes to log tables
 
@@ -485,8 +553,8 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Role (Name, RemoteAccess, InternalTTL, RemoteTTL) VALUES ('Administrator', true, 15, 5)");
 
 		// Add a couple of users
-		query("INSERT INTO User (Username, Password, Name, RoleID) SELECT 'Anonymous','Anonymous','Anonymous User', RoleID FROM Role WHERE Name = 'Anonymous'");
-		query("INSERT INTO User (Username, Password, Name, RoleID) SELECT 'Admin','Admin ','Administrative User', RoleID FROM Role WHERE Name = 'Administrator'");
+		query("INSERT INTO User (Username, Password, Name, Theme, Active, ForceChange, RoleID) SELECT 'Anonymous','Anonymous','Anonymous User', 'indigo', true, false, RoleID FROM Role WHERE Name = 'Anonymous'");
+		query("INSERT INTO User (Username, Password, Name, Theme, Active, ForceChange, RoleID) SELECT 'Admin','Admin ','Administrative User', 'deep-purple', true, false, RoleID FROM Role WHERE Name = 'Administrator'");
 
 		// Give access to tables
 		query("INSERT INTO TableAccess (Name,RoleID,CanGET) SELECT A.name, B.RoleID, true FROM sqlite_master A, Role B WHERE (A.type='table' AND A.name <> 'sqlite_sequence' AND A.name NOT LIKE 'User%' AND A.name NOT LIKE 'TableAccess%') AND (B.Name <> 'Administrator')");
@@ -508,7 +576,9 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Temperature', 0, 6, 'temp-0-5.png,temp-5-10.png,temp-10-15.png,temp-15-20.png,temp-20-25.png,temp-25-30.png,temp-gt-30.png', 'Cold,Chilly,Cool,Mild,Warm,Hot,Baking')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Wind Direction', 0, 15, 'WindN.png,WindNNE.png,WindNE.png,WindENE.png,WindE.png,WindESE.png,WindSE.png,WindSSE.png,WindS.png,WindSSW.png,WindSW.png,WindWSW.png,WindW.png,WindWNW.png,WindNW.png,WindNNW.png', 'N,NNE,NE,ENE,E,ESE,SE,SSE,S,SSW,SW,WSW,W,WNW,NW,NNW')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, RetentionDays, RetentionInterval, IconList, TextLabels) VALUES ('Audible', 0, 1, 1, 300, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,On')");
-		query("INSERT INTO Unit (Name, RetentionDays, RetentionInterval) VALUES ('Text', 7, 900)");
+		query("INSERT INTO Unit (Name) VALUES ('Text')");
+		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Type', 'Media48_Off,Media48_On', 'None,Audio,Video')");
+		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Status', 'Media48_Off,Media48_On', 'None,Playing,Paused')");
 
 		sqlite3_wal_checkpoint(m_dbase, NULL);
 	}

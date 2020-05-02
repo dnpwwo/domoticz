@@ -217,6 +217,7 @@ namespace http {
 			{	// Case 2
 				sSQL += " WHERE T." + m_Table + "ID=" + std::to_string(m_TableKey);
 			}
+
 			if (m_ParentKey)
 			{	// Case 3a - We can't be sure which way around the keys go
 				std::string		testSQL = sSQL + ", " + m_Parent + " P WHERE P." + m_Parent + "ID=" + std::to_string(m_ParentKey) + " AND P." + m_Parent + "ID=T." + m_Parent + "ID";
@@ -230,6 +231,68 @@ namespace http {
 					sSQL = testSQL;
 				}
 			}
+
+			// Add any query parameters into the query
+			std::multimap<std::string, std::string>::const_iterator it = m_Request.parameters.begin();
+			std::string	sOrder = "";
+			for (std::multimap<std::string, std::string>::const_iterator it = m_Request.parameters.begin(); it != m_Request.parameters.end(); ++it)
+			{
+				std::string sParam = it->first;
+				// Handle special case(s) first
+				if (sParam == "Order")
+				{
+					for (int i = 0; i < m_ValidFields.size(); i++)
+					{
+						if (it->second == m_ValidFields[i][1])
+						{
+							if (m_ValidFields[i][2] == "TEXT")
+							{
+								sOrder = "'" + it->second + "'";
+							}
+							else
+							{
+								sOrder = it->second;
+							}
+							break;
+						}
+					}
+				}
+				else
+				{
+					// Add items to where clause if they are in the target 
+					for (int i = 0; i < m_ValidFields.size(); i++)
+					{
+						if (sParam == m_ValidFields[i][1])
+						{
+							if (sSQL.find("WHERE") == std::string::npos)
+							{
+								sSQL += " WHERE ";
+							}
+							else
+							{
+								sSQL += " AND ";
+							}
+							if (m_ValidFields[i][2] == "TEXT")
+							{
+								sSQL += " T." + sParam + "='" + it->second + "'";
+							}
+							else
+							{
+								sSQL += " T." + sParam + "=" + it->second;
+							}
+							break;
+						}
+					}
+				}
+				
+			}
+
+			// Add order clause if one was requested
+			if (sOrder.length())
+			{
+				sSQL += " ORDER BY T." + sOrder;
+			}
+
 			std::vector<std::vector<std::string> >	result = m_sql.safe_query(sSQL.c_str());
 
 			// Handle any data we get back
@@ -445,26 +508,11 @@ namespace http {
 		{
 			CRESTRequest* pREST = NULL;
 			std::string	sURI = req.uri;
-			std::string	sOrder;
-			std::string	sFilter;
 
-			// Handle query string - TODO: Order - Field or direction, Filter Field name or value???
-			if (sURI.find('&'))
+			// Handle query string removal
+			if (sURI.find('?'))
 			{
-				std::string::size_type pos = sURI.find("&order=");
-				if (pos != std::string::npos)
-				{
-					sOrder = sURI.substr(pos+7, sURI.find('&', pos+1) - (pos+7));
-				}
-
-				pos = sURI.find("&filter=");
-				if (pos != std::string::npos)
-				{
-					sFilter = sURI.substr(pos+8, sURI.find('&', pos+1) - (pos+8));
-				}
-
-				// Strip query string out of URI
-				sURI = sURI.substr(0, sURI.find('&'));
+				sURI = sURI.substr(0, sURI.find('?'));
 			}
 
 			// Break URI into parts
@@ -551,7 +599,6 @@ namespace http {
 					// Initialise object's data
 					pREST->setTable(sTable, iTableKey);
 					pREST->setParent(sParent, iParentKey);
-					pREST->setOptions(sOrder, sFilter);
 				}
 			}
 

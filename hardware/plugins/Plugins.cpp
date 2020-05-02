@@ -359,6 +359,7 @@ namespace Plugins {
 			if (!pErrBytes)
 			{
 				// ImportError has name and path attributes
+				PyErr_Clear();
 				if (PyObject_HasAttrString(pValue, "path"))
 				{
 					PyObject*		pString = PyObject_GetAttrString(pValue, "path");
@@ -371,6 +372,7 @@ namespace Plugins {
 					}
 					Py_XDECREF(pString);
 				}
+				PyErr_Clear();
 				if (PyObject_HasAttrString(pValue, "name"))
 				{
 					PyObject*		pString = PyObject_GetAttrString(pValue, "name");
@@ -390,6 +392,7 @@ namespace Plugins {
 				}
 
 				// SyntaxError, IndentationError & TabError have filename, lineno, offset and text attributes
+				PyErr_Clear();
 				if (PyObject_HasAttrString(pValue, "filename"))
 				{
 					PyObject*		pString = PyObject_GetAttrString(pValue, "filename");
@@ -401,12 +404,14 @@ namespace Plugins {
 				}
 				long long	lineno = -1;
 				long long 	offset = -1;
+				PyErr_Clear();
 				if (PyObject_HasAttrString(pValue, "lineno"))
 				{
 					PyObject*		pString = PyObject_GetAttrString(pValue, "lineno");
 					lineno = PyLong_AsLongLong(pString);
 					Py_XDECREF(pString);
 				}
+				PyErr_Clear();
 				if (PyObject_HasAttrString(pExcept, "offset"))
 				{
 					PyObject*		pString = PyObject_GetAttrString(pExcept, "offset");
@@ -428,6 +433,7 @@ namespace Plugins {
 					sError = "";
 				}
 
+				PyErr_Clear();
 				if (PyObject_HasAttrString(pValue, "text"))
 				{
 					PyObject*		pString = PyObject_GetAttrString(pValue, "text");
@@ -538,9 +544,10 @@ namespace Plugins {
 				std::string		FileName = "";
 				if (pCode->co_filename)
 				{
-					PyBytesObject*	pFileBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_filename);
-					FileName = pFileBytes->ob_sval;
-					Py_XDECREF(pFileBytes);
+				//	Current design has no file and Python seems to supply invalid data in that case
+				//	PyBytesObject*	pFileBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_filename);
+				//	FileName = pFileBytes->ob_sval;
+				//	Py_XDECREF(pFileBytes);
 				}
 				std::string		FuncName = "Unknown";
 				if (pCode->co_name)
@@ -1054,6 +1061,8 @@ Error:
 		ConnectDirective*	pMessage = (ConnectDirective*)pMess;
 		CConnection*		pConnection = (CConnection*)pMessage->m_pConnection;
 
+		m_LastHeartbeatReceive = mytime(NULL);
+
 		if (pConnection->pTransport && pConnection->pTransport->IsConnected())
 		{
 			_log.Log(LOG_ERROR, "(%s) Current transport is still connected, directive ignored.", m_Name.c_str());
@@ -1182,7 +1191,7 @@ Error:
 	{
 		ReadEvent*	pMessage = (ReadEvent*)pMess;
 		CConnection*	pConnection = (CConnection*)pMessage->m_pConnection;
-
+		m_LastHeartbeatReceive = mytime(NULL);
 		pConnection->pProtocol->ProcessInbound(pMessage);
 	}
 
