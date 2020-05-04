@@ -1,8 +1,12 @@
 #pragma once
 
 #include "DelayedLink.h"
+#include "PluginManager.h"
 #include "Plugins.h"
 #include "PythonConnections.h"
+#include "PythonInterfaces.h"
+#include "PythonDevices.h"
+#include "PythonValues.h"
 
 #ifndef byte
 typedef unsigned char byte;
@@ -173,6 +177,50 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 		{
 			Callback(NULL);
 			AccessPython	Guard(m_pPlugin);
+			Py_DECREF(m_Target);
+		};
+	};
+
+	class onUpdateValueCallback : public CCallbackBase
+	{
+	private:
+		long	m_DeviceID;
+		long	m_ValueID;
+	public:
+		onUpdateValueCallback(CPlugin* pPlugin, long lDeviceID, long lValueID) : m_DeviceID(lDeviceID), m_ValueID(lValueID), CCallbackBase(pPlugin, "onUpdate") { };
+	protected:
+		virtual void ProcessLocked()
+		{
+			CPlugin* pPlugin = NULL;
+			PyObject* pDevice = NULL; // Used for insert
+			PyObject* pValue = NULL;  // Used for update & delete
+		
+			// Iterate through all Plugins (Interfaces)
+			CPluginSystem	PluginSystem;
+			for (std::map<int, CDomoticzHardwareBase*>::iterator it = PluginSystem.GetHardware()->begin(); it != PluginSystem.GetHardware()->end(); it++)
+			{
+				pPlugin = (CPlugin*)it->second;
+				AccessPython	Guard(pPlugin);
+
+				PyObject* pKey = PyLong_FromLong(m_DeviceID);
+				pDevice = PyDict_GetItem(((CInterface*)pPlugin->m_Interface)->Devices, pKey);
+				Py_DECREF(pKey);
+				if (pDevice) // This the Device the Value has been added to
+				{
+					pValue = CDevice_FindDevice((CDevice*)pDevice, m_ValueID);
+					if (pValue)
+					{
+						CValue_refresh((CValue*)pValue);
+						m_Target = pValue;
+						break;
+					}
+				}
+			}
+
+			if (pValue)
+			{
+				Callback(NULL);
+			}
 			Py_DECREF(m_Target);
 		};
 	};

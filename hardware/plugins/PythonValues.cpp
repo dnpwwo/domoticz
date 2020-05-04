@@ -267,9 +267,9 @@ namespace Plugins {
 	{
 		char*	szName = NULL;
 		long	lDeviceID = -1;
-		long	lUnitID = -1;
+		char*	szUnit = NULL;
 		PyObject* pValue = NULL;
-		static char* kwlist[] = { "Name", "DeviceID", "UnitID",	"Value", NULL };
+		static char* kwlist[] = { "Name", "DeviceID", "Unit",	"Value", NULL };
 
 		try
 		{
@@ -303,7 +303,7 @@ namespace Plugins {
 			}
 			else
 			{
-				if (PyArg_ParseTupleAndKeywords(args, kwds, "siiO", kwlist, &szName, &lDeviceID, &lUnitID, &pValue))
+				if (PyArg_ParseTupleAndKeywords(args, kwds, "sisO", kwlist, &szName, &lDeviceID, &szUnit, &pValue))
 				{
 					PyObject* pSafeAssign;
 					std::string	sName = szName ? szName : "";
@@ -314,7 +314,25 @@ namespace Plugins {
 						Py_XDECREF(pSafeAssign);
 					}
 					self->DeviceID = lDeviceID;
-					self->UnitID = lUnitID;
+					std::string	sUnit = szUnit ? szUnit : "";
+					std::vector<std::vector<std::string> > result;
+					result = m_sql.safe_query("SELECT UnitID FROM Unit WHERE Name='%q'", sUnit.c_str());
+
+					// Handle any data we get back
+					if (result.empty())
+					{
+						_log.Log(LOG_ERROR, "Invalid Unit, '%s' not found.", sUnit.c_str());
+						goto Error;
+					}
+					else
+					{
+						for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+						{
+							std::vector<std::string> sd = *itt;
+							self->UnitID = atoi(sd[0].c_str());
+						}
+					}
+
 					if (pValue)
 					{
 						pSafeAssign = self->Value;
@@ -460,7 +478,7 @@ namespace Plugins {
 				else
 				{
 					// Read ValueID of new value and update the object
-					std::vector<std::vector<std::string>> result = m_sql.safe_query("SELECT ValueID FROM Value WHERE DeviceID = %d AND Name = '%q'", self->DeviceID, sName.c_str());
+					std::vector<std::vector<std::string>> result = m_sql.safe_query("SELECT ValueID FROM Value WHERE DeviceID = %d AND Name = '%q' ORDER BY ValueID ASC", self->DeviceID, sName.c_str());
 					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
@@ -480,8 +498,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Value creation failed, Value object is not associated with a plugin.");
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		return (PyObject*)self;
 	}
 
 	PyObject* CValue_update(CValue* self)

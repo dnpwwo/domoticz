@@ -358,7 +358,7 @@ const char* sqlCreateTile =
 const char* sqlCreateElement =
 	"CREATE TABLE IF NOT EXISTS [Element] ("
 			"[ElementID] INTEGER PRIMARY KEY AUTOINCREMENT, "
-			"[TabID] INTEGER NOT NULL, "
+			"[TileID] INTEGER NOT NULL, "
 			"[Name] TEXT DEFAULT Unknown, "
 			"[ValueID] INTEGER NOT NULL, "
 			"[Type] TEXT DEFAULT Unknown, "
@@ -568,7 +568,7 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Fan On/Off', 0, 1, 'Fan48_Off.png,Fan48_On.png', 'Off,On')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Laptop On/Off', 0, 1, 'Computer48_Off.png,Computer48_On.png', 'Off,On')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Desktop On/Off', 0, 1, 'ComputerPC48_Off.png,ComputerPC48_On.png', 'Off,On')");
-		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Contact Open/Close', 0, 1, 'Contact48_Off.png,Contact48_On.png', 'Closed,Open')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Contact Open/Close', 0, 3, 'Contact48_Off.png,Contact48_On.png,Shield_Bang.png,Shield_Cross.png', 'Closed,Open,Bypass,Tamper')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Door Open/Close', 0, 1, 'Door48_Off.png,Door48_On.png', 'Closed,Open')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Dimmer', 0, 100, 'Dimmer48_Off.png,Dimmer48_On.png', 'Off,On')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Percentage', 0, 100, 'Percentage48.png', '%')");
@@ -577,8 +577,9 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Wind Direction', 0, 15, 'WindN.png,WindNNE.png,WindNE.png,WindENE.png,WindE.png,WindESE.png,WindSE.png,WindSSE.png,WindS.png,WindSSW.png,WindSW.png,WindWSW.png,WindW.png,WindWNW.png,WindNW.png,WindNNW.png', 'N,NNE,NE,ENE,E,ESE,SE,SSE,S,SSW,SW,WSW,W,WNW,NW,NNW')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, RetentionDays, RetentionInterval, IconList, TextLabels) VALUES ('Audible', 0, 1, 1, 300, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,On')");
 		query("INSERT INTO Unit (Name) VALUES ('Text')");
-		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Type', 'Media48_Off,Media48_On', 'None,Audio,Video')");
-		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Status', 'Media48_Off,Media48_On', 'None,Playing,Paused')");
+		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Type', 'Media48_Off.png,Media48_On.png', 'None,Audio,Video')");
+		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Status', 'Media48_Off.png,Media48_On.png', 'None,Playing,Paused')");
+		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('PIR', 'motion48-off.png,motion48-on.png,Shield_Bang.png,Shield_Cross.png', 'Closed,Open,Bypass,Tamper')");
 
 		sqlite3_wal_checkpoint(m_dbase, NULL);
 	}

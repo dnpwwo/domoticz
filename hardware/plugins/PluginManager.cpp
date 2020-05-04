@@ -59,11 +59,6 @@ namespace Plugins {
 
 	PyMODINIT_FUNC PyInit_Domoticz(void);
 
-#ifdef ENABLE_PYTHON
-    // Need forward decleration
-    // PyMODINIT_FUNC PyInit_DomoticzEvents(void);
-#endif // ENABLE_PYTHON
-
 	std::mutex PluginMutex;	// controls accessto the message queue and m_pPlugins map
 	std::queue<CPluginMessageBase*>	PluginMessageQueue;
 	boost::asio::io_service ios;
@@ -413,7 +408,13 @@ namespace Plugins {
 					{
 						AccessPython	Guard(pPlugin);
 
-						pDevice = CInterface_AddDeviceToDict((CInterface*)pPlugin->m_Interface, lDeviceID);
+						// Check the device has not been manually added by plugin
+						pDevice = CInterface_FindDevice((CInterface*)pPlugin->m_Interface, lDeviceID);
+						if (!pDevice)
+						{
+							// if not then add it to the dictionary
+							pDevice = CInterface_AddDeviceToDict((CInterface*)pPlugin->m_Interface, lDeviceID);
+						}
 						if (pDevice)
 						{
 							pPlugin->MessagePlugin(new onCreateCallback(pPlugin, pDevice));
@@ -519,29 +520,11 @@ namespace Plugins {
 					try
 					{
 						long lDeviceID = atoi(GetFieldValue("DeviceID", pEntry).c_str());
-						// Iterate through all Plugins (Interfaces)
 						for (std::map<int, CDomoticzHardwareBase*>::iterator it = m_pPlugins.begin(); it != m_pPlugins.end(); it++)
 						{
 							pPlugin = (CPlugin*)it->second;
-							AccessPython	Guard(pPlugin);
-
-							PyObject* pKey = PyLong_FromLong(lDeviceID);
-							pDevice = PyDict_GetItem(((CInterface*)pPlugin->m_Interface)->Devices, pKey);
-							Py_DECREF(pKey);
-							if (pDevice) // This the Device the Value has been added to
-							{
-								pValue = CDevice_FindDevice((CDevice*)pDevice, lValueID);
-								if (pValue)
-								{
-									CValue_refresh((CValue*)pValue);
-									pPlugin->MessagePlugin(new onUpdateCallback(pPlugin, pValue));
-									break;
-								}
-								else
-								{
-									_log.Log(LOG_ERROR, "PluginSystem:%s, Failed to get value entry number '%d' in Values dictionary.", __func__, lDeviceID);
-								}
-							}
+							pPlugin->MessagePlugin(new onUpdateValueCallback(pPlugin, lDeviceID, lValueID));
+							break;
 						}
 					}
 					catch (...)

@@ -563,8 +563,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Device creation failed, Device object is not associated with a plugin.");
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		return (PyObject*)self;
 	}
 
 	PyObject* CDevice_update(CDevice* self)

@@ -237,7 +237,6 @@ namespace Plugins {
 			m_Lock->lock();
 		}
 
-
 		if (pPlugin)
 		{
 			m_Python = pPlugin->PythonInterpreter();
