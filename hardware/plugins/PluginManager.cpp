@@ -404,25 +404,9 @@ namespace Plugins {
 						}
 					}
 
-					if (pEntry->m_Action == "Insert") 
+					if (pEntry->m_Action == "Insert")
 					{
-						AccessPython	Guard(pPlugin);
-
-						// Check the device has not been manually added by plugin
-						pDevice = CInterface_FindDevice((CInterface*)pPlugin->m_Interface, lDeviceID);
-						if (!pDevice)
-						{
-							// if not then add it to the dictionary
-							pDevice = CInterface_AddDeviceToDict((CInterface*)pPlugin->m_Interface, lDeviceID);
-						}
-						if (pDevice)
-						{
-							pPlugin->MessagePlugin(new onCreateCallback(pPlugin, pDevice));
-						}
-						else
-						{
-							_log.Log(LOG_ERROR, "PluginSystem:%s, failed to add device %d to interface's device dictionary.", __func__, lDeviceID);
-						}
+						pPlugin->MessagePlugin(new onCreateDeviceCallback(pPlugin, lDeviceID));
 					}
 					else if (pEntry->m_Action == "Update") 
 					{

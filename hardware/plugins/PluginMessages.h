@@ -168,6 +168,39 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 		};
 	};
 
+	class onCreateDeviceCallback : public CCallbackBase
+	{
+	private:
+		CPlugin*	m_Plugin;
+		long		m_DeviceID;
+	public:
+		onCreateDeviceCallback(CPlugin* pPlugin, long lDeviceID) : m_Plugin(pPlugin), m_DeviceID(lDeviceID), CCallbackBase(pPlugin, "onCreate") { };
+	protected:
+		virtual void ProcessLocked()
+		{
+			PyObject* pDevice = NULL;
+
+			{
+				AccessPython	Guard(m_Plugin);
+
+				// Check the device has not been manually added by plugin
+				pDevice = CInterface_FindDevice((CInterface*)m_Plugin->m_Interface, m_DeviceID);
+				if (!pDevice)
+				{
+					// if not then add it to the dictionary
+					pDevice = CInterface_AddDeviceToDict((CInterface*)m_Plugin->m_Interface, m_DeviceID);
+				}
+			}
+
+			if (pDevice)
+			{
+				m_Target = pDevice;
+				Callback(NULL);
+				Py_DECREF(m_Target);
+			}
+		};
+	};
+
 	class onUpdateCallback : public CCallbackBase
 	{
 	public:
@@ -220,8 +253,8 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 			if (pValue)
 			{
 				Callback(NULL);
+				Py_DECREF(m_Target);
 			}
-			Py_DECREF(m_Target);
 		};
 	};
 

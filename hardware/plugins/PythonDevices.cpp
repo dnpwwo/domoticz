@@ -563,6 +563,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Device creation failed, Device object is not associated with a plugin.");
 		}
 
+		//Py_INCREF(self);
 		return (PyObject*)self;
 	}
 

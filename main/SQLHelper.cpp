@@ -470,6 +470,13 @@ bool CSQLHelper::OpenDatabase()
 		sqlite3_close(m_dbase);
 		return false;
 	}
+	rc = sqlite3_busy_timeout(m_dbase, 1000);	// Required in case any plugins do database changes that generate log updates (makes connection wait 1 second on db lock)
+	if (rc)
+	{
+		_log.Log(LOG_ERROR, "Error setting busy timeout on SQLite3 database: %s", sqlite3_errmsg(m_dbase));
+		sqlite3_close(m_dbase);
+		return false;
+}
 #ifndef WIN32
 	//test, this could improve performance
 	sqlite3_exec(m_dbase, "PRAGMA synchronous = NORMAL", NULL, NULL, NULL);
@@ -568,7 +575,7 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Fan On/Off', 0, 1, 'Fan48_Off.png,Fan48_On.png', 'Off,On')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Laptop On/Off', 0, 1, 'Computer48_Off.png,Computer48_On.png', 'Off,On')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Desktop On/Off', 0, 1, 'ComputerPC48_Off.png,ComputerPC48_On.png', 'Off,On')");
-		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Contact Open/Close', 0, 3, 'Contact48_Off.png,Contact48_On.png,Shield_Bang.png,Shield_Cross.png', 'Closed,Open,Bypass,Tamper')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Contact Open/Close', 0, 1, 'Contact48_Off.png,Contact48_On.png', 'Closed,Open')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Door Open/Close', 0, 1, 'Door48_Off.png,Door48_On.png', 'Closed,Open')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Dimmer', 0, 100, 'Dimmer48_Off.png,Dimmer48_On.png', 'Off,On')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Percentage', 0, 100, 'Percentage48.png', '%')");
@@ -579,7 +586,6 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Unit (Name) VALUES ('Text')");
 		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Type', 'Media48_Off.png,Media48_On.png', 'None,Audio,Video')");
 		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Status', 'Media48_Off.png,Media48_On.png', 'None,Playing,Paused')");
-		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('PIR', 'motion48-off.png,motion48-on.png,Shield_Bang.png,Shield_Cross.png', 'Closed,Open,Bypass,Tamper')");
 
 		sqlite3_wal_checkpoint(m_dbase, NULL);
 	}
