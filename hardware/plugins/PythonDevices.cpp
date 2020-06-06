@@ -277,7 +277,7 @@ namespace Plugins {
 		return pValue;
 	}
 
-	PyObject* CDevice_FindDevice(CDevice* self, long lValueID)
+	PyObject* CDevice_FindValue(CDevice* self, long lValueID)
 	{
 		PyObject* pValue = NULL;
 
@@ -310,11 +310,25 @@ namespace Plugins {
 		Py_XDECREF(self->Name);
 		Py_XDECREF(self->ExternalID);
 		Py_XDECREF(self->Timestamp);
+		PyObject* key, * value;
+		Py_ssize_t pos = 0;
+		// Sanity check to make sure the reference counbting is all good.
+		while (PyDict_Next(self->Values, &pos, &key, &value))
+		{
+			if (value->ob_refcnt != 1)
+			{
+				std::string	sName = PyUnicode_AsUTF8(((CValue*)value)->Name);
+				_log.Log(LOG_ERROR, "%s: Value '%s' Reference Count not one: %d.", __func__, sName.c_str(), value->ob_refcnt);
+			}
+		}
+
 		if (PyDict_Size(self->Values))
 		{
 			PyDict_Clear(self->Values);
 		}
 		Py_XDECREF(self->Values);
+		// Py_XDECREF(self->Parent);	// Reference to owning interface is borrowed so don't release it.
+										// Interface will always exist longer than a device, plus they can't point at each other (they could never be deleted)
 		Py_TYPE(self)->tp_free((PyObject*)self);
 	}
 
@@ -396,6 +410,7 @@ namespace Plugins {
 			if (pModState->lObjectID)
 			{
 				self->DeviceID = pModState->lObjectID;
+				self->Parent = pModState->pPlugin->m_Interface;			// Borrow a reference to the owning Interface
 				CDevice_refresh(self);
 				pModState->lObjectID = 0;
 
@@ -416,7 +431,8 @@ namespace Plugins {
 					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
-						CDevice_AddValueToDict(self, atoi(sd[0].c_str()));
+						PyObject* pValue = CDevice_AddValueToDict(self, atoi(sd[0].c_str()));
+						Py_XDECREF(pValue);
 					}
 				}
 			}
@@ -425,6 +441,7 @@ namespace Plugins {
 				if (PyArg_ParseTupleAndKeywords(args, kwds, "ss", kwlist, &szName, &szExternalID))
 				{
 					self->InterfaceID = pModState->pPlugin->m_InterfaceID;
+					self->Parent = pModState->pPlugin->m_Interface;			// Borrow a reference to the owning Interface
 					std::string	sName = szName ? szName : "";
 					if (sName.length())
 					{
@@ -543,7 +560,7 @@ namespace Plugins {
 				else
 				{
 					// Read DeviceID of new device and update the object
-					std::vector<std::vector<std::string>> result = m_sql.safe_query("SELECT DeviceID FROM Device WHERE InterfaceID = %d AND Name = '%q'", self->InterfaceID, sName.c_str());
+					std::vector<std::vector<std::string>> result = m_sql.safe_query("SELECT MAX(DeviceID) FROM Device WHERE InterfaceID = %d AND Name = '%q'", self->InterfaceID, sName.c_str());
 					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
@@ -563,8 +580,8 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Device creation failed, Device object is not associated with a plugin.");
 		}
 
-		//Py_INCREF(self);
-		return (PyObject*)self;
+		Py_INCREF(Py_None);
+		return Py_None;
 	}
 
 	PyObject* CDevice_update(CDevice* self)
@@ -585,7 +602,8 @@ namespace Plugins {
 				}
 				else
 				{
-					_log.Log(LOG_NORM, "Update to 'Device' succeeded, %d records updated.", iRowCount);
+					std::string	sName = PyUnicode_AsUTF8(self->Name);
+					_log.Log(LOG_NORM, "Update to Device '%s' succeeded, %d records updated.", sName.c_str(), iRowCount);
 				}
 			}
 			else

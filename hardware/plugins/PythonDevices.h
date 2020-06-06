@@ -15,6 +15,7 @@ namespace Plugins {
 		bool		Active;
 		PyObject*	Timestamp;
 		PyObject*	Values;
+		PyObject*	Parent;
 		CPlugin*	pPlugin;
 	} CDevice;
 
@@ -40,6 +41,7 @@ namespace Plugins {
 		{ "Active", T_BOOL, offsetof(CDevice, Active), 0, "Device active status" },
 		{ "Timestamp", T_OBJECT, offsetof(CDevice, Timestamp), READONLY, "Last update timestamp" },
 		{ "Values", T_OBJECT, offsetof(CDevice, Values), READONLY, "Values dictionary" },
+		{ "Parent", T_OBJECT, offsetof(CDevice, Parent), READONLY, "Parent interface" },
 		{ NULL }  /* Sentinel */
 	};
 
@@ -98,5 +100,5 @@ namespace Plugins {
 
 	// Interface functions NOT exposed to Python
 	PyObject* CDevice_AddValueToDict(CDevice* self, long lValueID);
-	PyObject* CDevice_FindDevice(CDevice* self, long lValueID);
+	PyObject* CDevice_FindValue(CDevice* self, long lValueID);
 }

@@ -312,6 +312,19 @@ namespace Plugins {
 	{
 		Py_XDECREF(self->Name);
 		Py_XDECREF(self->Configuration);
+
+		PyObject* key, * value;
+		Py_ssize_t pos = 0;
+		// Sanity check to make sure the reference counbting is all good.
+		while (PyDict_Next(self->Devices, &pos, &key, &value))
+		{
+			if (value->ob_refcnt != 1)
+			{
+				std::string	sName = PyUnicode_AsUTF8(((CDevice*)value)->Name);
+				_log.Log(LOG_ERROR, "%s: Device '%s' Reference Count not one: %d.", __func__, sName.c_str(), value->ob_refcnt);
+			}
+		}
+
 		if (PyDict_Size(self->Devices))
 		{
 			PyDict_Clear(self->Devices);
@@ -387,6 +400,7 @@ namespace Plugins {
 				return 0;
 			}
 			self->pPlugin = pModState->pPlugin;
+			pModState->pPlugin->m_Interface = (PyObject*)self;
 
 			// During startup plugin sets this to signal load from database 
 			if (pModState->lObjectID)

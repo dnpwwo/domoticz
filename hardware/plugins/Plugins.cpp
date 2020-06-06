@@ -43,7 +43,7 @@ extern MainWorker m_mainworker;
 namespace Plugins {
 
 	extern std::mutex PluginMutex;	// controls access to the message queue
-	extern std::queue<CPluginMessageBase*>	PluginMessageQueue;
+	extern std::deque<CPluginMessageBase*>	PluginMessageQueue;
 
 	void LogPythonException(CPlugin* pPlugin, const std::string &sHandler)
 	{
@@ -70,19 +70,31 @@ namespace Plugins {
 		}
 		if (pTypeText && pErrBytes)
 		{
-			_log.Log(LOG_ERROR, "(%s) '%s' failed '%s':'%s'.", Name.c_str(), sHandler.c_str(), pTypeText, pErrBytes->ob_sval);
+			if (pPlugin)
+				pPlugin->InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s':'%s'.", Name.c_str(), sHandler.c_str(), pTypeText, pErrBytes->ob_sval);
+			else
+				_log.Log(LOG_ERROR, "(%s) '%s' failed '%s':'%s'.", Name.c_str(), sHandler.c_str(), pTypeText, pErrBytes->ob_sval);
 		}
 		if (pTypeText && !pErrBytes)
 		{
-			_log.Log(LOG_ERROR, "(%s) '%s' failed '%s'.", Name.c_str(), sHandler.c_str(), pTypeText);
+			if (pPlugin)
+				pPlugin->InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s'.", Name.c_str(), sHandler.c_str(), pTypeText);
+			else
+				_log.Log(LOG_ERROR, "(%s) '%s' failed '%s'.", Name.c_str(), sHandler.c_str(), pTypeText);
 		}
 		if (!pTypeText && pErrBytes)
 		{
-			_log.Log(LOG_ERROR, "(%s) '%s' failed '%s'.", Name.c_str(), sHandler.c_str(), pErrBytes->ob_sval);
+			if (pPlugin)
+				pPlugin->InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s'.", Name.c_str(), sHandler.c_str(), pErrBytes->ob_sval);
+			else
+				_log.Log(LOG_ERROR, "(%s) '%s' failed '%s'.", Name.c_str(), sHandler.c_str(), pErrBytes->ob_sval);
 		}
 		if (!pTypeText && !pErrBytes)
 		{
-			_log.Log(LOG_ERROR, "(%s) '%s' failed, unable to determine error.", Name.c_str(), sHandler.c_str());
+			if (pPlugin)
+				pPlugin->InterfaceLog(LOG_ERROR, "(%s) '%s' failed, unable to determine error.", Name.c_str(), sHandler.c_str());
+			else
+				_log.Log(LOG_ERROR, "(%s) '%s' failed, unable to determine error.", Name.c_str(), sHandler.c_str());
 		}
 		if (pErrBytes) Py_XDECREF(pErrBytes);
 
@@ -96,7 +108,10 @@ namespace Plugins {
 				PyCodeObject*	pCode = frame->f_code;
 				PyBytesObject*	pFileBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_filename);
 				PyBytesObject*	pFuncBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_name);
-				_log.Log(LOG_ERROR, "(%s) ----> Line %d in %s, function %s", Name.c_str(), lineno, pFileBytes->ob_sval, pFuncBytes->ob_sval);
+				if (pPlugin)
+					pPlugin->InterfaceLog(LOG_ERROR, "(%s) ----> Line %d in %s, function %s", Name.c_str(), lineno, pFileBytes->ob_sval, pFuncBytes->ob_sval);
+				else
+					_log.Log(LOG_ERROR, "(%s) ----> Line %d in %s, function %s", Name.c_str(), lineno, pFileBytes->ob_sval, pFuncBytes->ob_sval);
 				Py_XDECREF(pFileBytes);
 				Py_XDECREF(pFuncBytes);
 			}
@@ -105,7 +120,10 @@ namespace Plugins {
 
 		if (!pExcept && !pValue && !pTraceback)
 		{
-			_log.Log(LOG_ERROR, "(%s) Call to message handler '%s' failed, unable to decode exception.", Name.c_str(), sHandler.c_str());
+			if (pPlugin)
+				pPlugin->InterfaceLog(LOG_ERROR, "(%s) Call to message handler '%s' failed, unable to decode exception.", Name.c_str(), sHandler.c_str());
+			else
+				_log.Log(LOG_ERROR, "(%s) Call to message handler '%s' failed, unable to decode exception.", Name.c_str(), sHandler.c_str());
 		}
 
 		if (pExcept) Py_XDECREF(pExcept);
@@ -258,6 +276,7 @@ namespace Plugins {
 		if (PyErr_Occurred())
 		{
 			_log.Log(LOG_NORM, "Clearing Python error during Thread Restore.");
+			LogPythonException(pPlugin, "Unknown");
 			PyErr_Clear();
 		}
 	}
@@ -622,7 +641,7 @@ namespace Plugins {
 		std::lock_guard<std::mutex> l(PluginMutex);
 		std::queue<CPluginMessageBase*>	TempMessageQueue(PluginMessageQueue);
 		while (!PluginMessageQueue.empty())
-			PluginMessageQueue.pop();
+			PluginMessageQueue.pop_front();
 
 		while (!TempMessageQueue.empty())
 		{
@@ -641,7 +660,7 @@ namespace Plugins {
 			{
 				// Message is for a different plugin so requeue it
 				_log.Log(LOG_NORM, "(%s) requeuing '%s' message for '%s'", m_Name.c_str(), FrontMessage->Name(), FrontMessage->Plugin()->m_Name.c_str());
-				PluginMessageQueue.push(FrontMessage);
+				PluginMessageQueue.push_back(FrontMessage);
 			}
 		}
 	}
@@ -682,28 +701,12 @@ namespace Plugins {
 					// otherwise just signal stop
 					MessagePlugin(new onStopCallback(this));
 				}
-
-				// loop on stop to be processed
-				while (m_bIsStarted)
-				{
-					sleep_milliseconds(100);
-				}
-			}
-
-			InterfaceLog(LOG_DEBUG_INT, "Stopping threads.", m_Name.c_str());
-
-			if (m_thread)
-			{
-				m_thread->join();
-				m_thread.reset();
 			}
 		}
 		catch (...)
 		{
 			//Don't throw from a Stop command
 		}
-
-		InterfaceLog(LOG_STATUS, "%s interface stopped.", m_Name.c_str());
 
 		return true;
 	}
@@ -747,7 +750,7 @@ namespace Plugins {
 
 	bool CPlugin::Initialise()
 	{
-		
+
 		m_bIsStarted = false;
 
 		// Load details from database
@@ -763,7 +766,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "(%s) Active Interface not found in database.", m_Name.c_str());
 			goto Error;
 		}
-		
+
 		try
 		{
 			PyEval_RestoreThread((PyThreadState*)m_mainworker.m_pluginsystem.PythonThread());
@@ -792,17 +795,17 @@ namespace Plugins {
 				//	Python loads the 'site' module automatically and adds extra search directories for module loading
 				//	This code makes the plugin framework function the same way
 				//
-				void*	pSiteModule = PyImport_ImportModule("site");
+				void* pSiteModule = PyImport_ImportModule("site");
 				if (!pSiteModule)
 				{
 					InterfaceLog(LOG_ERROR, "Failed to load 'site' module, continuing.");
 				}
 				else
 				{
-					PyObject*	pFunc = PyObject_GetAttrString((PyObject*)pSiteModule, "getsitepackages");
+					PyObject* pFunc = PyObject_GetAttrString((PyObject*)pSiteModule, "getsitepackages");
 					if (pFunc && PyCallable_Check(pFunc))
 					{
-						PyObject*	pSites = PyObject_CallObject(pFunc, NULL);
+						PyObject* pSites = PyObject_CallObject(pFunc, NULL);
 						if (!pSites)
 						{
 							LogPythonException("getsitepackages");
@@ -810,7 +813,7 @@ namespace Plugins {
 						else
 							for (Py_ssize_t i = 0; i < PyList_Size(pSites); i++)
 							{
-								PyObject*	pSite = PyList_GetItem(pSites, i);
+								PyObject* pSite = PyList_GetItem(pSites, i);
 								if (pSite && PyUnicode_Check(pSite))
 								{
 									std::wstringstream ssPath;
@@ -836,14 +839,14 @@ namespace Plugins {
 				//
 				//	Load the 'faulthandler' module to get a python stackdump during a segfault
 				//
-				void*	pFaultModule = PyImport_ImportModule("faulthandler");
+				void* pFaultModule = PyImport_ImportModule("faulthandler");
 				if (!pFaultModule)
 				{
 					InterfaceLog(LOG_ERROR, "Failed to load 'faulthandler' module, continuing.");
 				}
 				else
 				{
-					PyObject*	pFunc = PyObject_GetAttrString((PyObject*)pFaultModule, "enable");
+					PyObject* pFunc = PyObject_GetAttrString((PyObject*)pFaultModule, "enable");
 					if (pFunc && PyCallable_Check(pFunc))
 					{
 						PyObject_CallObject(pFunc, NULL);
@@ -963,12 +966,28 @@ namespace Plugins {
 			InterfaceLog(LOG_ERROR, "Exception caught in '%s'.", m_Name.c_str(), __func__);
 		}
 
-Error:
+	Error:
 		if (PyErr_Occurred())
 		{
 			LogPythonException();
 		}
 		PyEval_SaveThread();
+		m_bIsStarting = false;
+		return false;
+	}
+
+	bool CPlugin::Finalise()
+	{
+		InterfaceLog(LOG_DEBUG_INT, "Stopping threads.", m_Name.c_str());
+
+		if (m_thread)
+		{
+			m_thread->join();
+			m_thread.reset();
+		}
+
+		InterfaceLog(LOG_STATUS, "%s interface stopped.", m_Name.c_str());
+
 		m_bIsStarting = false;
 		return false;
 	}
@@ -1311,7 +1330,7 @@ Error:
 
 		// Add message to queue
 		std::lock_guard<std::mutex> l(PluginMutex);
-		PluginMessageQueue.push(pMessage);
+		PluginMessageQueue.push_back(pMessage);
 	}
 
 	void CPlugin::DisconnectEvent(CEventBase * pMess)
@@ -1346,6 +1365,12 @@ Error:
 			if (pMessage->bNotifyPlugin)
 			{
 				MessagePlugin(new onDisconnectCallback(this, (PyObject*)pConnection));
+			}
+			else if (pConnection->Target)
+			{
+				// Remove reference to event target because the disconnect callback won't do it
+				Py_XDECREF(pConnection->Target);
+				pConnection->Target = NULL;
 			}
 
 			// Plugin exiting and all connections have disconnect messages queued
@@ -1420,7 +1445,14 @@ Error:
 					Py_XDECREF(pReturnValue);
 					Py_XDECREF(pFunc);
 				}
-				else if (m_bDebug & PDM_QUEUE) _log.Log(LOG_NORM, "(%s) Message handler '%s' not callable, ignored.", m_Name.c_str(), sHandler.c_str());
+				else
+				{
+					if (m_bDebug & PDM_QUEUE) _log.Log(LOG_NORM, "(%s) Message handler '%s' not callable, ignored.", m_Name.c_str(), sHandler.c_str());
+					if (PyErr_Occurred())
+					{
+						PyErr_Clear();
+					}
+				}
 			}
 
 			if (pParams) Py_XDECREF(pParams);
@@ -1444,11 +1476,42 @@ Error:
 				PyErr_Clear();
 			}
 
-			// Stop Python
 			PyEval_RestoreThread(m_PyInterpreter);
-			if (m_Interface) Py_XDECREF(m_Interface);
-			if (m_PyModule) Py_XDECREF(m_PyModule);
-			if (m_PyInterpreter) Py_EndInterpreter((PyThreadState*)m_PyInterpreter);
+
+			// Delete any connection records before releasing the Interface itself
+			std::lock_guard<std::mutex> lTransports(m_TransportsMutex);
+			for (std::vector<CPluginTransport*>::iterator itt = m_Transports.begin(); itt != m_Transports.end(); itt++)
+			{
+				CPluginTransport* pPluginTransport = *itt;
+				// Tell transport to disconnect if required
+				if (pPluginTransport)
+				{
+					Py_XDECREF(pPluginTransport);
+				}
+			}
+
+			// Stop Python
+			if (PyDict_Size(m_SettingsDict))
+			{
+				PyDict_Clear(m_SettingsDict);
+			}
+			if (m_Interface)
+			{
+				if (m_Interface->ob_refcnt != 1)
+					_log.Log(LOG_ERROR, "%s: Interface '%d' Reference Count not one: %d.", __func__, m_InterfaceID, m_Interface->ob_refcnt);
+				Py_XDECREF(m_Interface);
+				m_Interface = NULL;
+			}
+			if (m_PyModule)
+			{
+				Py_XDECREF(m_PyModule);
+				m_PyModule = NULL;
+			}
+			if (m_PyInterpreter)
+			{
+				Py_EndInterpreter((PyThreadState*)m_PyInterpreter);
+				m_PyInterpreter = NULL;
+			}
 			PyEval_ReleaseLock();
 		}
 		catch (std::exception *e)
@@ -1459,11 +1522,8 @@ Error:
 		{
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown releasing Interpreter", __func__);
 		}
+
 		ClearMessageQueue();
-		m_PyModule = NULL;
-		m_Interface = NULL;
-		m_SettingsDict = NULL;
-		m_PyInterpreter = NULL;
 		m_bIsStarted = false;
 	}
 

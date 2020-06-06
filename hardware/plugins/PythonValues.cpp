@@ -498,7 +498,8 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Value creation failed, Value object is not associated with a plugin.");
 		}
 
-		return (PyObject*)self;
+		Py_INCREF(Py_None);
+		return Py_None;
 	}
 
 	PyObject* CValue_update(CValue* self)
@@ -537,7 +538,8 @@ namespace Plugins {
 				}
 				else
 				{
-					ValueLog(self, LOG_NORM, "Update to 'Value' succeeded, %d records updated.", iRowCount);
+					std::string	sName = PyUnicode_AsUTF8(self->Name);
+					ValueLog(self, LOG_NORM, "Update to Value '%s' succeeded, %d records updated.", sName.c_str(), iRowCount);
 				}
 			}
 			else

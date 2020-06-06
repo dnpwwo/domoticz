@@ -132,13 +132,12 @@ namespace Plugins {
 	int CConnection_init(CConnection * self, PyObject * args, PyObject * kwds)
 	{
 		char*		pName = NULL;
-		PyObject*	pTarget = NULL;
 		char*		pTransport = NULL;
 		char*		pProtocol = NULL;
 		char*		pAddress = NULL;
 		char*		pPort = NULL;
 		int			iBaud = -1;
-		static char *kwlist[] = { "Target", "Name", "Transport", "Protocol", "Address", "Port", "Baud", NULL };
+		static char* kwlist[] = { "Name", "Transport", "Protocol", "Address", "Port", "Baud", NULL };
 
 		try
 		{
@@ -161,15 +160,10 @@ namespace Plugins {
 				_log.Log(LOG_ERROR, "CPlugin:%s, illegal operation, Plugin has not started yet.", __func__);
 				return 0;
 			}
+			self->pPlugin = pModState->pPlugin;
 
-			if (PyArg_ParseTupleAndKeywords(args, kwds, "Oss|sssi", kwlist, &pTarget, &pName, &pTransport, &pProtocol, &pAddress, &pPort, &iBaud))
-			{
-				self->pPlugin = pModState->pPlugin;
-				if (pTarget) {
-					Py_XDECREF(self->Target);
-					self->Target = pTarget;
-					Py_INCREF(pTarget);
-				}
+			if (PyArg_ParseTupleAndKeywords(args, kwds, "ss|sssi", kwlist, &pName, &pTransport, &pProtocol, &pAddress, &pPort, &iBaud))
+				{
 				if (pName) {
 					Py_XDECREF(self->Name);
 					self->Name = PyUnicode_FromString(pName);
@@ -199,7 +193,7 @@ namespace Plugins {
 			{
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
-				_log.Log(LOG_ERROR, "Expected: myVar = domoticz.Connection(Target=\"<Object>\", Name=\"<Name>\", Transport=\"<Transport>\", Protocol=\"<Protocol>\", Address=\"<IP-Address>\", Port=\"<Port>\", Baud=0)");
+				_log.Log(LOG_ERROR, "Expected: myVar = domoticz.Connection(Name=\"<Name>\", Transport=\"<Transport>\", Protocol=\"<Protocol>\", Address=\"<IP-Address>\", Port=\"<Port>\", Baud=0)");
 				LogPythonException(pPlugin, __func__);
 			}
 		}
@@ -215,7 +209,7 @@ namespace Plugins {
 		return 0;
 	}
 
-	PyObject * CConnection_connect(CConnection * self)
+	PyObject * CConnection_connect(CConnection* self, PyObject* args, PyObject* kwds)
 	{
 		Py_INCREF(Py_None);
 
@@ -244,7 +238,27 @@ namespace Plugins {
 			return Py_None;
 		}
 
-		self->pPlugin->MessagePlugin(new ConnectDirective(self->pPlugin, (PyObject*)self));
+		PyObject* pTarget = NULL;
+		static char* kwlist[] = { "Target", NULL };
+		if (PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &pTarget))
+		{
+			if (pTarget) {
+				Py_INCREF(pTarget);
+				Py_XDECREF(self->Target);
+				self->Target = pTarget;
+				self->pPlugin->MessagePlugin(new ConnectDirective(self->pPlugin, (PyObject*)self));
+			}
+			else
+			{
+				_log.Log(LOG_ERROR, "Connect request not completed, no Event Target specified.");
+				LogPythonException(self->pPlugin, __func__);
+			}
+		}
+		else
+		{
+			_log.Log(LOG_ERROR, "Expected: myVar = Connection.Connect(Target=\"<Object>\")");
+			LogPythonException(self->pPlugin, __func__);
+		}
 
 		return Py_None;
 	}

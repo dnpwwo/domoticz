@@ -47,7 +47,6 @@ namespace Plugins {
 		bool StopHardware() override;
 		void ClearMessageQueue();
 
-		void InterfaceLog(const _eLogLevel level, const char* Message, ...);
 		void LogPythonException();
 
 	public:
@@ -63,6 +62,7 @@ namespace Plugins {
 		void	RemoveConnection(CPluginTransport*);
 
 		bool	Initialise();
+		bool	Finalise();
 		bool	LoadSettings();
 		bool	Start();
 		void	ConnectionProtocol(CDirectiveBase*);
@@ -75,7 +75,8 @@ namespace Plugins {
 		void	Callback(PyObject*, std::string, void*);
 		void	Stop();
 
-		void LogPythonException(const std::string&);
+		void	LogPythonException(const std::string&);
+		void	InterfaceLog(const _eLogLevel level, const char* Message, ...);
 
 		void	WriteDebugBuffer(const std::vector<byte>& Buffer, bool Incoming);
 

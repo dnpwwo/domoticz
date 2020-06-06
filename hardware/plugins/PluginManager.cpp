@@ -60,7 +60,7 @@ namespace Plugins {
 	PyMODINIT_FUNC PyInit_Domoticz(void);
 
 	std::mutex PluginMutex;	// controls accessto the message queue and m_pPlugins map
-	std::queue<CPluginMessageBase*>	PluginMessageQueue;
+	std::deque<CPluginMessageBase*>	PluginMessageQueue;
 	boost::asio::io_service ios;
 
 	std::map<int, CDomoticzHardwareBase*>	CPluginSystem::m_pPlugins;
@@ -83,7 +83,7 @@ namespace Plugins {
 		std::lock_guard<std::mutex> l(PluginMutex);
 		while (!PluginMessageQueue.empty())
 		{
-			PluginMessageQueue.pop();
+			PluginMessageQueue.pop_front();
 		}
 
 		m_pPlugins.clear();
@@ -170,7 +170,7 @@ namespace Plugins {
 			{
 				_log.Log(LOG_NORM, "(" + pPlugin->m_Name + ") ' flushing " + std::string(Message->Name()) + "' queue entry");
 			}
-			PluginMessageQueue.pop();
+			PluginMessageQueue.pop_front();
 		}
 
 		m_pPlugins.clear();
@@ -270,7 +270,7 @@ namespace Plugins {
 					for (size_t i = 0; i < PluginMessageQueue.size(); i++)
 					{
 						CPluginMessageBase* FrontMessage = PluginMessageQueue.front();
-						PluginMessageQueue.pop();
+						PluginMessageQueue.pop_front();
 						if (!FrontMessage->m_Delay || FrontMessage->m_When <= Now)
 						{
 							// Message is ready now or was already ready (this is the case for almost all messages)
@@ -278,13 +278,14 @@ namespace Plugins {
 							break;
 						}
 						// Message is for sometime in the future so requeue it (this happens when the 'Delay' parameter is used on a Send)
-						PluginMessageQueue.push(FrontMessage);
+						PluginMessageQueue.push_back(FrontMessage);
 					}
 				}
 
 				if (Message)
 				{
 					bProcessed = true;
+
 					try
 					{
 						const CPlugin* pPlugin = Message->Plugin();
@@ -302,9 +303,9 @@ namespace Plugins {
 				// Free the memory for the message
 				if (Message)
 				{
-					if (!dynamic_cast<onStopCallback*>(Message))
+					if (Message->m_pPlugin)
 					{
-						// Lock Python if Plugin hasn't just stopped
+						// Lock Python if Plugin is known
 						AccessPython	Guard((CPlugin*)Message->Plugin());
 						delete Message;
 					}
@@ -362,7 +363,6 @@ namespace Plugins {
 					else if (!bActive && m_pPlugins.count(InterfaceID))
 					{
 						m_pPlugins.find(InterfaceID)->second->Stop();
-						DeregisterPlugin(InterfaceID);
 					}
 				}
 				else if (pEntry->m_Action == "Delete") {
@@ -370,7 +370,6 @@ namespace Plugins {
 					if (!bActive && m_pPlugins.count(InterfaceID))
 					{
 						m_pPlugins.find(InterfaceID)->second->Stop();
-						DeregisterPlugin(InterfaceID);
 					}
 				}
 				else
@@ -399,7 +398,7 @@ namespace Plugins {
 						// Sanity check
 						if (!pPlugin)
 						{
-							_log.Log(LOG_ERROR, "PluginSystem:%s, unable to find Plugin for Device %s event.", __func__, pEntry->m_Action.c_str());
+							// Just continue if the plugin is not running
 							return;
 						}
 					}
@@ -410,42 +409,12 @@ namespace Plugins {
 					}
 					else if (pEntry->m_Action == "Update") 
 					{
-						AccessPython	Guard(pPlugin);
-
-						pDevice = CInterface_FindDevice((CInterface*)pPlugin->m_Interface, lDeviceID);
-						if (pDevice)
-						{
-							CDevice_refresh((CDevice*)pDevice);
-							pPlugin->MessagePlugin(new onUpdateCallback(pPlugin, pDevice));
-						}
-						else
-						{
-							_log.Log(LOG_ERROR, "PluginSystem:%s, failed to find device %d in interface's device dictionary.", __func__, lDeviceID);
-						}
+						pPlugin->MessagePlugin(new onUpdateDeviceCallback(pPlugin, lDeviceID));
 					}
 					else if (pEntry->m_Action == "Delete") 
 					{
-						// Only detail available is the DeviceID so cycle through plugins and find it
-						for (std::map<int, CDomoticzHardwareBase*>::iterator it = m_pPlugins.begin(); it != m_pPlugins.end(); it++)
-						{
-							pPlugin = (CPlugin*)it->second;
-							AccessPython	Guard(pPlugin);
-
-							CInterface* pInterface = (CInterface*)pPlugin->m_Interface;
-							pDevice = CInterface_FindDevice(pInterface, lDeviceID);
-							if (pDevice)
-							{
-								PyObject* pKey = PyLong_FromLong(lDeviceID);
-								if (PyDict_DelItem(pInterface->Devices, pKey))
-								{
-									_log.Log(LOG_ERROR, "PluginSystem:%s, failed to delete Device from dictionary.", __func__);
-								}
-								Py_DECREF(pKey);
-
-								pPlugin->MessagePlugin(new onDeleteCallback(pPlugin, pDevice));
-								break; // This one
-							}
-						}
+						std::lock_guard<std::mutex> l(PluginMutex);
+						PluginMessageQueue.push_back(new onDeleteDeviceCallback(lDeviceID));
 					}
 					else
 					{
@@ -459,123 +428,25 @@ namespace Plugins {
 			}
 			else if (sTable == "Values") 
 			{
+				long lDeviceID = atoi(GetFieldValue("DeviceID", pEntry).c_str());
 				long lValueID = pEntry->m_RowIdx;
 				CPlugin* pPlugin = NULL;
 				PyObject* pDevice = NULL; // Used for insert
-				PyObject* pValue = NULL;  // Used for update & delete
 
 				if (pEntry->m_Action == "Insert")
 				{
-					try
-					{
-						long lDeviceID = atoi(GetFieldValue("DeviceID", pEntry).c_str());
-						// Iterate through all Plugins (Interfaces)
-						for (std::map<int, CDomoticzHardwareBase*>::iterator it = m_pPlugins.begin(); it != m_pPlugins.end(); it++)
-						{
-							pPlugin = (CPlugin*)it->second;
-							AccessPython	Guard(pPlugin);
-
-							PyObject* pKey = PyLong_FromLong(lDeviceID);
-							pDevice = PyDict_GetItem(((CInterface*)pPlugin->m_Interface)->Devices, pKey);
-							Py_DECREF(pKey);
-							if (pDevice) // This the Device the Value has been added to
-							{
-								pValue = CDevice_AddValueToDict((CDevice*)pDevice, lValueID);
-								if (pValue)
-								{
-									pPlugin->MessagePlugin(new onCreateCallback(pPlugin, pValue));
-									break; 
-								}
-								else
-								{
-									_log.Log(LOG_ERROR, "PluginSystem:%s, failed to add value %d to device's Values dictionary.", __func__, lValueID);
-								}
-							}
-						}
-					}
-					catch (...)
-					{
-						_log.Log(LOG_ERROR, "Exception finding Plugin in '%s'.", __func__);
-						return;
-					}
+					std::lock_guard<std::mutex> l(PluginMutex);
+					PluginMessageQueue.push_back(new onCreateValueCallback(lDeviceID, lValueID));
 				}
 				else if (pEntry->m_Action == "Update")
 				{
-					try
-					{
-						long lDeviceID = atoi(GetFieldValue("DeviceID", pEntry).c_str());
-						for (std::map<int, CDomoticzHardwareBase*>::iterator it = m_pPlugins.begin(); it != m_pPlugins.end(); it++)
-						{
-							pPlugin = (CPlugin*)it->second;
-							pPlugin->MessagePlugin(new onUpdateValueCallback(pPlugin, lDeviceID, lValueID));
-							break;
-						}
-					}
-					catch (...)
-					{
-						_log.Log(LOG_ERROR, "Exception finding Plugin in '%s'.", __func__);
-						return;
-					}
+					std::lock_guard<std::mutex> l(PluginMutex);
+					PluginMessageQueue.push_back(new onUpdateValueCallback(lDeviceID, lValueID));
 				}
 				else if (pEntry->m_Action == "Delete") 
 				{
-					try
-					{
-						// Iterate through all Plugins (Interfaces)
-						for (std::map<int, CDomoticzHardwareBase*>::iterator it = m_pPlugins.begin(); it != m_pPlugins.end(); it++)
-						{
-							pPlugin = (CPlugin*)it->second;
-							AccessPython	Guard(pPlugin);
-
-							PyObject* pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
-							if (!pDevicesDict || !PyDict_Check(pDevicesDict))
-							{
-								continue; // Should never happen
-							}
-
-							PyObject* key, *pDevice;
-							Py_ssize_t pos = 0;
-							// For delete we don't know the 'owning' DeviceID so search all
-							while (PyDict_Next(pDevicesDict, &pos, &key, &pDevice))
-							{
-								// And locate it into the Device's Values dictionary
-								PyObject* pValuesDict = PyObject_GetAttrString(pDevice, "Values");
-								if (!pValuesDict || !PyDict_Check(pValuesDict))
-								{
-									_log.Log(LOG_ERROR, "PluginSystem:%s, unable to obtain Device's Values dictionary.", __func__);
-									return;
-								}
-
-								PyObject* pKey = PyLong_FromLong(lValueID);
-								pValue = PyDict_GetItem(pValuesDict, pKey);
-								if (!pValue)
-								{
-									// Not this Device
-									Py_DECREF(pValuesDict);
-									continue;
-								}
-
-								// Delete it from the Device's Values dictionary
-								Py_INCREF(pValue);
-								if (PyDict_DelItem(pValuesDict, pKey))
-								{
-									_log.Log(LOG_ERROR, "PluginSystem:%s, failed to delete Value out of Device's Values dictionary.", __func__);
-								}
-								Py_DECREF(pKey);
-								Py_DECREF(pValuesDict);
-
-								// Notify  Value that it has been deleted, event handler must decref the Value
-								pPlugin->MessagePlugin(new onDeleteCallback(pPlugin, pValue));
-								break;
-							}
-							pPlugin = NULL;
-						}
-					}
-					catch (...)
-					{
-						_log.Log(LOG_ERROR, "Exception finding Plugin in '%s'.", __func__);
-						return;
-					}
+					std::lock_guard<std::mutex> l(PluginMutex);
+					PluginMessageQueue.push_back(new onDeleteValueCallback(lValueID));
 				}
 				else
 				{
