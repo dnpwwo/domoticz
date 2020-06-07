@@ -28,7 +28,7 @@ namespace Plugins {
 	PyObject* CConnection_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
 	int CConnection_init(CConnection *self, PyObject *args, PyObject *kwds);
 	PyObject* CConnection_connect(CConnection* self, PyObject* args, PyObject* kwds);
-	PyObject* CConnection_listen(CConnection* self);
+	PyObject* CConnection_listen(CConnection* self, PyObject* args, PyObject* kwds);
 	PyObject* CConnection_send(CConnection *self, PyObject *args, PyObject *kwds);
 	PyObject* CConnection_disconnect(CConnection* self);
 	PyObject* CConnection_bytes(CConnection* self);
@@ -49,7 +49,7 @@ namespace Plugins {
 	static PyMethodDef CConnection_methods[] = {
 		{ "Connect", (PyCFunction)CConnection_connect, METH_VARARGS | METH_KEYWORDS, "Connect to specified Address/Port)" },
 		{ "Send", (PyCFunction)CConnection_send, METH_VARARGS | METH_KEYWORDS, "Send data to connection." },
-		{ "Listen", (PyCFunction)CConnection_listen, METH_NOARGS, "Listen on specified Port." },
+		{ "Listen", (PyCFunction)CConnection_listen, METH_VARARGS | METH_KEYWORDS, "Start listening on specified Port." },
 		{ "Disconnect", (PyCFunction)CConnection_disconnect, METH_NOARGS, "Disconnect connection or stop listening." },
 		{ "BytesTransferred", (PyCFunction)CConnection_bytes, METH_NOARGS, "Bytes transferred since connection was opened." },
 		{ "Connecting", (PyCFunction)CConnection_isconnecting, METH_NOARGS, "Connection in progress." },

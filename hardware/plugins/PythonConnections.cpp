@@ -263,7 +263,7 @@ namespace Plugins {
 		return Py_None;
 	}
 
-	PyObject * CConnection_listen(CConnection * self)
+	PyObject * CConnection_listen(CConnection * self, PyObject* args, PyObject* kwds)
 	{
 		Py_INCREF(Py_None);
 
@@ -292,7 +292,27 @@ namespace Plugins {
 			return Py_None;
 		}
 
-		self->pPlugin->MessagePlugin(new ListenDirective(self->pPlugin, (PyObject*)self));
+		PyObject* pTarget = NULL;
+		static char* kwlist[] = { "Target", NULL };
+		if (PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &pTarget))
+		{
+			if (pTarget) {
+				Py_INCREF(pTarget);
+				Py_XDECREF(self->Target);
+				self->Target = pTarget;
+				self->pPlugin->MessagePlugin(new ListenDirective(self->pPlugin, (PyObject*)self));
+			}
+			else
+			{
+				_log.Log(LOG_ERROR, "Listen request not completed, no Event Target specified.");
+				LogPythonException(self->pPlugin, __func__);
+			}
+		}
+		else
+		{
+			_log.Log(LOG_ERROR, "Expected: myVar = Connection.Listen(Target=\"<Object>\")");
+			LogPythonException(self->pPlugin, __func__);
+		}
 
 		return Py_None;
 	}

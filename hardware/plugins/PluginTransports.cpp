@@ -202,6 +202,8 @@ namespace Plugins {
 			Py_INCREF(pConnection->Transport);
 			pConnection->Protocol = ((CConnection*)m_pConnection)->Protocol;
 			Py_INCREF(pConnection->Protocol);
+			pConnection->Target = ((CConnection*)m_pConnection)->Target;
+			Py_INCREF(pConnection->Target);
 			pConnection->pPlugin = ((CConnection*)m_pConnection)->pPlugin;
 
 			// Add it to the plugins list of connections
@@ -572,6 +574,8 @@ namespace Plugins {
 			Py_INCREF(pConnection->Transport);
 			pConnection->Protocol = ((CConnection*)m_pConnection)->Protocol;
 			Py_INCREF(pConnection->Protocol);
+			pConnection->Target = ((CConnection*)m_pConnection)->Target;
+			Py_INCREF(pConnection->Target);
 			pConnection->pPlugin = ((CConnection*)m_pConnection)->pPlugin;
 
 			// Create Protocol object to handle connection's traffic
