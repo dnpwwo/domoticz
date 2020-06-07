@@ -7,6 +7,7 @@
 #include "PythonInterfaces.h"
 #include "PythonDevices.h"
 #include "PythonValues.h"
+#include "PluginTransports.h"
 #include <deque>
 
 #ifndef byte
@@ -422,7 +423,11 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 		{
 		public:
 			onConnectCallback(CPlugin* pPlugin, PyObject* Connection) : CCallbackBase(pPlugin, "onConnect"), CHasConnection(Connection) { m_Name = __func__; };
-			onConnectCallback(CPlugin* pPlugin, PyObject* Connection, const int Code, const std::string &Text) : CCallbackBase(pPlugin, "onConnect"), CHasConnection(Connection), m_Status(Code), m_Text(Text) { m_Name = __func__; };
+			onConnectCallback(CPlugin* pPlugin, PyObject* Connection, const int Code, const std::string &Text) : CCallbackBase(pPlugin, "onConnect"), CHasConnection(Connection), m_Status(Code), m_Text(Text)
+			{
+				m_Name = __func__;
+				m_Target = ((CConnection*)m_pConnection)->Target;
+			};
 			int						m_Status;
 			std::string				m_Text;
 		protected:
@@ -433,8 +438,19 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 	#else
 				std::string textUTF8 = m_Text; // TODO: Is it safe to assume non-Windows will always be UTF-8?
 	#endif
-				Callback(((CConnection*)m_pConnection)->Target, Py_BuildValue("Ois", m_pConnection, m_Status, textUTF8.c_str()));  // 0 is success else socket failure code
-			};
+				if (m_Target)
+				{
+					Callback(m_Target, Py_BuildValue("Ois", m_pConnection, m_Status, textUTF8.c_str()));  // 0 is success else socket failure code
+					if (!((CConnection*)m_pConnection)->pTransport->IsConnected())
+					{
+						// Non-connection based transports only call this on error and connection based protocol will be connected if it wasn't an error so
+						// if not connected this is the last event for the connection before another 'Connect' (or 'Listen') so release reference to the target
+						AccessPython	Guard(m_pPlugin);
+						Py_DECREF(m_Target);
+						((CConnection*)m_pConnection)->Target = NULL;
+					}
+				}
+	};
 		};
 
 	class onMessageCallback : public CCallbackBase, public CHasConnection
