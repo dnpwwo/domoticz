@@ -395,25 +395,22 @@ namespace Plugins {
 					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
-						PyObject* pSafeAssign;
+						PyObjPtr pSafeAssign;	// Used to make sure fields always have a valid value during update
 
 						self->DeviceID = atoi(sd[0].c_str());
 
 						pSafeAssign = self->Name;
 						self->Name = PyUnicode_FromString(sd[1].c_str());
-						Py_XDECREF(pSafeAssign);
 
 						self->UnitID = atoi(sd[2].c_str());
 
 						pSafeAssign = self->Value;
 						self->Value = PyUnicode_FromString(sd[3].c_str());
-						Py_XDECREF(pSafeAssign);
 
 						self->Debug = atoi(sd[4].c_str()) ? true : false;
 
 						pSafeAssign = self->Timestamp;
 						self->Timestamp = PyUnicode_FromString(sd[5].c_str());
-						Py_XDECREF(pSafeAssign);
 					}
 				}
 			}

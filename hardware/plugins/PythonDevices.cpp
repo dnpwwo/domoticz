@@ -232,7 +232,7 @@ namespace Plugins {
 				return 0;
 			}
 
-			PyObject* argList = Py_BuildValue("(siiO)", "", -1, -1, PyUnicode_FromString(""));
+			PyObjPtr argList = Py_BuildValue("(siiO)", "", -1, -1, PyUnicode_FromString(""));
 			if (!argList)
 			{
 				DeviceLog(self, LOG_ERROR, "Building Value argument list failed for Value %d.", lValueID);
@@ -242,7 +242,6 @@ namespace Plugins {
 			// Pass values in, needs to be a tuple and signal CValue_init to load from the database
 			pModState->lObjectID = lValueID;
 			pValue = PyObject_CallObject((PyObject*)pModState->pValueClass, argList);
-			Py_DECREF(argList);
 			if (!pValue)
 			{
 				DeviceLog(self, LOG_ERROR, "Value object creation failed for Value %d.", lValueID);
@@ -250,13 +249,12 @@ namespace Plugins {
 			}
 
 			// And insert it into the Device's Values dictionary
-			PyObject* pKey = PyLong_FromLong(lValueID);
+			PyObjPtr pKey = PyLong_FromLong(lValueID);
 			if (PyDict_SetItem(self->Values, pKey, pValue) == -1)
 			{
 				DeviceLog(self, LOG_ERROR, "Failed to add value number '%d' to Values dictionary for Device %d.", lValueID, self->DeviceID);
 				goto Error;
 			}
-			Py_DECREF(pKey);
 		}
 		catch (std::exception* e)
 		{
@@ -284,13 +282,12 @@ namespace Plugins {
 		try
 		{
 			// If the key is in the dictionary then return a pointer to it
-			PyObject* pKey = PyLong_FromLong(lValueID);
+			PyObjPtr pKey = PyLong_FromLong(lValueID);
 			pValue = PyDict_GetItem(self->Values, pKey);
 			if (pValue)
 			{
 				Py_INCREF(pValue);
 			}
-			Py_DECREF(pKey);
 		}
 		catch (std::exception* e)
 		{
@@ -500,24 +497,21 @@ namespace Plugins {
 					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
-						PyObject* pSafeAssign;
+						PyObjPtr pSafeAssign;	// Used to make sure fields always have a valid value during update
 
 						self->InterfaceID = atoi(sd[0].c_str());
 
 						pSafeAssign = self->Name;
 						self->Name = PyUnicode_FromString(sd[1].c_str());
-						Py_XDECREF(pSafeAssign);
 
 						pSafeAssign = self->ExternalID;
 						self->ExternalID = PyUnicode_FromString(sd[2].c_str());
-						Py_XDECREF(pSafeAssign);
 
 						self->Debug = atoi(sd[3].c_str()) ? true : false;
 						self->Active = atoi(sd[4].c_str()) ? true : false;
 
 						pSafeAssign = self->Timestamp;
 						self->Timestamp = PyUnicode_FromString(sd[5].c_str());
-						Py_XDECREF(pSafeAssign);
 					}
 				}
 			}

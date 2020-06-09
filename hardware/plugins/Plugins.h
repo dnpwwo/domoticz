@@ -2,6 +2,7 @@
 
 #include "../DomoticzHardware.h"
 #include "DelayedLink.h"
+#include "../main/Logger.h"
 
 #ifndef byte
 typedef unsigned char byte;
@@ -121,5 +122,41 @@ namespace Plugins {
 	public:
 		AccessPython(CPlugin* pPlugin);
 		~AccessPython();
+	};
+
+	//
+	//	Controls lifetime of Python Objects to ensure they always release
+	//
+	class PyObjPtr
+	{
+	private:
+		PyObject* m_pObject;
+	public:
+		PyObjPtr() : m_pObject(NULL) { };
+		PyObjPtr(PyObject* pObject) : m_pObject(pObject) { };
+		operator PyObject* () const { return m_pObject; }
+		operator bool () const { return (m_pObject != NULL); }
+		void operator =(PyObject* pObject)
+		{
+			if (m_pObject)
+			{
+				Py_XDECREF(m_pObject);
+			}
+			m_pObject = pObject;
+		}
+		~PyObjPtr()
+		{
+			if (m_pObject)
+			{
+				if (m_pObject->ob_refcnt <= 0)
+				{
+					_log.Log(LOG_ERROR, "Reference count error on decref, ref count is '%d'.", m_pObject->ob_refcnt);
+				}
+				else
+				{
+					Py_XDECREF(m_pObject);
+				}
+			}
+		};
 	};
 }

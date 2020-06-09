@@ -17,7 +17,6 @@
 #include "PythonConnections.h"
 
 #include "../main/Helper.h"
-#include "../main/Logger.h"
 #include "../main/SQLHelper.h"
 #include "../main/mainworker.h"
 #include "../main/localtime_r.h"
@@ -1400,32 +1399,28 @@ Error:
 			// Callbacks MUST already have taken the PythonMutex lock otherwise bad things will happen
 			if (m_PyModule && !sHandler.empty())
 			{
-				PyObject*	pFunc = PyObject_GetAttrString(pTarget, sHandler.c_str());
+				PyObjPtr	pFunc = PyObject_GetAttrString(pTarget, sHandler.c_str());
 				if (pFunc && PyCallable_Check(pFunc))
 				{
-					// if object has debugging set then log this calback
-					PyObject* pDebugging = PyObject_GetAttrString(pTarget, "Debugging");
+					// if object has debugging set then log this callback
+					PyObjPtr pDebugging = PyObject_GetAttrString(pTarget, "Debugging");
 					if (pDebugging)
 					{
 						if (PyObject_IsTrue(pDebugging))
 						{
-							PyObject* pDebug = PyObject_GetAttrString(pTarget, "Debug");
+							PyObjPtr pDebug = PyObject_GetAttrString(pTarget, "Debug");
 							if (pDebug && PyCallable_Check(pDebug))
 							{
-								PyObject* argList = Py_BuildValue("(s)", std::string("Calling message handler '"+sHandler+"'.").c_str());
+								PyObjPtr argList = Py_BuildValue("(s)", std::string("Calling message handler '"+sHandler+"'.").c_str());
 								if (!argList)
 								{
 									_log.Log(LOG_ERROR, "Building Device argument list failed for Debug call.");
 									return;
 								}
 								PyErr_Clear();
-								PyObject* pReturnValue = PyObject_CallObject(pDebug, argList);
-								Py_XDECREF(argList);
-								Py_XDECREF(pReturnValue);
-								Py_XDECREF(pDebug);
+								PyObjPtr pReturnValue = PyObject_CallObject(pDebug, argList);
 							}
 						}
-						Py_XDECREF(pDebugging);
 					}
 
 					if (PyErr_Occurred())
@@ -1433,7 +1428,7 @@ Error:
 						_log.Log(LOG_ERROR, "Python exception set prior to callback '%s'.", sHandler.c_str());
 						PyErr_Clear();
 					}
-					PyObject*	pReturnValue = PyObject_CallObject(pFunc, (PyObject*)pParams);
+					PyObjPtr	pReturnValue = PyObject_CallObject(pFunc, (PyObject*)pParams);
 					if (!pReturnValue || PyErr_Occurred())
 					{
 						LogPythonException(sHandler);
@@ -1442,8 +1437,6 @@ Error:
 							PyErr_Clear();
 						}
 					}
-					Py_XDECREF(pReturnValue);
-					Py_XDECREF(pFunc);
 				}
 				else
 				{
@@ -1491,7 +1484,7 @@ Error:
 			}
 
 			// Stop Python
-			if (PyDict_Size(m_SettingsDict))
+			if (m_SettingsDict && PyDict_Size(m_SettingsDict))
 			{
 				PyDict_Clear(m_SettingsDict);
 			}

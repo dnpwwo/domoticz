@@ -235,7 +235,7 @@ namespace Plugins {
 
 			// Pass values in, needs to be a tuple and signal CDevice_init to load from the database
 			pModState->lObjectID = lDeviceID;
-			PyObject* argList = Py_BuildValue("(ss)", "", "");
+			PyObjPtr argList = Py_BuildValue("(ss)", "", "");
 			if (!argList)
 			{
 				InterfaceLog(self, LOG_ERROR, "Building Device argument list failed for Device %d.", lDeviceID);
@@ -245,7 +245,6 @@ namespace Plugins {
 			// Call the class object, this will call new followed by init
 			PyType_Ready(&CDeviceType);
 			pDevice = PyObject_CallObject((PyObject*)pModState->pDeviceClass, argList);
-			Py_DECREF(argList);
 			if (!pDevice)
 			{
 				InterfaceLog(self, LOG_ERROR, "Device object creation failed for Device %d.", lDeviceID);
@@ -253,13 +252,12 @@ namespace Plugins {
 			}
 
 			// And insert it into the Interface's Devices dictionary
-			PyObject* pKey = PyLong_FromLong(lDeviceID);
+			PyObjPtr pKey = PyLong_FromLong(lDeviceID);
 			if (PyDict_SetItem(self->Devices, pKey, pDevice) == -1)
 			{
 				InterfaceLog(self, LOG_ERROR, "Failed to add device number '%d' to device dictionary.", lDeviceID);
 				goto Error;
 			}
-			Py_DECREF(pKey);
 		}
 		catch (std::exception* e)
 		{
@@ -287,13 +285,12 @@ namespace Plugins {
 		try
 		{
 			// If the key is in the dictionary then return a pointer to it
-			PyObject* pKey = PyLong_FromLong(lDeviceID);
+			PyObjPtr pKey = PyLong_FromLong(lDeviceID);
 			pDevice = PyDict_GetItem(self->Devices, pKey);
 			if (pDevice)
 			{
 				Py_INCREF(pDevice);
 			}
-			Py_DECREF(pKey);
 		}
 		catch (std::exception* e)
 		{
@@ -465,12 +462,11 @@ namespace Plugins {
 					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
-						PyObject* pSafeAssign;
+						PyObjPtr pSafeAssign;	// Used to make sure fields always have a valid value during update
 
 						self->InterfaceID = atoi(sd[0].c_str());
 						pSafeAssign = self->Name;
 						self->Name = PyUnicode_FromString(sd[1].c_str());
-						Py_XDECREF(pSafeAssign);
 
 						pSafeAssign = self->Configuration;
 						CPluginProtocolJSON	pJSON;
@@ -480,7 +476,6 @@ namespace Plugins {
 						{
 							InterfaceLog(self, LOG_DEBUG_INT, "No configuration loaded or parse error.");
 						}
-						Py_XDECREF(pSafeAssign);
 
 						self->Debug = atoi(sd[3].c_str()) ? true : false;
 						self->Active = atoi(sd[4].c_str()) ? true : false;
