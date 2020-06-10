@@ -179,7 +179,29 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 
 
 	// onCreate, onUpdate, onDelete can apply to Device or Values objects
-	class onCreateDeviceCallback : public CCallbackBase
+class onUpdateInterfaceCallback : public CCallbackBase
+{
+public:
+	onUpdateInterfaceCallback(CPlugin* pPlugin) : CCallbackBase(pPlugin, "onUpdate") { m_Target = pPlugin->m_Interface; };
+protected:
+	virtual void ProcessLocked()
+	{
+		{
+			AccessPython	Guard(m_pPlugin);
+			if (m_Target)
+			{
+				CInterface_refresh((CInterface*)m_Target);
+			}
+		}
+
+		if (m_Target)
+		{
+			Callback(NULL);
+		}
+	};
+};
+
+class onCreateDeviceCallback : public CCallbackBase
 	{
 	private:
 		long		m_DeviceID;

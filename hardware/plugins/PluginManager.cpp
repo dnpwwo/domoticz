@@ -364,6 +364,14 @@ namespace Plugins {
 					{
 						m_pPlugins.find(InterfaceID)->second->Stop();
 					}
+					else
+					{
+						if (m_pPlugins.count(InterfaceID))
+						{
+							CPlugin* pPlugin = (CPlugin*)m_pPlugins.find(InterfaceID)->second;
+							pPlugin->MessagePlugin(new onUpdateInterfaceCallback(pPlugin));
+						}
+					}
 				}
 				else if (pEntry->m_Action == "Delete") {
 					// Stop and de-register interface
