@@ -358,28 +358,26 @@ namespace Plugins {
 	void CPlugin::LogPythonException()
 	{
 		PyTracebackObject	*pTraceback;
-		PyObject			*pExcept, *pValue;
-		PyTypeObject		*TypeName;
-		PyBytesObject		*pErrBytes = NULL;
+		PyObjPtr			pExcept;
+		PyObjPtr			pValue;
 
 		PyErr_Fetch(&pExcept, &pValue, (PyObject**)&pTraceback);
 
 		if (pExcept)
 		{
-			TypeName = (PyTypeObject*)pExcept;
-			_log.Log(LOG_ERROR, "(%s) Module Import failed, exception: '%s'", m_Name.c_str(), TypeName->tp_name);
+			_log.Log(LOG_ERROR, "(%s) Module Import failed, exception: '%s'", m_Name.c_str(), ((PyTypeObject*)pExcept)->tp_name);
 		}
 		if (pValue)
 		{
-			std::string			sError;
-			pErrBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pValue);	// Won't normally return text for Import related errors
+			std::string		sError;
+			PyObjPtr		pErrBytes = PyUnicode_AsASCIIString(pValue);	// Won't normally return text for Import related errors
 			if (!pErrBytes)
 			{
 				// ImportError has name and path attributes
 				PyErr_Clear();
 				if (PyObject_HasAttrString(pValue, "path"))
 				{
-					PyObject*		pString = PyObject_GetAttrString(pValue, "path");
+					PyObjPtr		pString = PyObject_GetAttrString(pValue, "path");
 					PyBytesObject*	pBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pString);
 					if (pBytes)
 					{
@@ -387,12 +385,11 @@ namespace Plugins {
 						sError += pBytes->ob_sval;
 						Py_XDECREF(pBytes);
 					}
-					Py_XDECREF(pString);
 				}
 				PyErr_Clear();
 				if (PyObject_HasAttrString(pValue, "name"))
 				{
-					PyObject*		pString = PyObject_GetAttrString(pValue, "name");
+					PyObjPtr		pString = PyObject_GetAttrString(pValue, "name");
 					PyBytesObject*	pBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pString);
 					if (pBytes)
 					{
@@ -400,7 +397,6 @@ namespace Plugins {
 						sError += pBytes->ob_sval;
 						Py_XDECREF(pBytes);
 					}
-					Py_XDECREF(pString);
 				}
 				if (!sError.empty())
 				{
@@ -412,11 +408,10 @@ namespace Plugins {
 				PyErr_Clear();
 				if (PyObject_HasAttrString(pValue, "filename"))
 				{
-					PyObject*		pString = PyObject_GetAttrString(pValue, "filename");
+					PyObjPtr		pString = PyObject_GetAttrString(pValue, "filename");
 					PyBytesObject*	pBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pString);
 					sError += "File: ";
 					sError += pBytes->ob_sval;
-					Py_XDECREF(pString);
 					Py_XDECREF(pBytes);
 				}
 				long long	lineno = -1;
@@ -424,17 +419,14 @@ namespace Plugins {
 				PyErr_Clear();
 				if (PyObject_HasAttrString(pValue, "lineno"))
 				{
-					PyObject*		pString = PyObject_GetAttrString(pValue, "lineno");
+					PyObjPtr		pString = PyObject_GetAttrString(pValue, "lineno");
 					lineno = PyLong_AsLongLong(pString);
-					Py_XDECREF(pString);
 				}
 				PyErr_Clear();
 				if (PyObject_HasAttrString(pExcept, "offset"))
 				{
-					PyObject*		pString = PyObject_GetAttrString(pExcept, "offset");
+					PyObjPtr		pString = PyObject_GetAttrString(pExcept, "offset");
 					offset = PyLong_AsLongLong(pString);
-					PyBytesObject* pBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pString);
-					Py_XDECREF(pString);
 				}
 
 				if (!sError.empty())
@@ -453,10 +445,9 @@ namespace Plugins {
 				PyErr_Clear();
 				if (PyObject_HasAttrString(pValue, "text"))
 				{
-					PyObject*		pString = PyObject_GetAttrString(pValue, "text");
+					PyObjPtr		pString = PyObject_GetAttrString(pValue, "text");
 					std::string		sUTF = PyUnicode_AsUTF8(pString);
 					_log.Log(LOG_ERROR, "(%s) Error Line '%s'", m_Name.c_str(), sUTF.c_str());
-					Py_XDECREF(pString);
 				}
 				else
 				{
@@ -468,15 +459,14 @@ namespace Plugins {
 					_log.Log(LOG_ERROR, "(%s) Import detail: %s", m_Name.c_str(), sError.c_str());
 				}
 			}
-			else _log.Log(LOG_ERROR, "(%s) Module Import failed '%s'", m_Name.c_str(), pErrBytes->ob_sval);
+			else _log.Log(LOG_ERROR, "(%s) Module Import failed '%s'", m_Name.c_str(), ((PyBytesObject*)pErrBytes)->ob_sval);
 		}
 
-		if (pErrBytes) Py_XDECREF(pErrBytes);
-
 		// Log a stack trace if there is one
-		while (pTraceback)
+		PyTracebackObject* pTraceFrame = pTraceback;
+		while (pTraceFrame)
 		{
-			PyFrameObject* frame = pTraceback->tb_frame;
+			PyFrameObject* frame = pTraceFrame->tb_frame;
 			if (frame)
 			{
 				int lineno = PyFrame_GetLineNumber(frame);
@@ -484,23 +474,21 @@ namespace Plugins {
 				std::string		FileName = "";
 				if (pCode->co_filename)
 				{
-					PyBytesObject* pFileBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_filename);
-					FileName = pFileBytes->ob_sval;
-					Py_XDECREF(pFileBytes);
+					PyObjPtr	pFileBytes = PyUnicode_AsASCIIString(pCode->co_filename);
+					FileName = ((PyBytesObject*)pFileBytes)->ob_sval;
 				}
 				std::string		FuncName = "Unknown";
 				if (pCode->co_name)
 				{
-					PyBytesObject* pFuncBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_name);
-					FuncName = pFuncBytes->ob_sval;
-					Py_XDECREF(pFuncBytes);
+					PyObjPtr	pFuncBytes = PyUnicode_AsASCIIString(pCode->co_name);
+					FuncName = ((PyBytesObject*)pFuncBytes)->ob_sval;
 				}
 				if (!FileName.empty())
 					_log.Log(LOG_ERROR, "(%s) ----> Line %d in '%s', function %s", m_Name.c_str(), lineno, FileName.c_str(), FuncName.c_str());
 				else
 					_log.Log(LOG_ERROR, "(%s) ----> Line %d in '%s'", m_Name.c_str(), lineno, FuncName.c_str());
 			}
-			pTraceback = pTraceback->tb_next;
+			pTraceFrame = pTraceFrame->tb_next;
 		}
 
 		if (!pExcept && !pValue && !pTraceback)
@@ -508,52 +496,53 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "(%s) Call to import module failed, unable to decode exception.", m_Name.c_str());
 		}
 
-		if (pExcept) Py_XDECREF(pExcept);
-		if (pValue) Py_XDECREF(pValue);
 		if (pTraceback) Py_XDECREF(pTraceback);
 	}
 
 	void CPlugin::LogPythonException(const std::string &sHandler)
 	{
 		PyTracebackObject	*pTraceback;
-		PyObject			*pExcept, *pValue;
-		PyTypeObject		*TypeName;
-		PyBytesObject		*pErrBytes = NULL;
-		const char*			pTypeText = NULL;
+		PyObjPtr			pExcept;
+		PyObjPtr			pValue;
+		std::string			sTypeText;
+		std::string			sErrorText;
 
 		PyErr_Fetch(&pExcept, &pValue, (PyObject**)&pTraceback);
 
 		if (pExcept)
 		{
-			TypeName = (PyTypeObject*)pExcept;
-			pTypeText = TypeName->tp_name;
+			sTypeText = ((PyTypeObject*)pExcept)->tp_name;
 		}
 		if (pValue)
 		{
-			pErrBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pValue);
+			PyObjPtr pErrBytes = PyUnicode_AsASCIIString(pValue);
+			if (pErrBytes)
+			{
+				sErrorText = ((PyBytesObject*)pErrBytes)->ob_sval;
+			}
 		}
-		if (pTypeText && pErrBytes)
+		if (sTypeText.length() && sErrorText.length())
 		{
-			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s':'%s'.", m_Name.c_str(), sHandler.c_str(), pTypeText, pErrBytes->ob_sval);
+			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s':'%s'.", m_Name.c_str(), sHandler.c_str(), sTypeText.c_str(), sErrorText.c_str());
 		}
-		if (pTypeText && !pErrBytes)
+		if (sTypeText.length() && !sErrorText.length())
 		{
-			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), pTypeText);
+			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), sTypeText.c_str());
 		}
-		if (!pTypeText && pErrBytes)
+		if (!sTypeText.length() && sErrorText.length())
 		{
-			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), pErrBytes->ob_sval);
+			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), sErrorText.c_str());
 		}
-		if (!pTypeText && !pErrBytes)
+		if (!sTypeText.length() && !sErrorText.length())
 		{
 			InterfaceLog(LOG_ERROR, "(%s) '%s' failed, unable to determine error.", m_Name.c_str(), sHandler.c_str());
 		}
-		if (pErrBytes) Py_XDECREF(pErrBytes);
 
 		// Log a stack trace if there is one
-		while (pTraceback)
+		PyTracebackObject* pTraceFrame = pTraceback;
+		while (pTraceFrame)
 			{
-			PyFrameObject *frame = pTraceback->tb_frame;
+			PyFrameObject *frame = pTraceFrame->tb_frame;
 			if (frame)
 			{
 				int lineno = PyFrame_GetLineNumber(frame);
@@ -561,24 +550,22 @@ namespace Plugins {
 				std::string		FileName = "";
 				if (pCode->co_filename)
 				{
-				//	Current design has no file and Python seems to supply invalid data in that case
-				//	PyBytesObject*	pFileBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_filename);
-				//	FileName = pFileBytes->ob_sval;
-				//	Py_XDECREF(pFileBytes);
+					//	Current design has no file and Python seems to supply invalid data in that case
+					PyObjPtr	pFileBytes = PyUnicode_AsASCIIString(pCode->co_filename);
+					FileName = ((PyBytesObject*)pFileBytes)->ob_sval;
 				}
 				std::string		FuncName = "Unknown";
 				if (pCode->co_name)
 				{
-					PyBytesObject*	pFuncBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_name);
-					FuncName = pFuncBytes->ob_sval;
-					Py_XDECREF(pFuncBytes);
+					PyObjPtr	pFuncBytes = PyUnicode_AsASCIIString(pCode->co_name);
+					FuncName = ((PyBytesObject*)pFuncBytes)->ob_sval;
 				}
 				if (!FileName.empty())
 					InterfaceLog(LOG_ERROR, "(%s) ----> Line %d in '%s', function %s", m_Name.c_str(), lineno, FileName.c_str(), FuncName.c_str());
 				else
 					InterfaceLog(LOG_ERROR, "(%s) ----> Line %d in '%s'", m_Name.c_str(), lineno, FuncName.c_str());
 			}
-			pTraceback = pTraceback->tb_next;
+			pTraceFrame = pTraceFrame->tb_next;
 		}
 
 		if (!pExcept && !pValue && !pTraceback)
@@ -586,8 +573,6 @@ namespace Plugins {
 			InterfaceLog(LOG_ERROR, "(%s) Call to message handler '%s' failed, unable to decode exception.", m_Name.c_str(), sHandler.c_str());
 		}
 
-		if (pExcept) Py_XDECREF(pExcept);
-		if (pValue) Py_XDECREF(pValue);
 		if (pTraceback) Py_XDECREF(pTraceback);
 	}
 

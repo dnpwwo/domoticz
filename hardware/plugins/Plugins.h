@@ -135,7 +135,10 @@ namespace Plugins {
 		PyObjPtr() : m_pObject(NULL) { };
 		PyObjPtr(PyObject* pObject) : m_pObject(pObject) { };
 		operator PyObject* () const { return m_pObject; }
+		operator PyTypeObject* () const { return (PyTypeObject*)m_pObject; }
+		operator PyBytesObject* () const { return (PyBytesObject*)m_pObject; }
 		operator bool () const { return (m_pObject != NULL); }
+		PyObject** operator &() { return &m_pObject; };
 		void operator =(PyObject* pObject)
 		{
 			if (m_pObject)
