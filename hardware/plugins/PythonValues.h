@@ -5,17 +5,22 @@
 
 namespace Plugins {
 
-	typedef struct {
+	class CDevice;
+
+	class CValue {
+	public:
 		PyObject_HEAD
 		long		ValueID;
 		long		DeviceID;
 		PyObject*	Name;
+		PyObject*	InternalID;
 		long		UnitID;
 		PyObject*	Value;
 		bool		Debug;
 		PyObject*	Timestamp;
+		CDevice*	Parent;
 		CPlugin*	pPlugin;
-	} CValue;
+	};
 
 	void CValue_dealloc(CValue* self);
 	PyObject* CValue_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
@@ -33,11 +38,13 @@ namespace Plugins {
 	static PyMemberDef CValue_members[] = {
 		{ "ValueID",	T_LONG, offsetof(CValue, ValueID), READONLY, "Internal Value Number" },
 		{ "Name", T_OBJECT,	offsetof(CValue, Name), READONLY, "Name" },
+		{ "InternalID", T_OBJECT,	offsetof(CValue, InternalID), READONLY, "Internal ID" },
 		{ "DeviceID", T_LONG, offsetof(CValue, DeviceID), READONLY, "Device this Value relates to" },
 		{ "UnitID",	T_LONG, offsetof(CValue, UnitID), READONLY, "Unit ID this Value is constrained by" },
 		{ "Value", T_OBJECT, offsetof(CValue, Value), 0, "Value" },
 		{ "Debugging", T_BOOL, offsetof(CValue, Debug), READONLY, "Debug logging status" },
 		{ "Timestamp", T_OBJECT, offsetof(CValue, Timestamp), READONLY, "Last update timestamp" },
+		{ "Parent", T_OBJECT, offsetof(CValue, Parent), READONLY, "Parent device" },
 		{ NULL }  /* Sentinel */
 	};
 

@@ -99,7 +99,7 @@ namespace Plugins {
 		virtual void ProcessLocked()
 		{
 			m_pPlugin->Start();
-			m_Target = m_pPlugin->m_Interface;
+			m_Target = (PyObject*)m_pPlugin->m_Interface;
 			Callback(NULL);
 		};
 	};
@@ -111,7 +111,7 @@ namespace Plugins {
 	protected:
 		virtual void ProcessLocked()
 		{
-			m_Target = m_pPlugin->m_Interface;
+			m_Target = (PyObject*)m_pPlugin->m_Interface;
 			Callback(NULL);
 		};
 	};
@@ -182,7 +182,7 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 	class onUpdateInterfaceCallback : public CCallbackBase
 {
 public:
-	onUpdateInterfaceCallback(CPlugin* pPlugin) : CCallbackBase(pPlugin, "onUpdate") { m_Target = pPlugin->m_Interface; };
+	onUpdateInterfaceCallback(CPlugin* pPlugin) : CCallbackBase(pPlugin, "onUpdate") { m_Target = (PyObject*)pPlugin->m_Interface; };
 protected:
 	virtual void ProcessLocked()
 	{
@@ -210,23 +210,23 @@ protected:
 	protected:
 		virtual void ProcessLocked()
 		{
-			PyObject* pDevice = NULL;
+			CDevice* pDevice = NULL;
 
 			{
 				AccessPython	Guard(m_pPlugin);
 
 				// Check the device has not been manually added by plugin
-				pDevice = CInterface_FindDevice((CInterface*)m_pPlugin->m_Interface, m_DeviceID);
+				pDevice = ((CInterface*)m_pPlugin->m_Interface)->FindDevice(m_DeviceID);
 				if (!pDevice)
 				{
 					// if not then add it to the dictionary
-					pDevice = CInterface_AddDeviceToDict((CInterface*)m_pPlugin->m_Interface, m_DeviceID);
+					pDevice = ((CInterface*)m_pPlugin->m_Interface)->AddDeviceToDict(m_DeviceID);
 				}
 			}
 
 			if (pDevice)
 			{
-				m_Target = pDevice;
+				m_Target = (PyObject*)pDevice;
 				Callback(NULL);
 				AccessPython	Guard(m_pPlugin);
 				Py_DECREF(m_Target);
@@ -245,7 +245,8 @@ protected:
 		{
 			{
 				AccessPython	Guard(m_pPlugin);
-				m_Target = CInterface_FindDevice((CInterface*)m_pPlugin->m_Interface, m_DeviceID);
+				CInterface* pInterface = (CInterface*)m_pPlugin->m_Interface;
+				m_Target = (PyObject*)pInterface->FindDevice(m_DeviceID);
 				if (m_Target)
 				{
 					CDevice_refresh((CDevice*)m_Target);
@@ -278,12 +279,11 @@ protected:
 				AccessPython	Guard(m_pPlugin);
 
 				CInterface* pInterface = (CInterface*)m_pPlugin->m_Interface;
-				m_Target = CInterface_FindDevice(pInterface, m_DeviceID);
+				m_Target = (PyObject*)pInterface->FindDevice(m_DeviceID);
 				if (m_Target)
 				{
-					PyObject* pKey = PyLong_FromLong(m_DeviceID);
+					PyObjPtr pKey = PyLong_FromLong(m_DeviceID);
 					PyDict_DelItem(pInterface->Devices, pKey);
-					Py_DECREF(pKey);
 					break; // This one
 				}
 			}
@@ -308,8 +308,6 @@ protected:
 	protected:
 		virtual void ProcessLocked()
 		{
-			PyObject* pDevice = NULL;
-
 			{
 				// Iterate through all Plugins (Interfaces)
 				CPluginSystem	PluginSystem;
@@ -318,15 +316,16 @@ protected:
 					m_pPlugin = (CPlugin*)it->second;
 					AccessPython	Guard(m_pPlugin);
 
-					PyObject* pDevice = CInterface_FindDevice((CInterface*)m_pPlugin->m_Interface, m_DeviceID);
+					CInterface* pInterface = (CInterface*)m_pPlugin->m_Interface;
+					CDevice* pDevice = pInterface->FindDevice(m_DeviceID);
 					if (pDevice) // This the Device the Value has been added to
 					{
 						// Check the value has not been manually added by plugin
-						m_Target = CDevice_FindValue((CDevice*)pDevice, m_ValueID);
+						m_Target = (PyObject*)pDevice->FindValue(m_ValueID);
 						Py_DECREF(pDevice);
 						if (!m_Target)
 						{
-							m_Target = CDevice_AddValueToDict((CDevice*)pDevice, m_ValueID);
+							m_Target = (PyObject*)pDevice->AddValueToDict(m_ValueID);
 						}
 						break;
 					}
@@ -359,10 +358,11 @@ protected:
 				m_pPlugin = (CPlugin*)it->second;
 				AccessPython	Guard(m_pPlugin);
 
-				PyObject*	pDevice = CInterface_FindDevice((CInterface*)m_pPlugin->m_Interface, m_DeviceID);
+				CInterface* pInterface = (CInterface*)m_pPlugin->m_Interface;
+				CDevice*	pDevice = pInterface->FindDevice(m_DeviceID);
 				if (pDevice) // This the Device the Value has been added to
 				{
-					m_Target = CDevice_FindValue((CDevice*)pDevice, m_ValueID);
+					m_Target = (PyObject*)pDevice->FindValue(m_ValueID);
 					Py_DECREF(pDevice);
 					if (m_Target)
 					{

@@ -212,9 +212,9 @@ namespace Plugins {
 		return Py_None;
 	}
 
-	PyObject* CDevice_AddValueToDict(CDevice* self, long lValueID)
+	CValue* CDevice::AddValueToDict(long lValueID)
 	{
-		PyObject* pValue = NULL;
+		CValue* pValue = NULL;
 
 		try
 		{
@@ -235,24 +235,24 @@ namespace Plugins {
 			PyObjPtr argList = Py_BuildValue("(siiO)", "", -1, -1, PyUnicode_FromString(""));
 			if (!argList)
 			{
-				DeviceLog(self, LOG_ERROR, "Building Value argument list failed for Value %d.", lValueID);
+				DeviceLog(this, LOG_ERROR, "Building Value argument list failed for Value %d.", lValueID);
 				goto Error;
 			}
 
 			// Pass values in, needs to be a tuple and signal CValue_init to load from the database
 			pModState->lObjectID = lValueID;
-			pValue = PyObject_CallObject((PyObject*)pModState->pValueClass, argList);
+			pValue = (CValue*)PyObject_CallObject((PyObject*)pModState->pValueClass, argList);
 			if (!pValue)
 			{
-				DeviceLog(self, LOG_ERROR, "Value object creation failed for Value %d.", lValueID);
+				DeviceLog(this, LOG_ERROR, "Value object creation failed for Value %d.", lValueID);
 				goto Error;
 			}
+			pValue->Parent = this;			// Borrow a reference to the owning Interface
 
 			// And insert it into the Device's Values dictionary
-			PyObjPtr pKey = PyLong_FromLong(lValueID);
-			if (PyDict_SetItem(self->Values, pKey, pValue) == -1)
+			if (PyDict_SetItem(Values, pValue->InternalID, (PyObject*)pValue) == -1)
 			{
-				DeviceLog(self, LOG_ERROR, "Failed to add value number '%d' to Values dictionary for Device %d.", lValueID, self->DeviceID);
+				DeviceLog(this, LOG_ERROR, "Failed to add value number '%d' to Values dictionary for Device %d.", lValueID, DeviceID);
 				goto Error;
 			}
 		}
@@ -268,25 +268,30 @@ namespace Plugins {
 	Error:
 		if (PyErr_Occurred())
 		{
-			self->pPlugin->LogPythonException("CDevice_AddValueToDict");
+			pPlugin->LogPythonException("CDevice_AddValueToDict");
 		}
 
 		// If not NULL the caller will need to decref
 		return pValue;
 	}
 
-	PyObject* CDevice_FindValue(CDevice* self, long lValueID)
+	CValue* CDevice::FindValue(long lValueID)
 	{
-		PyObject* pValue = NULL;
+		CValue* pValue = NULL;
 
 		try
 		{
-			// If the key is in the dictionary then return a pointer to it
-			PyObjPtr pKey = PyLong_FromLong(lValueID);
-			pValue = PyDict_GetItem(self->Values, pKey);
-			if (pValue)
+			// Dictionary is keyed by InternalID to make it more useable so do iterative search
+			PyObject*	key;
+			Py_ssize_t	pos = 0;
+			while (PyDict_Next(Values, &pos, &key, (PyObject**)&pValue))
 			{
-				Py_INCREF(pValue);
+				if (pValue->ValueID == lValueID)
+				{
+					Py_INCREF(pValue);
+					break;
+				}
+				pValue = NULL;
 			}
 		}
 		catch (std::exception* e)
@@ -305,7 +310,7 @@ namespace Plugins {
 	void CDevice_dealloc(CDevice* self)
 	{
 		Py_XDECREF(self->Name);
-		Py_XDECREF(self->ExternalID);
+		Py_XDECREF(self->InternalID);
 		Py_XDECREF(self->Timestamp);
 		PyObject* key, * value;
 		Py_ssize_t pos = 0;
@@ -346,12 +351,18 @@ namespace Plugins {
 					Py_DECREF(self);
 					return NULL;
 				}
-				self->ExternalID = PyUnicode_FromString("");
-				if (self->ExternalID == NULL) {
+				self->InternalID = PyUnicode_FromString("");
+				if (self->InternalID == NULL) {
+					Py_DECREF(self);
+					return NULL;
+				}
+				self->Address = PyUnicode_FromString("");
+				if (self->Address == NULL) {
 					Py_DECREF(self);
 					return NULL;
 				}
 				self->Debug = false;
+				self->Enabled = false;
 				self->Active = false;
 				self->Timestamp = PyUnicode_FromString("");
 				if (self->Timestamp == NULL) {
@@ -377,8 +388,10 @@ namespace Plugins {
 	int CDevice_init(CDevice* self, PyObject* args, PyObject* kwds)
 	{
 		char* szName = NULL;
-		char* szExternalID = NULL;
-		static char* kwlist[] = { "Name", "ExternalID", NULL };
+		char* szInternalID = NULL;
+		char* szAddress = NULL;
+		int   bEnabled = 1;
+		static char* kwlist[] = { "Name", "InternalID", "Address", "Enabled", NULL };
 
 		try
 		{
@@ -407,7 +420,6 @@ namespace Plugins {
 			if (pModState->lObjectID)
 			{
 				self->DeviceID = pModState->lObjectID;
-				self->Parent = pModState->pPlugin->m_Interface;			// Borrow a reference to the owning Interface
 				CDevice_refresh(self);
 				pModState->lObjectID = 0;
 
@@ -428,29 +440,35 @@ namespace Plugins {
 					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
-						PyObject* pValue = CDevice_AddValueToDict(self, atoi(sd[0].c_str()));
+						CValue* pValue = self->AddValueToDict(atoi(sd[0].c_str()));
 						Py_XDECREF(pValue);
 					}
 				}
 			}
 			else
 			{
-				if (PyArg_ParseTupleAndKeywords(args, kwds, "ss", kwlist, &szName, &szExternalID))
+				if (PyArg_ParseTupleAndKeywords(args, kwds, "sssp", kwlist, &szName, &szInternalID, &szAddress, &bEnabled))
 				{
 					self->InterfaceID = pModState->pPlugin->m_InterfaceID;
-					self->Parent = pModState->pPlugin->m_Interface;			// Borrow a reference to the owning Interface
 					std::string	sName = szName ? szName : "";
 					if (sName.length())
 					{
 						Py_DECREF(self->Name);
 						self->Name = PyUnicode_FromString(sName.c_str());
 					}
-					std::string	sExternalID = szExternalID ? szExternalID : "";
-					if (sExternalID.length())
+					std::string	sInternalID = szInternalID ? szInternalID : "";
+					if (sInternalID.length())
 					{
-						Py_DECREF(self->ExternalID);
-						self->ExternalID = PyUnicode_FromString(sExternalID.c_str());
+						Py_DECREF(self->InternalID);
+						self->InternalID = PyUnicode_FromString(sInternalID.c_str());
 					}
+					std::string	sAddress = szAddress ? szAddress : "";
+					if (sAddress.length())
+					{
+						Py_DECREF(self->Address);
+						self->Address = PyUnicode_FromString(sAddress.c_str());
+					}
+					self->Enabled = bEnabled;
 				}
 				else
 				{
@@ -484,7 +502,7 @@ namespace Plugins {
 			if (self->DeviceID >= 1)
 			{
 				std::vector<std::vector<std::string> > result;
-				result = m_sql.safe_query("SELECT InterfaceID, Name, ExternalID, Debug, Active, Timestamp FROM Device WHERE DeviceID = %d", self->DeviceID);
+				result = m_sql.safe_query("SELECT InterfaceID, Name, InternalID, Address, Debug, Enabled, Active, Timestamp FROM Device WHERE DeviceID = %d", self->DeviceID);
 
 				// Handle any data we get back
 				if (result.empty())
@@ -504,14 +522,18 @@ namespace Plugins {
 						pSafeAssign = self->Name;
 						self->Name = PyUnicode_FromString(sd[1].c_str());
 
-						pSafeAssign = self->ExternalID;
-						self->ExternalID = PyUnicode_FromString(sd[2].c_str());
+						pSafeAssign = self->InternalID;
+						self->InternalID = PyUnicode_FromString(sd[2].c_str());
 
-						self->Debug = atoi(sd[3].c_str()) ? true : false;
-						self->Active = atoi(sd[4].c_str()) ? true : false;
+						pSafeAssign = self->Address;
+						self->Address = PyUnicode_FromString(sd[3].c_str());
+
+						self->Debug = atoi(sd[4].c_str()) ? true : false;
+						self->Enabled = atoi(sd[5].c_str()) ? true : false;
+						self->Active = atoi(sd[6].c_str()) ? true : false;
 
 						pSafeAssign = self->Timestamp;
-						self->Timestamp = PyUnicode_FromString(sd[5].c_str());
+						self->Timestamp = PyUnicode_FromString(sd[7].c_str());
 					}
 				}
 			}
@@ -535,14 +557,17 @@ namespace Plugins {
 		{
 			if (self->DeviceID <= 1)
 			{
-				std::string		sSQL = "INSERT INTO Device (InterfaceID, Name, ExternalID, Debug, Active) VALUES (?,?,?,?,?);";
+				std::string		sSQL = "INSERT INTO Device (InterfaceID, Name, InternalID, Address, Debug, Enabled, Active) VALUES (?,?,?,?,?,?,?);";
 				std::vector<std::string> vValues;
 				vValues.push_back(std::to_string(self->InterfaceID));
 				std::string	sName = PyUnicode_AsUTF8(self->Name);
 				vValues.push_back(sName);
-				std::string	sExternalID = PyUnicode_AsUTF8(self->ExternalID);
-				vValues.push_back(sExternalID);
+				std::string	sInternalID = PyUnicode_AsUTF8(self->InternalID);
+				vValues.push_back(sInternalID);
+				std::string	sAddress = PyUnicode_AsUTF8(self->Address);
+				vValues.push_back(sAddress);
 				vValues.push_back(std::to_string(self->Debug));
+				vValues.push_back(std::to_string(self->Enabled));
 				vValues.push_back(std::to_string(self->Active));
 				int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
@@ -584,8 +609,10 @@ namespace Plugins {
 		{
 			if (self->DeviceID != -1)
 			{
-				std::string		sSQL = "UPDATE Device SET Active=?, Timestamp=CURRENT_TIMESTAMP WHERE DeviceID=" + std::to_string(self->DeviceID) + ";";
+				std::string		sSQL = "UPDATE Device SET Address=?, Active=?, Timestamp=CURRENT_TIMESTAMP WHERE DeviceID=" + std::to_string(self->DeviceID) + ";";
 				std::vector<std::string> vValues;
+				std::string	sAddress = PyUnicode_AsUTF8(self->Address);
+				vValues.push_back(sAddress);
 				vValues.push_back(std::to_string(self->Active));
 				int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
@@ -652,8 +679,8 @@ namespace Plugins {
 
 	PyObject* CDevice_str(CDevice* self)
 	{
-		PyObject* pRetVal = PyUnicode_FromFormat("DeviceID: %d, Name: %U, InterfaceID: %d, ExternalID: %U, Active: '%s', Timestamp: %U",
-			self->DeviceID, self->Name, self->InterfaceID, self->ExternalID, (self->Active?"True":"False"), self->Timestamp);
+		PyObject* pRetVal = PyUnicode_FromFormat("DeviceID: %d, Name: %U, InterfaceID: %d, InternalID: %U, Address: %U, Debug: '%s', Enabled: '%s', Active: '%s', Timestamp: %U",
+			self->DeviceID, self->Name, self->InterfaceID, self->InternalID, self->Address, (self->Debug ? "True" : "False"), (self->Enabled ? "True" : "False"), (self->Active ? "True" : "False"), self->Timestamp);
 		return pRetVal;
 	}
 }

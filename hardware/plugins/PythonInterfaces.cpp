@@ -1,7 +1,5 @@
 #include "stdafx.h"
 
-#include "PythonDevices.h"
-
 #include "PythonInterfaces.h"
 #include "PluginProtocols.h"
 
@@ -213,92 +211,97 @@ namespace Plugins {
 		return Py_None;
 	}
 
-	PyObject* CInterface_AddDeviceToDict(CInterface* self, long lDeviceID)
+	CDevice* CInterface::AddDeviceToDict(long lDeviceID)
 	{
-		PyObject* pDevice = NULL;
+		CDevice* pDevice = NULL;
 
 		try
 		{
 			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
 			if (!pModule)
 			{
-				InterfaceLog(self, LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
+				InterfaceLog(this, LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
 			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
 			if (!pModState)
 			{
-				InterfaceLog(self, LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
+				InterfaceLog(this, LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
 				return 0;
 			}
 
 			// Pass values in, needs to be a tuple and signal CDevice_init to load from the database
 			pModState->lObjectID = lDeviceID;
-			PyObjPtr argList = Py_BuildValue("(ss)", "", "");
+			PyObjPtr argList = Py_BuildValue("(sssN)", "", "", "", PyBool_FromLong(0));
 			if (!argList)
 			{
-				InterfaceLog(self, LOG_ERROR, "Building Device argument list failed for Device %d.", lDeviceID);
+				InterfaceLog(this, LOG_ERROR, "Building Device argument list failed for Device %d.", lDeviceID);
 				goto Error;
 			}
 
 			// Call the class object, this will call new followed by init
 			PyType_Ready(&CDeviceType);
-			pDevice = PyObject_CallObject((PyObject*)pModState->pDeviceClass, argList);
+			pDevice = (CDevice*)PyObject_CallObject((PyObject*)pModState->pDeviceClass, argList);
 			if (!pDevice)
 			{
-				InterfaceLog(self, LOG_ERROR, "Device object creation failed for Device %d.", lDeviceID);
+				InterfaceLog(this, LOG_ERROR, "Device object creation failed for Device %d.", lDeviceID);
 				goto Error;
 			}
+			pDevice->Parent = this;			// Borrow a reference to the owning Device
 
 			// And insert it into the Interface's Devices dictionary
-			PyObjPtr pKey = PyLong_FromLong(lDeviceID);
-			if (PyDict_SetItem(self->Devices, pKey, pDevice) == -1)
+			if (PyDict_SetItem(Devices, pDevice->InternalID, (PyObject*)pDevice) == -1)
 			{
-				InterfaceLog(self, LOG_ERROR, "Failed to add device number '%d' to device dictionary.", lDeviceID);
+				InterfaceLog(this, LOG_ERROR, "Failed to add device number '%d' to device dictionary.", lDeviceID);
 				goto Error;
 			}
 		}
 		catch (std::exception* e)
 		{
-			InterfaceLog(self, LOG_ERROR, "CInterface:%s, Execption thrown: %s", __func__, e->what());
+			InterfaceLog(this, LOG_ERROR, "CInterface:%s, Execption thrown: %s", __func__, e->what());
 		}
 		catch (...)
 		{
-			InterfaceLog(self, LOG_ERROR, "CInterface:%s, Unknown execption thrown", __func__);
+			InterfaceLog(this, LOG_ERROR, "CInterface:%s, Unknown execption thrown", __func__);
 		}
 
 	Error:
 		if (PyErr_Occurred())
 		{
-			self->pPlugin->LogPythonException("CInterface_AddDeviceToDict");
+			pPlugin->LogPythonException("CInterface_AddDeviceToDict");
 		}
 
 		// If not NULL the caller will need to decref
 		return pDevice;
 	}
 
-	PyObject* CInterface_FindDevice(CInterface* self, long lDeviceID)
+	CDevice* CInterface::FindDevice(long lDeviceID)
 	{
-		PyObject* pDevice = NULL;
+		CDevice* pDevice = NULL;
 
 		try
 		{
-			// If the key is in the dictionary then return a pointer to it
-			PyObjPtr pKey = PyLong_FromLong(lDeviceID);
-			pDevice = PyDict_GetItem(self->Devices, pKey);
-			if (pDevice)
+			// Dictionary is keyed by InternalID to make it more useable so do iterative search
+			PyObject*	key;
+			Py_ssize_t	pos = 0;
+			while (PyDict_Next(Devices, &pos, &key, (PyObject**)&pDevice))
 			{
-				Py_INCREF(pDevice);
+				if (pDevice->DeviceID == lDeviceID)
+				{
+					Py_INCREF(pDevice);
+					break;
+				}
+				pDevice = NULL;
 			}
 		}
 		catch (std::exception* e)
 		{
-			InterfaceLog(self, LOG_ERROR, "CInterface:%s, Execption thrown: %s", __func__, e->what());
+			InterfaceLog(this, LOG_ERROR, "CInterface:%s, Execption thrown: %s", __func__, e->what());
 		}
 		catch (...)
 		{
-			InterfaceLog(self, LOG_ERROR, "CInterface:%s, Unknown execption thrown", __func__);
+			InterfaceLog(this, LOG_ERROR, "CInterface:%s, Unknown execption thrown", __func__);
 		}
 
 		// If not NULL the caller will need to decref
@@ -397,7 +400,7 @@ namespace Plugins {
 				return 0;
 			}
 			self->pPlugin = pModState->pPlugin;
-			pModState->pPlugin->m_Interface = (PyObject*)self;
+			pModState->pPlugin->m_Interface = self;
 
 			// During startup plugin sets this to signal load from database 
 			if (pModState->lObjectID)
@@ -415,7 +418,7 @@ namespace Plugins {
 					for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
-						PyObject* pDevice = CInterface_AddDeviceToDict(self, atoi(sd[0].c_str()));
+						CDevice* pDevice = self->AddDeviceToDict(atoi(sd[0].c_str()));
 						Py_XDECREF(pDevice);
 					}
 				}

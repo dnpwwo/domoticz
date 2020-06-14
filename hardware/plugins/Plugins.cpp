@@ -326,7 +326,7 @@ namespace Plugins {
 		va_end(argList);
 
 		// Firstly do standard log behaviour
-		_log.Log(level, cbuffer);
+		_log.Log(level, &cbuffer[0]);
 
 		// Build SQL statement
 		std::string sMessage = cbuffer;
@@ -1016,7 +1016,7 @@ namespace Plugins {
 				pModState->lObjectID = m_InterfaceID;
 
 				// Call the class object, this will call new followed by init
-				m_Interface = (PyObject*)PyObject_CallObject((PyObject*)pModState->pInterfaceClass, NULL);
+				m_Interface = (CInterface*)PyObject_CallObject((PyObject*)pModState->pInterfaceClass, NULL);
 				if (!m_Interface)
 				{
 					_log.Log(LOG_ERROR, "Interface object creation failed for Interface %d.", m_InterfaceID);
@@ -1475,8 +1475,8 @@ Error:
 			}
 			if (m_Interface)
 			{
-				if (m_Interface->ob_refcnt != 1)
-					_log.Log(LOG_ERROR, "%s: Interface '%d' Reference Count not one: %d.", __func__, m_InterfaceID, m_Interface->ob_refcnt);
+				if (m_Interface->ob_base.ob_refcnt != 1)
+					_log.Log(LOG_ERROR, "%s: Interface '%d' Reference Count not one: %d.", __func__, m_InterfaceID, m_Interface->ob_base.ob_refcnt);
 				Py_XDECREF(m_Interface);
 				m_Interface = NULL;
 			}

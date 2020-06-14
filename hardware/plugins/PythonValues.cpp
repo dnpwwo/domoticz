@@ -214,8 +214,11 @@ namespace Plugins {
 	void CValue_dealloc(CValue* self)
 	{
 		Py_XDECREF(self->Name);
+		Py_XDECREF(self->InternalID);
 		Py_XDECREF(self->Value);
 		Py_XDECREF(self->Timestamp);
+		// Py_XDECREF(self->Parent);	// Reference to owning device is borrowed so don't release it.
+										// Device will always exist longer than a Value, plus they can't point at each other (they could never be deleted)
 		Py_TYPE(self)->tp_free((PyObject*)self);
 	}
 
@@ -233,6 +236,11 @@ namespace Plugins {
 				self->DeviceID = -1;
 				self->Name = PyUnicode_FromString("");
 				if (self->Name == NULL) {
+					Py_DECREF(self);
+					return NULL;
+				}
+				self->InternalID = PyUnicode_FromString("");
+				if (self->InternalID == NULL) {
 					Py_DECREF(self);
 					return NULL;
 				}
@@ -382,7 +390,7 @@ namespace Plugins {
 			if (self->ValueID >= 1)
 			{
 				std::vector<std::vector<std::string> > result;
-				result = m_sql.safe_query("SELECT DeviceID, Name, UnitID, Value, Debug, Timestamp FROM Value WHERE ValueID = %d", self->ValueID);
+				result = m_sql.safe_query("SELECT DeviceID, Name, InternalID, UnitID, Value, Debug, Timestamp FROM Value WHERE ValueID = %d", self->ValueID);
 
 				// Handle any data we get back
 				if (result.empty())
@@ -402,15 +410,18 @@ namespace Plugins {
 						pSafeAssign = self->Name;
 						self->Name = PyUnicode_FromString(sd[1].c_str());
 
-						self->UnitID = atoi(sd[2].c_str());
+						pSafeAssign = self->InternalID;
+						self->InternalID = PyUnicode_FromString(sd[2].c_str());
+
+						self->UnitID = atoi(sd[3].c_str());
 
 						pSafeAssign = self->Value;
-						self->Value = PyUnicode_FromString(sd[3].c_str());
+						self->Value = PyUnicode_FromString(sd[4].c_str());
 
-						self->Debug = atoi(sd[4].c_str()) ? true : false;
+						self->Debug = atoi(sd[5].c_str()) ? true : false;
 
 						pSafeAssign = self->Timestamp;
-						self->Timestamp = PyUnicode_FromString(sd[5].c_str());
+						self->Timestamp = PyUnicode_FromString(sd[6].c_str());
 					}
 				}
 			}
@@ -434,14 +445,16 @@ namespace Plugins {
 		{
 			if (self->ValueID <= 1)
 			{
-				std::string		sSQL = "INSERT INTO Value (Name, DeviceID, UnitID, Value, RetentionDays, RetentionInterval, Debug) "
-										"VALUES (?,?,?,?,"
+				std::string		sSQL = "INSERT INTO Value (Name, InternalID, DeviceID, UnitID, Value, RetentionDays, RetentionInterval, Debug) "
+										"VALUES (?,?,?,?,?,"
 												"(SELECT RetentionDays from Unit WHERE Unit.UnitID = "+ std::to_string(self->UnitID) +"), "
 												"(SELECT RetentionInterval from Unit WHERE Unit.UnitID = "+ std::to_string(self->UnitID) +"), "
 												"?);";
 				std::vector<std::string> vValues;
 				std::string	sName = PyUnicode_AsUTF8(self->Name);
 				vValues.push_back(sName);
+				std::string	sInternalID = PyUnicode_AsUTF8(self->InternalID);
+				vValues.push_back(sInternalID);
 				vValues.push_back(std::to_string(self->DeviceID));
 				vValues.push_back(std::to_string(self->UnitID));
 
@@ -591,8 +604,8 @@ namespace Plugins {
 
 	PyObject* CValue_str(CValue* self)
 	{
-		PyObject* pRetVal = PyUnicode_FromFormat("ID: %d, Name: %U, DeviceID: %d, UnitID: %d, Value: '%U', Timestamp: %U", 
-									self->ValueID, self->Name, self->DeviceID, self->UnitID, self->Value, self->Timestamp);
+		PyObject* pRetVal = PyUnicode_FromFormat("ID: %d, Name: %U, InternalID: %U, DeviceID: %d, UnitID: %d, Value: '%U', Timestamp: %U", 
+									self->ValueID, self->Name, self->InternalID, self->DeviceID, self->UnitID, self->Value, self->Timestamp);
 		return pRetVal;
 	}
 }

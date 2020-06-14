@@ -15,6 +15,7 @@ namespace Plugins {
 	class CPluginMessageBase;
 	class CPluginNotifier;
 	class CPluginTransport;
+	class CInterface;
 
 	enum PluginDebugMask
 	{
@@ -87,10 +88,10 @@ namespace Plugins {
 
 		void	MessagePlugin(CPluginMessageBase *pMessage);
 
-		PyObject* m_Interface;
+		CInterface*			m_Interface;
 
 		PyObject*			m_SettingsDict;
-		bool				m_bDebug;
+		PluginDebugMask		m_bDebug;
 		bool				m_bIsStarting;
 		bool				m_bTracing;
 	};

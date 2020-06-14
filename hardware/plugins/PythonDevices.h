@@ -1,23 +1,32 @@
 #pragma once
 
 #include "Plugins.h"
+#include "PythonValues.h"
 #include "DelayedLink.h"
 
 namespace Plugins {
 
-	typedef struct {
+	class CInterface;
+
+	class CDevice {
+	public:
 		PyObject_HEAD
 		long		DeviceID;
 		long		InterfaceID;
 		PyObject*	Name;
-		PyObject*	ExternalID;
+		PyObject*	InternalID;
+		PyObject*	Address;
 		bool		Debug;
+		bool		Enabled;
 		bool		Active;
 		PyObject*	Timestamp;
 		PyObject*	Values;
-		PyObject*	Parent;
+		CInterface*	Parent;
 		CPlugin*	pPlugin;
-	} CDevice;
+		// Interface functions NOT exposed to Python
+		CValue*		AddValueToDict(long lValueID);
+		CValue*		FindValue(long lValueID);
+	};
 
 	void CDevice_dealloc(CDevice* self);
 	PyObject* CDevice_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
@@ -36,8 +45,10 @@ namespace Plugins {
 		{ "DeviceID",	T_LONG, offsetof(CDevice, DeviceID), READONLY, "Internal Device Number" },
 		{ "InterfaceID", T_LONG, offsetof(CDevice, InterfaceID), READONLY, "Interface this Device relates to" },
 		{ "Name", T_OBJECT,	offsetof(CDevice, Name), READONLY, "Name" },
-		{ "ExternalID", T_OBJECT,	offsetof(CDevice, ExternalID), READONLY, "ExternalID" },
+		{ "InternalID", T_OBJECT,	offsetof(CDevice, InternalID), READONLY, "Internal ID" },
+		{ "Address", T_OBJECT,	offsetof(CDevice, Address), READONLY, "Address" },
 		{ "Debugging", T_BOOL, offsetof(CDevice, Debug), READONLY, "Debug logging status" },
+		{ "Enabled", T_BOOL, offsetof(CDevice, Enabled), 0, "Device enabled status" },
 		{ "Active", T_BOOL, offsetof(CDevice, Active), 0, "Device active status" },
 		{ "Timestamp", T_OBJECT, offsetof(CDevice, Timestamp), READONLY, "Last update timestamp" },
 		{ "Values", T_OBJECT, offsetof(CDevice, Values), READONLY, "Values dictionary" },
@@ -97,8 +108,4 @@ namespace Plugins {
 		0,                         /* tp_alloc */
 		CDevice_new                 /* tp_new */
 	};
-
-	// Interface functions NOT exposed to Python
-	PyObject* CDevice_AddValueToDict(CDevice* self, long lValueID);
-	PyObject* CDevice_FindValue(CDevice* self, long lValueID);
 }

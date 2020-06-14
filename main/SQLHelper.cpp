@@ -103,8 +103,10 @@ const char* sqlCreateDevice =
 			"[DeviceID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[InterfaceID] INTEGER NOT NULL, "
 			"[Name] TEXT DEFAULT Unknown, "
-			"[ExternalID] TEXT DEFAULT \"\", "
+			"[InternalID] TEXT DEFAULT \"\", "
+			"[Address] TEXT DEFAULT \"\", "
 			"[Debug] INTEGER DEFAULT 0, "
+			"[Enabled] INTEGER DEFAULT 0, "
 			"[Active] INTEGER DEFAULT 0, "
 			"[Timestamp] TEXT DEFAULT CURRENT_TIMESTAMP,"
 		"FOREIGN KEY(InterfaceID) REFERENCES Interface(InterfaceID) ON DELETE CASCADE);";
@@ -121,7 +123,7 @@ const char* sqlDeviceAfterInsertTrigger =
 		"CREATE TRIGGER IF NOT EXISTS [DeviceAfterInsertTrigger] AFTER INSERT ON Device "
 			"FOR EACH ROW "
 			"BEGIN "
-				"INSERT into DeviceLog(DeviceID, Message) values(NEW.DeviceID, 'Device \"' || New.Name || '\" created, ID '||New.DeviceID||', ExternalID \"'||New.ExternalID||'\".'); "
+				"INSERT into DeviceLog(DeviceID, Message) values(NEW.DeviceID, 'Device \"' || New.Name || '\" created, ID '||New.DeviceID||', InternalID \"'||New.InternalID||'\".'); "
 			"END;";
 
 const char* sqlDeviceAfterUpdateTrigger =
@@ -130,14 +132,14 @@ const char* sqlDeviceAfterUpdateTrigger =
 			"BEGIN "
 				"INSERT into DeviceLog(DeviceID, Message) values(NEW.DeviceID, "
 					"CASE "
-						"WHEN (OLD.Name == NEW.Name) AND (OLD.ExternalID == New.ExternalID) AND (OLD.Active == New.Active) THEN "
+						"WHEN (OLD.Name == NEW.Name) AND (OLD.InternalID == New.InternalID) AND (OLD.Active == New.Active) THEN "
 							"'Device \"' || New.Name || '\" touched.' "
 						"WHEN (OLD.Active != New.Active) AND (NEW.Active == 1) THEN "
 							"'Device \"' || New.Name || '\" status changed: Active.' "
 						"WHEN (OLD.Active != New.Active) AND (NEW.Active == 0) THEN "
 							"'Device \"' || New.Name || '\" status changed: Inactive.' "
 						"ELSE "
-							"'Device \"' || New.Name || '\" updated, ID '||New.DeviceID||', ExternalID \"'||New.ExternalID||'\".' "
+							"'Device \"' || New.Name || '\" updated, ID '||New.DeviceID||', InternalID \"'||New.InternalID||'\".' "
 					"END "
 				"); "
 			"END;";
@@ -165,6 +167,7 @@ const char* sqlCreateValue =
 	"CREATE TABLE IF NOT EXISTS [Value] ("
 			"[ValueID] INTEGER PRIMARY KEY AUTOINCREMENT, "
 			"[Name] TEXT DEFAULT \"\", "
+			"[InternalID] TEXT DEFAULT \"\", "
 			"[DeviceID] INTEGER NOT NULL, "
 			"[UnitID] INTEGER NOT NULL, "
 			"[Value] TEXT DEFAULT \"\", "
