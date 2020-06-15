@@ -232,7 +232,7 @@ namespace Plugins {
 				return 0;
 			}
 
-			PyObjPtr argList = Py_BuildValue("(siiO)", "", -1, -1, PyUnicode_FromString(""));
+			PyObjPtr argList = Py_BuildValue("(ssiiO)", "", "", -1, -1, PyUnicode_FromString(""));
 			if (!argList)
 			{
 				DeviceLog(this, LOG_ERROR, "Building Value argument list failed for Value %d.", lValueID);

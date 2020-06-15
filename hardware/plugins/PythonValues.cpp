@@ -274,10 +274,11 @@ namespace Plugins {
 	int CValue_init(CValue* self, PyObject* args, PyObject* kwds)
 	{
 		char*	szName = NULL;
+		char* szInternalID = NULL;
 		long	lDeviceID = -1;
 		char*	szUnit = NULL;
 		PyObject* pValue = NULL;
-		static char* kwlist[] = { "Name", "DeviceID", "Unit",	"Value", NULL };
+		static char* kwlist[] = { "Name", "InternalID", "DeviceID", "Unit",	"Value", NULL };
 
 		try
 		{
@@ -311,7 +312,7 @@ namespace Plugins {
 			}
 			else
 			{
-				if (PyArg_ParseTupleAndKeywords(args, kwds, "sisO", kwlist, &szName, &lDeviceID, &szUnit, &pValue))
+				if (PyArg_ParseTupleAndKeywords(args, kwds, "ssisO", kwlist, &szName, &szInternalID, &lDeviceID, &szUnit, &pValue))
 				{
 					PyObject* pSafeAssign;
 					std::string	sName = szName ? szName : "";
@@ -320,6 +321,12 @@ namespace Plugins {
 						pSafeAssign = self->Name;
 						self->Name = PyUnicode_FromString(sName.c_str());
 						Py_XDECREF(pSafeAssign);
+					}
+					std::string	sInternalID = szInternalID ? szInternalID : "";
+					if (sInternalID.length())
+					{
+						Py_DECREF(self->InternalID);
+						self->InternalID = PyUnicode_FromString(sInternalID.c_str());
 					}
 					self->DeviceID = lDeviceID;
 					std::string	sUnit = szUnit ? szUnit : "";

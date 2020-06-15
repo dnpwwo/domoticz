@@ -362,6 +362,7 @@ namespace Plugins {
 		PyObjPtr			pValue;
 
 		PyErr_Fetch(&pExcept, &pValue, (PyObject**)&pTraceback);
+		PyErr_NormalizeException(&pExcept, &pValue, (PyObject**)&pTraceback);
 
 		if (pExcept)
 		{
@@ -447,6 +448,7 @@ namespace Plugins {
 				{
 					PyObjPtr		pString = PyObject_GetAttrString(pValue, "text");
 					std::string		sUTF = PyUnicode_AsUTF8(pString);
+					sUTF.erase(std::remove(sUTF.begin(), sUTF.end(), '\n'), sUTF.end());
 					_log.Log(LOG_ERROR, "(%s) Error Line '%s'", m_Name.c_str(), sUTF.c_str());
 				}
 				else
@@ -508,6 +510,7 @@ namespace Plugins {
 		std::string			sErrorText;
 
 		PyErr_Fetch(&pExcept, &pValue, (PyObject**)&pTraceback);
+		PyErr_NormalizeException(&pExcept, &pValue, (PyObject * *)& pTraceback);
 
 		if (pExcept)
 		{

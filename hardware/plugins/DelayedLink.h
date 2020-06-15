@@ -90,6 +90,7 @@ namespace Plugins {
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyState_FindModule, struct PyModuleDef*);
 		DECLARE_PYTHON_SYMBOL(void, PyErr_Clear, );
 		DECLARE_PYTHON_SYMBOL(void, PyErr_Fetch, PyObject** COMMA PyObject** COMMA PyObject**);
+		DECLARE_PYTHON_SYMBOL(void, PyErr_NormalizeException, PyObject** COMMA PyObject** COMMA PyObject**);
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyImport_ImportModule, const char*);
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyObject_CallObject, PyObject* COMMA PyObject*);
 		DECLARE_PYTHON_SYMBOL(int, PyFrame_GetLineNumber, PyFrameObject*);
@@ -227,6 +228,7 @@ namespace Plugins {
 					RESOLVE_PYTHON_SYMBOL(PyState_FindModule);
 					RESOLVE_PYTHON_SYMBOL(PyErr_Clear);
 					RESOLVE_PYTHON_SYMBOL(PyErr_Fetch);
+					RESOLVE_PYTHON_SYMBOL(PyErr_NormalizeException);
 					RESOLVE_PYTHON_SYMBOL(PyImport_ImportModule);
 					RESOLVE_PYTHON_SYMBOL(PyObject_CallObject);
 					RESOLVE_PYTHON_SYMBOL(PyFrame_GetLineNumber);
@@ -434,6 +436,7 @@ extern	SharedLibraryProxy* pythonLib;
 #define PyState_FindModule		pythonLib->PyState_FindModule
 #define PyErr_Clear				pythonLib->PyErr_Clear
 #define PyErr_Fetch				pythonLib->PyErr_Fetch
+#define PyErr_NormalizeException	pythonLib->PyErr_NormalizeException
 #define PyImport_ImportModule	pythonLib->PyImport_ImportModule
 #define PyObject_CallObject		pythonLib->PyObject_CallObject
 #define PyFrame_GetLineNumber	pythonLib->PyFrame_GetLineNumber
