@@ -574,7 +574,7 @@ namespace Plugins {
 				// Handle any data we get back
 				if (!iRowCount)
 				{
-					DeviceLog(self, LOG_ERROR, "Insert into 'Device' failed to create any records for ID %d", self->DeviceID);
+					DeviceLog(self, LOG_ERROR, "Insert into 'Device' failed to create any records for ID %ld", self->DeviceID);
 				}
 				else
 				{
@@ -586,12 +586,12 @@ namespace Plugins {
 						self->DeviceID = atoi(sd[0].c_str());
 					}
 
-					_log.Log(LOG_NORM, "Insert into 'Device' succeeded with ID %d, %d record(s) created.", self->DeviceID, iRowCount);
+					_log.Log(LOG_NORM, "Insert into 'Device' succeeded with ID %ld, %d record(s) created.", self->DeviceID, iRowCount);
 				}
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Device ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), (long)self->DeviceID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Device ID '%ld', must not be already set.", self->pPlugin->m_Name.c_str(), (long)self->DeviceID);
 			}
 		}
 		else
@@ -619,7 +619,7 @@ namespace Plugins {
 				// Handle any data we get back
 				if (!iRowCount)
 				{
-					DeviceLog(self, LOG_ERROR, "Update to 'Device' failed to update any records for ID %d", self->DeviceID);
+					DeviceLog(self, LOG_ERROR, "Update to 'Device' failed to update any records for ID %ld", self->DeviceID);
 				}
 				else
 				{
@@ -629,7 +629,7 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Device ID '%d', must already be set.", self->pPlugin->m_Name.c_str(), (long)self->DeviceID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Device ID '%ld', must already be set.", self->pPlugin->m_Name.c_str(), (long)self->DeviceID);
 			}
 		}
 		else
@@ -656,7 +656,7 @@ namespace Plugins {
 				std::vector<std::vector<std::string> >	result = m_sql.safe_query("SELECT changes();");
 				if (result.empty())
 				{
-					DeviceLog(self, LOG_ERROR, "Delete from 'Device' failed to delete any records for ID %d", self->DeviceID);
+					DeviceLog(self, LOG_ERROR, "Delete from 'Device' failed to delete any records for ID %ld", self->DeviceID);
 				}
 				else
 				{
@@ -665,7 +665,7 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Device deletion failed, '%d' does not represent a Device identifier.", self->pPlugin->m_Name.c_str(), self->DeviceID);
+				_log.Log(LOG_ERROR, "(%s) Device deletion failed, '%ld' does not represent a Device identifier.", self->pPlugin->m_Name.c_str(), self->DeviceID);
 			}
 		}
 		else

@@ -490,7 +490,7 @@ namespace Plugins {
 				// Handle any data we get back
 				if (!iRowCount)
 				{
-					ValueLog(self, LOG_ERROR, "Insert into 'Value' failed to create any records for ID %d", self->ValueID);
+					ValueLog(self, LOG_ERROR, "Insert into 'Value' failed to create any records for ID %ld", self->ValueID);
 				}
 				else
 				{
@@ -502,12 +502,12 @@ namespace Plugins {
 						self->ValueID = atoi(sd[0].c_str());
 					}
 
-					_log.Log(LOG_NORM, "Insert into 'Value' succeeded with ID %d, %d record(s) created.", self->ValueID, iRowCount);
+					_log.Log(LOG_NORM, "Insert into 'Value' succeeded with ID %ld, %d record(s) created.", self->ValueID, iRowCount);
 				}
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%d', must not be already set.", self->pPlugin->m_Name.c_str(), (long)self->ValueID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%ld', must not be already set.", self->pPlugin->m_Name.c_str(), (long)self->ValueID);
 			}
 		}
 		else
@@ -551,7 +551,7 @@ namespace Plugins {
 				// Handle any data we get back
 				if (!iRowCount)
 				{
-					ValueLog(self, LOG_ERROR, "Update to 'Value' failed to update any records for ID %d", self->ValueID);
+					ValueLog(self, LOG_ERROR, "Update to 'Value' failed to update any records for ID %ld", self->ValueID);
 				}
 				else
 				{
@@ -561,7 +561,7 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%d', must already be set.", self->pPlugin->m_Name.c_str(), (long)self->ValueID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%ld', must already be set.", self->pPlugin->m_Name.c_str(), (long)self->ValueID);
 			}
 		}
 		else
@@ -588,7 +588,7 @@ namespace Plugins {
 				std::vector<std::vector<std::string> >	result = m_sql.safe_query("SELECT changes();");
 				if (result.empty())
 				{
-					ValueLog(self, LOG_ERROR, "Delete from 'Value' failed to delete any records for ID %d", self->ValueID);
+					ValueLog(self, LOG_ERROR, "Delete from 'Value' failed to delete any records for ID %ld", self->ValueID);
 				}
 				else
 				{
@@ -597,7 +597,7 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Value deletion failed, '%d' does not represent a Value identifier.", self->pPlugin->m_Name.c_str(), self->ValueID);
+				_log.Log(LOG_ERROR, "(%s) Value deletion failed, '%ld' does not represent a Value identifier.", self->pPlugin->m_Name.c_str(), self->ValueID);
 			}
 		}
 		else

@@ -520,7 +520,7 @@ namespace Plugins {
 				// Handle any data we get back
 				if (!iRowCount)
 				{
-					InterfaceLog(self, LOG_ERROR, "Update to 'Interface' failed to update any records for ID %d", self->InterfaceID);
+					InterfaceLog(self, LOG_ERROR, "Update to 'Interface' failed to update any records for ID %ld", self->InterfaceID);
 				}
 				else
 				{
@@ -529,7 +529,7 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Interface ID '%d', must already set.", self->pPlugin->m_Name.c_str(), (long)self->InterfaceID);
+				_log.Log(LOG_ERROR, "(%s) Invalid Interface ID '%ld', must already set.", self->pPlugin->m_Name.c_str(), self->InterfaceID);
 			}
 		}
 		else
