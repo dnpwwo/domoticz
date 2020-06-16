@@ -46,7 +46,7 @@ namespace Plugins {
 		{ "InterfaceID", T_LONG, offsetof(CDevice, InterfaceID), READONLY, "Interface this Device relates to" },
 		{ "Name", T_OBJECT,	offsetof(CDevice, Name), READONLY, "Name" },
 		{ "InternalID", T_OBJECT,	offsetof(CDevice, InternalID), READONLY, "Internal ID" },
-		{ "Address", T_OBJECT,	offsetof(CDevice, Address), READONLY, "Address" },
+		{ "Address", T_OBJECT,	offsetof(CDevice, Address), 0, "Address" },
 		{ "Debugging", T_BOOL, offsetof(CDevice, Debug), READONLY, "Debug logging status" },
 		{ "Enabled", T_BOOL, offsetof(CDevice, Enabled), 0, "Device enabled status" },
 		{ "Active", T_BOOL, offsetof(CDevice, Active), 0, "Device active status" },

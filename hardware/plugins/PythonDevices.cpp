@@ -474,7 +474,7 @@ namespace Plugins {
 				{
 					CPlugin* pPlugin = NULL;
 					if (pModState) pPlugin = pModState->pPlugin;
-					_log.Log(LOG_ERROR, "Expected: myDevice = domoticz.Device(Name=\"myDevice\", DeviceID=1, UnitID=1, Device=\"1.0\")");
+					_log.Log(LOG_ERROR, "Expected: myDevice = domoticz.Device(Name=\"myDevice\", InternalID=\"xxxxxxx\", Address=\"192.168.0.xxx\", Enabled=True)");
 					LogPythonException(pPlugin, __func__);
 				}
 			}
