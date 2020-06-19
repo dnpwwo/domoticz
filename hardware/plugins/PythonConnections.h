@@ -8,21 +8,22 @@ namespace Plugins {
 	class CPluginTransport;
 	class CPluginProtocol;
 
-	typedef struct {
-		PyObject_HEAD
-		PyObject*			Name;
-		PyObject*			Target;
-		PyObject*			Address;
-		PyObject*			Port;
-		int					Baud;
-		PyObject*			LastSeen;
-		CPlugin*			pPlugin;
-		PyObject*			Transport;
-		CPluginTransport*	pTransport;
-		PyObject*			Protocol;
-		CPluginProtocol*	pProtocol;
-		PyObject*			Parent;
-	} CConnection;
+	class CConnection {
+		public:
+			PyObject_HEAD
+			PyObject*			Name;
+			PyObject*			Target;
+			PyObject*			Address;		// Python object to callback to (Interface or Device normally)
+			PyObject*			Port;
+			int					Baud;
+			PyObject*			LastSeen;
+			CPlugin*			pPlugin;
+			PyObject*			Transport;
+			CPluginTransport*	pTransport;
+			PyObject*			Protocol;
+			CPluginProtocol*	pProtocol;
+			CConnection*		Parent;			// Parent Connection, used when a listening connection spawns a Connection
+	};
 
 	void CConnection_dealloc(CConnection* self);
 	PyObject* CConnection_new(PyTypeObject *type, PyObject *args, PyObject *kwds);

@@ -6,6 +6,7 @@ namespace Plugins {
 
 	class ReadEvent;
 	class WriteDirective;
+	class CConnection;
 
 	class CPluginProtocol
 	{
@@ -17,7 +18,7 @@ namespace Plugins {
 		CPluginProtocol() : m_Secure(false) {};
 		virtual void				ProcessInbound(const ReadEvent* Message);
 		virtual std::vector<byte>	ProcessOutbound(const WriteDirective* WriteMessage);
-		virtual void				Flush(CPlugin* pPlugin, PyObject* pConnection);
+		virtual void				Flush(CPlugin* pPlugin, CConnection* pConnection);
 		virtual int					Length() { return m_sRetainedData.size(); };
 		virtual bool				Secure() { return m_Secure; };
 
@@ -57,7 +58,7 @@ namespace Plugins {
 		size_t			m_RemainingChunk;
 	protected:
 		void			ExtractHeaders(std::string*	pData);
-		void			Flush(CPlugin* pPlugin, PyObject* pConnection);
+		void			Flush(CPlugin* pPlugin, CConnection* pConnection);
 	public:
 		CPluginProtocolHTTP(bool Secure) : m_ContentLength(0), m_Headers(NULL), m_Chunked(false), m_RemainingChunk(0) { m_Secure = Secure; };
 		virtual void				ProcessInbound(const ReadEvent* Message);

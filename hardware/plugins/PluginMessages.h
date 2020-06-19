@@ -48,7 +48,7 @@ namespace Plugins {
 	class CHasConnection
 	{
 	public:
-		CHasConnection(PyObject* Connection) : m_pConnection(Connection)
+		CHasConnection(CConnection* Connection) : m_pConnection(Connection)
 		{
 			Py_XINCREF(m_pConnection);
 		};
@@ -56,7 +56,7 @@ namespace Plugins {
 		{
 			Py_XDECREF(m_pConnection);
 		}
-		PyObject*	m_pConnection;
+		CConnection*	m_pConnection;
 	};
 
 	class InitializeMessage : public CPluginMessageBase
@@ -444,8 +444,8 @@ protected:
 	class onConnectCallback : public CCallbackBase, public CHasConnection
 		{
 		public:
-			onConnectCallback(CPlugin* pPlugin, PyObject* Connection) : CCallbackBase(pPlugin, "onConnect"), CHasConnection(Connection) { m_Name = __func__; };
-			onConnectCallback(CPlugin* pPlugin, PyObject* Connection, const int Code, const std::string &Text) : CCallbackBase(pPlugin, "onConnect"), CHasConnection(Connection), m_Status(Code), m_Text(Text)
+			onConnectCallback(CPlugin* pPlugin, CConnection* Connection) : CCallbackBase(pPlugin, "onConnect"), CHasConnection(Connection) { m_Name = __func__; };
+			onConnectCallback(CPlugin* pPlugin, CConnection* Connection, const int Code, const std::string &Text) : CCallbackBase(pPlugin, "onConnect"), CHasConnection(Connection), m_Status(Code), m_Text(Text)
 			{
 				m_Name = __func__;
 				m_Target = ((CConnection*)m_pConnection)->Target;
@@ -478,18 +478,18 @@ protected:
 	class onMessageCallback : public CCallbackBase, public CHasConnection
 	{
 	public:
-		onMessageCallback(CPlugin* pPlugin, PyObject* Connection, const std::string& Buffer) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection), m_Data(NULL)
+		onMessageCallback(CPlugin* pPlugin, CConnection* Connection, const std::string& Buffer) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection), m_Data(NULL)
 		{
 			m_Name = __func__;
 			m_Buffer.reserve(Buffer.length());
 			m_Buffer.assign((const byte*)Buffer.c_str(), (const byte*)Buffer.c_str() + Buffer.length());
 		};
-		onMessageCallback(CPlugin* pPlugin, PyObject* Connection, const std::vector<byte>& Buffer) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection), m_Data(NULL)
+		onMessageCallback(CPlugin* pPlugin, CConnection* Connection, const std::vector<byte>& Buffer) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection), m_Data(NULL)
 		{
 			m_Name = __func__;
 			m_Buffer = Buffer;
 		};
-		onMessageCallback(CPlugin* pPlugin, PyObject* Connection, PyObject* pData) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection)
+		onMessageCallback(CPlugin* pPlugin, CConnection* Connection, PyObject* pData) : CCallbackBase(pPlugin, "onMessage"), CHasConnection(Connection)
 		{
 			m_Name = __func__;
 			m_Data = pData;
@@ -521,10 +521,10 @@ protected:
 	class onDisconnectCallback : public CCallbackBase, public CHasConnection
 	{
 	public:
-		onDisconnectCallback(CPlugin* pPlugin, PyObject* Connection) : CCallbackBase(pPlugin, "onDisconnect"), CHasConnection(Connection)
+		onDisconnectCallback(CPlugin* pPlugin, CConnection* Connection) : CCallbackBase(pPlugin, "onDisconnect"), CHasConnection(Connection)
 		{
 			m_Name = __func__;
-			m_Target = ((CConnection*)m_pConnection)->Target;
+			m_Target = m_pConnection->Target;
 		};
 	protected:
 		virtual void ProcessLocked()
@@ -535,7 +535,7 @@ protected:
 				AccessPython	Guard(m_pPlugin);
 				// This is the last event for the connection before another 'Connect' so release reference to the target
 				Py_DECREF(m_Target);
-				((CConnection*)m_pConnection)->Target = NULL;
+				m_pConnection->Target = NULL;
 			}
 		};
 	};
@@ -654,28 +654,28 @@ protected:
 	class ProtocolDirective : public CDirectiveBase, public CHasConnection
 	{
 	public:
-		ProtocolDirective(CPlugin* pPlugin, PyObject* Connection) : CDirectiveBase(pPlugin), CHasConnection(Connection) { m_Name = __func__; };
+		ProtocolDirective(CPlugin* pPlugin, CConnection* Connection) : CDirectiveBase(pPlugin), CHasConnection(Connection) { m_Name = __func__; };
 		virtual void ProcessLocked() { m_pPlugin->ConnectionProtocol(this); };
 	};
 
 	class ConnectDirective : public CDirectiveBase, public CHasConnection
 	{
 	public:
-		ConnectDirective(CPlugin* pPlugin, PyObject* Connection) : CDirectiveBase(pPlugin), CHasConnection(Connection) { m_Name = __func__; };
+		ConnectDirective(CPlugin* pPlugin, CConnection* Connection) : CDirectiveBase(pPlugin), CHasConnection(Connection) { m_Name = __func__; };
 		virtual void ProcessLocked() { m_pPlugin->ConnectionConnect(this); };
 	};
 
 	class ListenDirective : public CDirectiveBase, public CHasConnection
 	{
 	public:
-		ListenDirective(CPlugin* pPlugin, PyObject* Connection) : CDirectiveBase(pPlugin), CHasConnection(Connection) { m_Name = __func__; };
+		ListenDirective(CPlugin* pPlugin, CConnection* Connection) : CDirectiveBase(pPlugin), CHasConnection(Connection) { m_Name = __func__; };
 		virtual void ProcessLocked() { m_pPlugin->ConnectionListen(this); };
 	};
 
 	class DisconnectDirective : public CDirectiveBase, public CHasConnection
 	{
 	public:
-		DisconnectDirective(CPlugin* pPlugin, PyObject* Connection) : CDirectiveBase(pPlugin), CHasConnection(Connection) { m_Name = __func__; };
+		DisconnectDirective(CPlugin* pPlugin, CConnection* Connection) : CDirectiveBase(pPlugin), CHasConnection(Connection) { m_Name = __func__; };
 		virtual void ProcessLocked() { m_pPlugin->ConnectionDisconnect(this); };
 	};
 
@@ -683,7 +683,7 @@ protected:
 	{
 	public:
 		PyObject*		m_Object;
-		WriteDirective(CPlugin* pPlugin, PyObject* Connection, PyObject* pData, const int Delay) : CDirectiveBase(pPlugin), CHasConnection(Connection)
+		WriteDirective(CPlugin* pPlugin, CConnection* Connection, PyObject* pData, const int Delay) : CDirectiveBase(pPlugin), CHasConnection(Connection)
 		{
 			m_Name = __func__;
 			m_Object = pData;
@@ -731,7 +731,7 @@ protected:
 	class ReadEvent : public CEventBase, public CHasConnection
 	{
 	public:
-		ReadEvent(CPlugin* pPlugin, PyObject* Connection, const int ByteCount, const unsigned char* Data, const int ElapsedMs = -1) : CEventBase(pPlugin), CHasConnection(Connection)
+		ReadEvent(CPlugin* pPlugin, CConnection* Connection, const int ByteCount, const unsigned char* Data, const int ElapsedMs = -1) : CEventBase(pPlugin), CHasConnection(Connection)
 		{
 			m_Name = __func__;
 			m_ElapsedMs = ElapsedMs;
@@ -750,8 +750,8 @@ protected:
 	class DisconnectedEvent : public CEventBase, public CHasConnection
 	{
 	public:
-		DisconnectedEvent(CPlugin* pPlugin, PyObject* Connection) : CEventBase(pPlugin), CHasConnection(Connection), bNotifyPlugin(true) { m_Name = __func__; };
-		DisconnectedEvent(CPlugin* pPlugin, PyObject* Connection, bool NotifyPlugin) : CEventBase(pPlugin), CHasConnection(Connection), bNotifyPlugin(NotifyPlugin) { m_Name = __func__; };
+		DisconnectedEvent(CPlugin* pPlugin, CConnection* Connection) : CEventBase(pPlugin), CHasConnection(Connection), bNotifyPlugin(true) { m_Name = __func__; };
+		DisconnectedEvent(CPlugin* pPlugin, CConnection* Connection, bool NotifyPlugin) : CEventBase(pPlugin), CHasConnection(Connection), bNotifyPlugin(NotifyPlugin) { m_Name = __func__; };
 		virtual void ProcessLocked() { m_pPlugin->DisconnectEvent(this); };
 		bool	bNotifyPlugin;
 	};

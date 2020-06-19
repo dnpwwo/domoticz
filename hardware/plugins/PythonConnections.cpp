@@ -109,7 +109,7 @@ namespace Plugins {
 					return NULL;
 				}
 
-				self->Parent = Py_None;
+				self->Parent = (CConnection*)Py_None;
 				Py_INCREF(Py_None);
 
 				self->pPlugin = NULL;
@@ -186,7 +186,7 @@ namespace Plugins {
 				{
 					Py_XDECREF(self->Protocol);
 					self->Protocol = PyUnicode_FromString(pProtocol);
-					self->pPlugin->MessagePlugin(new ProtocolDirective(self->pPlugin, (PyObject*)self));
+					self->pPlugin->MessagePlugin(new ProtocolDirective(self->pPlugin, self));
 				}
 			}
 			else
@@ -246,7 +246,7 @@ namespace Plugins {
 				Py_INCREF(pTarget);
 				Py_XDECREF(self->Target);
 				self->Target = pTarget;
-				self->pPlugin->MessagePlugin(new ConnectDirective(self->pPlugin, (PyObject*)self));
+				self->pPlugin->MessagePlugin(new ConnectDirective(self->pPlugin, self));
 			}
 			else
 			{
@@ -300,7 +300,7 @@ namespace Plugins {
 				Py_INCREF(pTarget);
 				Py_XDECREF(self->Target);
 				self->Target = pTarget;
-				self->pPlugin->MessagePlugin(new ListenDirective(self->pPlugin, (PyObject*)self));
+				self->pPlugin->MessagePlugin(new ListenDirective(self->pPlugin, self));
 			}
 			else
 			{
@@ -340,7 +340,7 @@ namespace Plugins {
 			else
 			{
 				//	Add start command to message queue
-				self->pPlugin->MessagePlugin(new WriteDirective(self->pPlugin, (PyObject*)self, pData, iDelay));
+				self->pPlugin->MessagePlugin(new WriteDirective(self->pPlugin, self, pData, iDelay));
 			}
 		}
 
@@ -354,7 +354,7 @@ namespace Plugins {
 		{
 			if (self->pTransport->IsConnecting() || self->pTransport->IsConnected())
 			{
-				self->pPlugin->MessagePlugin(new DisconnectDirective(self->pPlugin, (PyObject*)self));
+				self->pPlugin->MessagePlugin(new DisconnectDirective(self->pPlugin, self));
 			}
 			else
 				_log.Log(LOG_ERROR, "%s, disconnection request from '%s' ignored. Transport is not connecting or connected.", __func__, self->pPlugin->m_Name.c_str());
@@ -416,9 +416,9 @@ namespace Plugins {
 	PyObject * CConnection_str(CConnection * self)
 	{
 		std::string		sParent = "None";
-		if (self->Parent != Py_None)
+		if (((PyObject*)self->Parent) != Py_None)
 		{
-			sParent = PyUnicode_AsUTF8(((CConnection*)self->Parent)->Name);
+			sParent = PyUnicode_AsUTF8(self->Parent->Name);
 		}
 
 		if (self->pTransport)

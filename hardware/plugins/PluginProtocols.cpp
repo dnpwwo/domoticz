@@ -79,7 +79,7 @@ namespace Plugins {
 		return retVal;
 	}
 
-	void CPluginProtocol::Flush(CPlugin* pPlugin, PyObject* pConnection)
+	void CPluginProtocol::Flush(CPlugin* pPlugin, CConnection* pConnection)
 	{
 		if (m_sRetainedData.size())
 		{
@@ -508,7 +508,7 @@ namespace Plugins {
 		}
 	}
 
-	void CPluginProtocolHTTP::Flush(CPlugin* pPlugin, PyObject* pConnection)
+	void CPluginProtocolHTTP::Flush(CPlugin* pPlugin, CConnection* pConnection)
 	{
 		if (m_sRetainedData.size())
 		{

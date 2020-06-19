@@ -310,21 +310,52 @@ namespace Plugins {
 
 	void CInterface_dealloc(CInterface* self)
 	{
-		Py_XDECREF(self->Name);
-		Py_XDECREF(self->Configuration);
-
-		PyObject* key, * value;
-		Py_ssize_t pos = 0;
-		// Sanity check to make sure the reference counbting is all good.
-		while (PyDict_Next(self->Devices, &pos, &key, &value))
+		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
+		if (!pModule)
 		{
-			if (value->ob_refcnt != 1)
+			_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
+			return;
+		}
+
+		module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+		if (!pModState)
+		{
+			_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
+			return;
+		}
+
+		PyObject*	key;
+		CDevice*	pDevice;
+		Py_ssize_t	pos = 0;
+		// Sanity check to make sure the reference counbting is all good.
+		while (PyDict_Next(self->Devices, &pos, &key, (PyObject**)&pDevice))
+		{
+			// Dictionary should be full of Devices but Python script can make this assumption false, log warning if this has happened
+			int	isDevice = PyObject_IsInstance((PyObject*)pDevice, (PyObject*)pModState->pDeviceClass);
+			if (isDevice == -1)
 			{
-				std::string	sName = PyUnicode_AsUTF8(((CDevice*)value)->Name);
-				_log.Log(LOG_ERROR, "%s: Device '%s' Reference Count not one: %d.", __func__, sName.c_str(), value->ob_refcnt);
+				self->pPlugin->LogPythonException("Error determining type of Python object during dealloc");
+			}
+			else if (isDevice == 0)
+			{
+				InterfaceLog(self, LOG_NORM, "%s: Device dictionary contained non-Device entry.", __func__);
+			}
+			else
+			{
+				if (pDevice->ob_base.ob_refcnt > 1)
+				{
+					std::string	sName = PyUnicode_AsUTF8(pDevice->Name);
+					InterfaceLog(self, LOG_ERROR, "%s: Device '%s' Reference Count not one: %d.", __func__, sName.c_str(), pDevice->ob_base.ob_refcnt);
+				}
+				else if (pDevice->ob_base.ob_refcnt < 1)
+				{
+					InterfaceLog(self, LOG_ERROR, "%s: Device with ID %d Reference Count not one: %d.", __func__, pDevice->DeviceID, pDevice->ob_base.ob_refcnt);
+				}
 			}
 		}
 
+		Py_XDECREF(self->Name);
+		Py_XDECREF(self->Configuration);
 		if (PyDict_Size(self->Devices))
 		{
 			PyDict_Clear(self->Devices);

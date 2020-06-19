@@ -309,27 +309,59 @@ namespace Plugins {
 
 	void CDevice_dealloc(CDevice* self)
 	{
-		Py_XDECREF(self->Name);
-		Py_XDECREF(self->InternalID);
-		Py_XDECREF(self->Timestamp);
-		PyObject* key, * value;
+		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
+		if (!pModule)
+		{
+			_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
+			return;
+		}
+
+		module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+		if (!pModState)
+		{
+			_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
+			return;
+		}
+
+		PyObject* key;
+		CValue* pValue;
 		Py_ssize_t pos = 0;
 		// Sanity check to make sure the reference counbting is all good.
-		while (PyDict_Next(self->Values, &pos, &key, &value))
+		while (PyDict_Next(self->Values, &pos, &key, (PyObject**)&pValue))
 		{
-			if (value->ob_refcnt != 1)
+			// Dictionary should be full of Values but Python script can make this assumption false, log warning if this has happened
+			int	isValue = PyObject_IsInstance((PyObject*)pValue, (PyObject*)pModState->pValueClass);
+			if (isValue == -1)
 			{
-				std::string	sName = PyUnicode_AsUTF8(((CValue*)value)->Name);
-				_log.Log(LOG_ERROR, "%s: Value '%s' Reference Count not one: %d.", __func__, sName.c_str(), value->ob_refcnt);
+				self->pPlugin->LogPythonException("Error determining type of Python object during dealloc");
+			}
+			else if (isValue == 0)
+			{
+				DeviceLog(self, LOG_NORM, "%s: Value dictionary contained non-Value entry.", __func__);
+			}
+			else
+			{
+				if (pValue->ob_base.ob_refcnt > 1)
+				{
+					std::string	sName = PyUnicode_AsUTF8(pValue->Name);
+						DeviceLog(self, LOG_ERROR, "%s: Value '%s' Reference Count not one: %d.", __func__, sName.c_str(), pValue->ob_base.ob_refcnt);
+				}
+				else if (pValue->ob_base.ob_refcnt < 1)
+				{
+					DeviceLog(self, LOG_ERROR, "%s: Value with ID %d Reference Count not one: %d.", __func__, pValue->ValueID, pValue->ob_base.ob_refcnt);
+				}
 			}
 		}
 
+		Py_XDECREF(self->Name);
+		Py_XDECREF(self->InternalID);
+		Py_XDECREF(self->Timestamp);
 		if (PyDict_Size(self->Values))
 		{
 			PyDict_Clear(self->Values);
 		}
 		Py_XDECREF(self->Values);
-		// Py_XDECREF(self->Parent);	// Reference to owning interface is borrowed so don't release it.
+		// Py_XDECREF(self->Parent);	// Reference to owning connection is borrowed so don't release it.
 										// Interface will always exist longer than a device, plus they can't point at each other (they could never be deleted)
 		Py_TYPE(self)->tp_free((PyObject*)self);
 	}

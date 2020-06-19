@@ -29,19 +29,18 @@ namespace Plugins {
 	void CPluginTransport::VerifyConnection()
 	{
 		// If the Python CConnection object reference count ever drops to one the the connection is out of scope so shut it down
-		CConnection*	pConnection = (CConnection*)m_pConnection;
-		CPlugin*		pPlugin = pConnection ? pConnection->pPlugin : NULL;
-		if (pPlugin && (pPlugin->m_bDebug & PDM_CONNECTION) && m_pConnection && (m_pConnection->ob_refcnt <= 1))
+		CPlugin*		pPlugin = m_pConnection ? m_pConnection->pPlugin : NULL;
+		if (pPlugin && (pPlugin->m_bDebug & PDM_CONNECTION) && m_pConnection && (m_pConnection->ob_base.ob_refcnt <= 1))
 		{
-			std::string	sTransport = PyUnicode_AsUTF8(pConnection->Transport);
-			std::string	sAddress = PyUnicode_AsUTF8(pConnection->Address);
-			std::string	sPort = PyUnicode_AsUTF8(pConnection->Port);
+			std::string	sTransport = PyUnicode_AsUTF8(m_pConnection->Transport);
+			std::string	sAddress = PyUnicode_AsUTF8(m_pConnection->Address);
+			std::string	sPort = PyUnicode_AsUTF8(m_pConnection->Port);
 			if ((sTransport == "Serial") || (!sPort.length()))
-				_log.Log(LOG_NORM, "(%s) Connection '%s' released by Python, reference count is %d.", pPlugin->m_Name.c_str(), sAddress.c_str(), (int)m_pConnection->ob_refcnt);
+				_log.Log(LOG_NORM, "(%s) Connection '%s' released by Python, reference count is %d.", pPlugin->m_Name.c_str(), sAddress.c_str(), (int)m_pConnection->ob_base.ob_refcnt);
 			else
-				_log.Log(LOG_NORM, "(%s) Connection '%s:%s' released by Python, reference count is %d.", pPlugin->m_Name.c_str(), sAddress.c_str(), sPort.c_str(), (int)m_pConnection->ob_refcnt);
+				_log.Log(LOG_NORM, "(%s) Connection '%s:%s' released by Python, reference count is %d.", pPlugin->m_Name.c_str(), sAddress.c_str(), sPort.c_str(), (int)m_pConnection->ob_base.ob_refcnt);
 		}
-		if (!m_bDisconnectQueued && m_pConnection && (m_pConnection->ob_refcnt <= 1) && pPlugin)
+		if (!m_bDisconnectQueued && m_pConnection && (m_pConnection->ob_base.ob_refcnt <= 1) && pPlugin)
 		{
 			pPlugin->MessagePlugin(new DisconnectDirective(pPlugin, m_pConnection));
 			m_bDisconnectQueued = true;
@@ -50,7 +49,7 @@ namespace Plugins {
 
 	bool CPluginTransportTCP::handleConnect()
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 
 		try
 		{
@@ -85,7 +84,7 @@ namespace Plugins {
 
 	void CPluginTransportTCP::handleAsyncResolve(const boost::system::error_code & err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 		AccessPython	Guard(pPlugin);
 
 		if (!err)
@@ -108,7 +107,7 @@ namespace Plugins {
 
 	void CPluginTransportTCP::handleAsyncConnect(const boost::system::error_code & err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 		AccessPython	Guard(pPlugin);
 
 		pPlugin->MessagePlugin(new onConnectCallback(pPlugin, m_pConnection, err.value(), err.message()));
@@ -156,7 +155,7 @@ namespace Plugins {
 		catch (std::exception& e)
 		{
 			//			_log.Log(LOG_ERROR, "Plugin: Connection Exception: '%s' connecting to '%s:%s'", e.what(), m_IP.c_str(), m_Port.c_str());
-			CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+			CPlugin*	pPlugin = m_pConnection->pPlugin;
 			pPlugin->MessagePlugin(new onConnectCallback(pPlugin, m_pConnection, -1, std::string(e.what())));
 			return false;
 		}
@@ -174,14 +173,14 @@ namespace Plugins {
 			std::string sAddress = remote_ep.address().to_string();
 			std::string sPort = std::to_string(remote_ep.port());
 
-			AccessPython	Guard(((CConnection*)m_pConnection)->pPlugin);
+			AccessPython	Guard(m_pConnection->pPlugin);
 
 			CConnection* pConnection = (CConnection*)CConnection_new(&CConnectionType, (PyObject*)NULL, (PyObject*)NULL);
-			CPluginTransportTCP* pTcpTransport = new CPluginTransportTCP(m_HwdID, (PyObject*)pConnection, sAddress, sPort);
+			CPluginTransportTCP* pTcpTransport = new CPluginTransportTCP(m_HwdID, pConnection, sAddress, sPort);
 			Py_DECREF(pConnection);
 
 			// Configure transport object
-			pTcpTransport->m_pConnection = (PyObject*)pConnection;
+			pTcpTransport->m_pConnection = pConnection;
 			pTcpTransport->m_Socket = pSocket;
 			pTcpTransport->m_bConnected = true;
 			pTcpTransport->m_tLastSeen = time(0);
@@ -198,22 +197,22 @@ namespace Plugins {
 			Py_XDECREF(pConnection->Parent);
 			pConnection->Parent = m_pConnection;
 			Py_INCREF(m_pConnection);
-			pConnection->Transport = ((CConnection*)m_pConnection)->Transport;
+			pConnection->Transport = m_pConnection->Transport;
 			Py_INCREF(pConnection->Transport);
-			pConnection->Protocol = ((CConnection*)m_pConnection)->Protocol;
+			pConnection->Protocol = m_pConnection->Protocol;
 			Py_INCREF(pConnection->Protocol);
-			pConnection->Target = ((CConnection*)m_pConnection)->Target;
+			pConnection->Target = m_pConnection->Target;
 			Py_INCREF(pConnection->Target);
-			pConnection->pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+			pConnection->pPlugin = m_pConnection->pPlugin;
 
 			// Add it to the plugins list of connections
 			pConnection->pPlugin->AddConnection(pTcpTransport);
 
 			// Create Protocol object to handle connection's traffic
 			{
-				pConnection->pPlugin->MessagePlugin(new ProtocolDirective(pConnection->pPlugin, (PyObject*)pConnection));
+				pConnection->pPlugin->MessagePlugin(new ProtocolDirective(pConnection->pPlugin, pConnection));
 				//  and signal connection
-				pConnection->pPlugin->MessagePlugin(new onConnectCallback(pConnection->pPlugin, (PyObject*)pConnection, err.value(), err.message()));
+				pConnection->pPlugin->MessagePlugin(new onConnectCallback(pConnection->pPlugin, pConnection, err.value(), err.message()));
 			}
 
 			pTcpTransport->m_Socket->async_read_some(boost::asio::buffer(pTcpTransport->m_Buffer, sizeof pTcpTransport->m_Buffer),
@@ -230,7 +229,7 @@ namespace Plugins {
 			if (err != boost::asio::error::operation_aborted)
 				_log.Log(LOG_ERROR, "Plugin: Accept Exception: '%s' connecting to '%s:%s'", err.message().c_str(), m_IP.c_str(), m_Port.c_str());
 
-			CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+			CPlugin*	pPlugin = m_pConnection->pPlugin;
 			pPlugin->MessagePlugin(new DisconnectedEvent(pPlugin, m_pConnection));
 			m_bDisconnectQueued = true;
 		}
@@ -238,7 +237,7 @@ namespace Plugins {
 
 	void CPluginTransportTCP::handleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 		AccessPython	Guard(pPlugin);
 		if (!e)
 		{
@@ -304,7 +303,7 @@ namespace Plugins {
 
 	bool CPluginTransportTCP::handleDisconnect()
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 
 		if (pPlugin->m_bDebug & PDM_CONNECTION)
 		{
@@ -384,7 +383,7 @@ namespace Plugins {
 
 	void CPluginTransportTCPSecure::handleAsyncConnect(const boost::system::error_code & err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 		AccessPython	Guard(pPlugin);
 
 		if (!err)
@@ -441,9 +440,9 @@ namespace Plugins {
 		char subject_name[256];
 		X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
 		X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
-		if (m_pConnection && ((CConnection*)m_pConnection)->pPlugin->m_bDebug & PDM_CONNECTION)
+		if (m_pConnection && m_pConnection->pPlugin->m_bDebug & PDM_CONNECTION)
 		{
-			_log.Log(LOG_NORM, "(%s) TLS Certificate found '%s'", ((CConnection*)m_pConnection)->pPlugin->m_Name.c_str(), subject_name);
+			_log.Log(LOG_NORM, "(%s) TLS Certificate found '%s'", m_pConnection->pPlugin->m_Name.c_str(), subject_name);
 		}
 
 		// TODO: Add some certificate checking
@@ -453,7 +452,7 @@ namespace Plugins {
 
 	void CPluginTransportTCPSecure::handleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 		AccessPython	Guard(pPlugin);
 		if (!pPlugin)
 			return;
@@ -553,7 +552,7 @@ namespace Plugins {
 
 	void CPluginTransportUDP::handleRead(const boost::system::error_code& ec, std::size_t bytes_transferred)
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 		AccessPython	Guard(pPlugin);
 		if (!ec)
 		{
@@ -564,23 +563,23 @@ namespace Plugins {
 
 			// Configure temporary Python Connection object
 			Py_XDECREF(pConnection->Name);
-			pConnection->Name = ((CConnection*)m_pConnection)->Name;
+			pConnection->Name = m_pConnection->Name;
 			Py_INCREF(pConnection->Name);
 			Py_XDECREF(pConnection->Address);
 			pConnection->Address = PyUnicode_FromString(sAddress.c_str());
 			Py_XDECREF(pConnection->Port);
 			pConnection->Port = PyUnicode_FromString(sPort.c_str());
-			pConnection->Transport = ((CConnection*)m_pConnection)->Transport;
+			pConnection->Transport = m_pConnection->Transport;
 			Py_INCREF(pConnection->Transport);
-			pConnection->Protocol = ((CConnection*)m_pConnection)->Protocol;
+			pConnection->Protocol = m_pConnection->Protocol;
 			Py_INCREF(pConnection->Protocol);
-			pConnection->Target = ((CConnection*)m_pConnection)->Target;
+			pConnection->Target = m_pConnection->Target;
 			Py_INCREF(pConnection->Target);
-			pConnection->pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+			pConnection->pPlugin = m_pConnection->pPlugin;
 
 			// Create Protocol object to handle connection's traffic
-			pConnection->pPlugin->MessagePlugin(new ProtocolDirective(pConnection->pPlugin, (PyObject*)pConnection));
-			pConnection->pPlugin->MessagePlugin(new ReadEvent(pConnection->pPlugin, (PyObject*)pConnection, bytes_transferred, m_Buffer));
+			pConnection->pPlugin->MessagePlugin(new ProtocolDirective(pConnection->pPlugin, pConnection));
+			pConnection->pPlugin->MessagePlugin(new ReadEvent(pConnection->pPlugin, pConnection, bytes_transferred, m_Buffer));
 
 			m_tLastSeen = time(0);
 			m_iTotalBytes += bytes_transferred;
@@ -654,7 +653,7 @@ namespace Plugins {
 
 	bool CPluginTransportUDP::handleDisconnect()
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 
 		if (pPlugin->m_bDebug & PDM_CONNECTION)
 		{
@@ -763,7 +762,7 @@ namespace Plugins {
 
 	void CPluginTransportICMP::handleTimeout(const boost::system::error_code& ec)
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 		AccessPython	Guard(pPlugin);
 
 		if (!ec)  // Timeout, no response
@@ -773,7 +772,7 @@ namespace Plugins {
 				_log.Log(LOG_NORM, "(%s) ICMP timeout for address '%s'", pPlugin->m_Name.c_str(), m_IP.c_str());
 			}
 
-			CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+			CPlugin*	pPlugin = m_pConnection->pPlugin;
 			pPlugin->MessagePlugin(new ReadEvent(pPlugin, m_pConnection, 0, NULL));
 			pPlugin->MessagePlugin(new DisconnectDirective(pPlugin, m_pConnection));
 		}
@@ -789,7 +788,7 @@ namespace Plugins {
 
 	void CPluginTransportICMP::handleRead(const boost::system::error_code & ec, std::size_t bytes_transferred)
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 		AccessPython	Guard(pPlugin);
 		if (!pPlugin)
 			return;
@@ -856,9 +855,8 @@ namespace Plugins {
 		// Check transport is usable
 		if (!m_bConnected)
 		{
-			CConnection*	pConnection = (CConnection*)this->m_pConnection;
-			std::string	sConnection = PyUnicode_AsUTF8(pConnection->Name);
-			_log.Log(LOG_ERROR, "(%s) Transport not initialized, write directive to '%s' ignored. Connectionless transport should be Listening.", pConnection->pPlugin->m_Name.c_str(), sConnection.c_str());
+			std::string	sConnection = PyUnicode_AsUTF8(m_pConnection->Name);
+			_log.Log(LOG_ERROR, "(%s) Transport not initialized, write directive to '%s' ignored. Connectionless transport should be Listening.", m_pConnection->pPlugin->m_Name.c_str(), sConnection.c_str());
 		}
 
 		// Reset timeout if one is set or set one
@@ -894,7 +892,7 @@ namespace Plugins {
 
 	bool CPluginTransportICMP::handleDisconnect()
 	{
-		CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+		CPlugin*	pPlugin = m_pConnection->pPlugin;
 
 		if (pPlugin->m_bDebug & PDM_CONNECTION)
 		{
@@ -945,7 +943,7 @@ namespace Plugins {
 		}
 	}
 
-	CPluginTransportSerial::CPluginTransportSerial(int HwdID, PyObject* pConnection, const std::string & Port, int Baud) : CPluginTransport(HwdID, pConnection), m_Baud(Baud)
+	CPluginTransportSerial::CPluginTransportSerial(int HwdID, CConnection* pConnection, const std::string & Port, int Baud) : CPluginTransport(HwdID, pConnection), m_Baud(Baud)
 	{
 		m_Port = Port;
 	}
@@ -970,7 +968,7 @@ namespace Plugins {
 				m_tLastSeen = time(0);
 				m_bConnected = isOpen();
 
-				CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+				CPlugin*	pPlugin = m_pConnection->pPlugin;
 				if (m_bConnected)
 				{
 					pPlugin->MessagePlugin(new onConnectCallback(pPlugin, m_pConnection, 0, "SerialPort " + m_Port + " opened successfully."));
@@ -984,7 +982,7 @@ namespace Plugins {
 		}
 		catch (std::exception& e)
 		{
-			CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+			CPlugin*	pPlugin = m_pConnection->pPlugin;
 			pPlugin->MessagePlugin(new onConnectCallback(pPlugin, m_pConnection, -1, std::string(e.what())));
 			return false;
 		}
@@ -996,7 +994,7 @@ namespace Plugins {
 	{
 		if (bytes_transferred)
 		{
-			CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
+			CPlugin*	pPlugin = m_pConnection->pPlugin;
 			AccessPython	Guard(pPlugin);
 			pPlugin->MessagePlugin(new ReadEvent(pPlugin, m_pConnection, bytes_transferred, (const unsigned char*)data));
 

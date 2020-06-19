@@ -93,6 +93,8 @@ namespace Plugins {
 		DECLARE_PYTHON_SYMBOL(void, PyErr_NormalizeException, PyObject** COMMA PyObject** COMMA PyObject**);
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyImport_ImportModule, const char*);
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyObject_CallObject, PyObject* COMMA PyObject*);
+		DECLARE_PYTHON_SYMBOL(int, PyObject_IsInstance, PyObject* COMMA PyObject*);
+		DECLARE_PYTHON_SYMBOL(int, PyObject_IsSubclass, PyObject* COMMA PyObject*);
 		DECLARE_PYTHON_SYMBOL(int, PyFrame_GetLineNumber, PyFrameObject*);
 		DECLARE_PYTHON_SYMBOL(void, PyEval_InitThreads, );
 		DECLARE_PYTHON_SYMBOL(int, PyEval_ThreadsInitialized, );
@@ -231,6 +233,8 @@ namespace Plugins {
 					RESOLVE_PYTHON_SYMBOL(PyErr_NormalizeException);
 					RESOLVE_PYTHON_SYMBOL(PyImport_ImportModule);
 					RESOLVE_PYTHON_SYMBOL(PyObject_CallObject);
+					RESOLVE_PYTHON_SYMBOL(PyObject_IsInstance);
+					RESOLVE_PYTHON_SYMBOL(PyObject_IsSubclass);
 					RESOLVE_PYTHON_SYMBOL(PyFrame_GetLineNumber);
 					RESOLVE_PYTHON_SYMBOL(PyEval_InitThreads);
 					RESOLVE_PYTHON_SYMBOL(PyEval_ThreadsInitialized);
@@ -439,6 +443,8 @@ extern	SharedLibraryProxy* pythonLib;
 #define PyErr_NormalizeException	pythonLib->PyErr_NormalizeException
 #define PyImport_ImportModule	pythonLib->PyImport_ImportModule
 #define PyObject_CallObject		pythonLib->PyObject_CallObject
+#define PyObject_IsInstance		pythonLib->PyObject_IsInstance
+#define PyObject_IsSubclass		pythonLib->PyObject_IsSubclass
 #define PyFrame_GetLineNumber	pythonLib->PyFrame_GetLineNumber
 #define	PyEval_InitThreads		pythonLib->PyEval_InitThreads
 #define	PyEval_ThreadsInitialized	pythonLib->PyEval_ThreadsInitialized
