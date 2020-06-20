@@ -319,15 +319,21 @@ namespace Plugins {
 		m_bIsStarted = false;
 	}
 
-	void CPlugin::WriteToTargetLog(PyObject* pTarget, const char* sLevel, std::string& sMessage)
+	void CPlugin::WriteToTargetLog(PyObject* pTarget, const char* sLevel, const char* Message, ...)
 	{
+		va_list argList;
+		char cbuffer[1024];
+		va_start(argList, Message);
+		vsnprintf(cbuffer, sizeof(cbuffer), Message, argList);
+		va_end(argList);
+
 		// Mutex lock should be held prior to calling this function
 		// Targets should be Interfaces, Devices or Values
 		// Python method on the object will do the actual writing to make the messages to the correct place
 		PyObjPtr pLevelLog = PyObject_GetAttrString(pTarget, sLevel);
 		if (pLevelLog && PyCallable_Check(pLevelLog))
 		{
-			PyObjPtr argList = Py_BuildValue("(s)", sMessage.c_str());
+			PyObjPtr argList = Py_BuildValue("(s)", cbuffer);
 			if (!argList)
 			{
 				_log.Log(LOG_ERROR, "Failed while building argument list for '%s' logging call.", sLevel);
@@ -340,19 +346,8 @@ namespace Plugins {
 		}
 		else
 		{
-			InterfaceLog(LOG_ERROR, sMessage.c_str());
+			InterfaceLog(LOG_ERROR, cbuffer);
 		}
-	}
-
-	void CPlugin::WriteToTargetLog(PyObject* pTarget, const char* sLevel, const char* Message, ...)
-	{
-		va_list argList;
-		char cbuffer[1024];
-		va_start(argList, Message);
-		vsnprintf(cbuffer, sizeof(cbuffer), Message, argList);
-		va_end(argList);
-
-		WriteToTargetLog(pTarget, sLevel, std::string(cbuffer));
 	}
 	
 	void CPlugin::InterfaceLog(const _eLogLevel level, const char* Message, ...)
@@ -1433,14 +1428,14 @@ Error:
 					{
 						if (PyObject_IsTrue(pDebugging))
 						{
-							WriteToTargetLog(pTarget, "Debug", std::string("Calling message handler '" + sHandler + "'."));
+							WriteToTargetLog(pTarget, "Debug", "Calling message handler '%s'.", sHandler.c_str());
 						}
 					}
 
 					if (PyErr_Occurred())
 					{
 						PyErr_Clear();
-						WriteToTargetLog(pTarget, "Error", std::string("Python exception set prior to callback '"+ sHandler +"'"));
+						WriteToTargetLog(pTarget, "Error", "Python exception set prior to callback '%s'", sHandler.c_str());
 					}
 					PyObjPtr	pReturnValue = PyObject_CallObject(pFunc, (PyObject*)pParams);
 					if (!pReturnValue || PyErr_Occurred())
@@ -1454,7 +1449,7 @@ Error:
 						PyObjPtr	pLocals = PyObject_Dir(pTarget);
 						if (PyList_Check(pLocals))
 						{
-							WriteToTargetLog(pTarget, "Error", std::string("("+ m_Name +") Local context:"));
+							WriteToTargetLog(pTarget, "Error", "(%s) Local context:", m_Name.c_str());
 							PyObjPtr	pIter = PyObject_GetIter(pLocals);
 							PyObjPtr	pItem = PyIter_Next(pIter);
 							while (pItem)
@@ -1470,7 +1465,7 @@ Error:
 											PyObjPtr	pString = PyObject_Str(pValue);
 											std::string	sUTF = PyUnicode_AsUTF8(pString);
 											std::string	sBlank(20 - sAttrName.length(), ' ');
-											WriteToTargetLog(pTarget, "Error", std::string("(" + m_Name + ") ----> '" + sAttrName + "' " + sBlank + " '" + sUTF + "'"));
+											WriteToTargetLog(pTarget, "Error", "(%s) ----> '%s' %s '%s'", m_Name.c_str(), sAttrName.c_str(), sBlank.c_str(), sUTF.c_str());
 										}
 									}
 								}
