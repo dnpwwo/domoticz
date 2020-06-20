@@ -26,6 +26,7 @@ namespace Plugins {
 		// Interface functions NOT exposed to Python
 		CValue*		AddValueToDict(long lValueID);
 		CValue*		FindValue(long lValueID);
+		operator PyObject* () const { return (PyObject*)this; }
 	};
 
 	void CDevice_dealloc(CDevice* self);

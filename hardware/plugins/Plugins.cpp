@@ -21,14 +21,6 @@
 #include "../main/mainworker.h"
 #include "../main/localtime_r.h"
 
-#define ADD_STRING_TO_DICT(pDict, key, value) \
-		{	\
-			PyObject*	pObj = Py_BuildValue("s", value.c_str());	\
-			if (PyDict_SetItemString(pDict, key, pObj) == -1)	\
-				InterfaceLog(LOG_ERROR, "Failed to add key '%s', value '%s' to dictionary.", key, value.c_str());	\
-			Py_DECREF(pObj); \
-		}
-
 extern std::string szWWWFolder;
 extern std::string szStartupFolder;
 extern std::string szUserDataFolder;
@@ -47,7 +39,8 @@ namespace Plugins {
 	void LogPythonException(CPlugin* pPlugin, const std::string &sHandler)
 	{
 		PyTracebackObject	*pTraceback;
-		PyObject			*pExcept, *pValue;
+		PyObjPtr			pExcept;
+		PyObjPtr			pValue;
 		PyTypeObject		*TypeName;
 		PyBytesObject		*pErrBytes = NULL;
 		const char*			pTypeText = NULL;
@@ -56,7 +49,8 @@ namespace Plugins {
 		if (pPlugin)
 			Name = pPlugin->m_Name;
 
-		PyErr_Fetch(&pExcept, &pValue, (PyObject**)&pTraceback);
+		PyErr_Fetch(&pExcept, &pValue, (PyObject * *)& pTraceback);
+		PyErr_NormalizeException(&pExcept, &pValue, (PyObject * *)& pTraceback);
 
 		if (pExcept)
 		{
@@ -98,23 +92,33 @@ namespace Plugins {
 		if (pErrBytes) Py_XDECREF(pErrBytes);
 
 		// Log a stack trace if there is one
-		while (pTraceback)
+		PyTracebackObject* pTraceFrame = pTraceback;
+		while (pTraceFrame)
 		{
-			PyFrameObject *frame = pTraceback->tb_frame;
+			PyFrameObject* frame = pTraceFrame->tb_frame;
 			if (frame)
 			{
 				int lineno = PyFrame_GetLineNumber(frame);
-				PyCodeObject*	pCode = frame->f_code;
-				PyBytesObject*	pFileBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_filename);
-				PyBytesObject*	pFuncBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_name);
-				if (pPlugin)
-					pPlugin->InterfaceLog(LOG_ERROR, "(%s) ----> Line %d in %s, function %s", Name.c_str(), lineno, pFileBytes->ob_sval, pFuncBytes->ob_sval);
+				PyCodeObject* pCode = frame->f_code;
+				std::string		FileName = "";
+				if (pCode->co_filename)
+				{
+					//	Current design has no file and Python seems to supply invalid data in that case
+					PyObjPtr	pFileBytes = PyUnicode_AsASCIIString(pCode->co_filename);
+					FileName = ((PyBytesObject*)pFileBytes)->ob_sval;
+				}
+				std::string		FuncName = "Unknown";
+				if (pCode->co_name)
+				{
+					PyObjPtr	pFuncBytes = PyUnicode_AsASCIIString(pCode->co_name);
+					FuncName = ((PyBytesObject*)pFuncBytes)->ob_sval;
+				}
+				if (!FileName.empty())
+					_log.Log(LOG_ERROR, "(%s) ----> Line %d in '%s', function %s", pPlugin->m_Name.c_str(), lineno, FileName.c_str(), FuncName.c_str());
 				else
-					_log.Log(LOG_ERROR, "(%s) ----> Line %d in %s, function %s", Name.c_str(), lineno, pFileBytes->ob_sval, pFuncBytes->ob_sval);
-				Py_XDECREF(pFileBytes);
-				Py_XDECREF(pFuncBytes);
+					_log.Log(LOG_ERROR, "(%s) ----> Line %d in '%s'", pPlugin->m_Name.c_str(), lineno, FuncName.c_str());
 			}
-			pTraceback = pTraceback->tb_next;
+			pTraceFrame = pTraceFrame->tb_next;
 		}
 
 		if (!pExcept && !pValue && !pTraceback)
@@ -125,8 +129,6 @@ namespace Plugins {
 				_log.Log(LOG_ERROR, "(%s) Call to message handler '%s' failed, unable to decode exception.", Name.c_str(), sHandler.c_str());
 		}
 
-		if (pExcept) Py_XDECREF(pExcept);
-		if (pValue) Py_XDECREF(pValue);
 		if (pTraceback) Py_XDECREF(pTraceback);
 	}
 
@@ -317,6 +319,42 @@ namespace Plugins {
 		m_bIsStarted = false;
 	}
 
+	void CPlugin::WriteToTargetLog(PyObject* pTarget, const char* sLevel, std::string& sMessage)
+	{
+		// Mutex lock should be held prior to calling this function
+		// Targets should be Interfaces, Devices or Values
+		// Python method on the object will do the actual writing to make the messages to the correct place
+		PyObjPtr pLevelLog = PyObject_GetAttrString(pTarget, sLevel);
+		if (pLevelLog && PyCallable_Check(pLevelLog))
+		{
+			PyObjPtr argList = Py_BuildValue("(s)", sMessage.c_str());
+			if (!argList)
+			{
+				_log.Log(LOG_ERROR, "Failed while building argument list for '%s' logging call.", sLevel);
+				PyErr_Clear();
+			}
+			else
+			{
+				PyObjPtr pLogReturn = PyObject_CallObject(pLevelLog, argList);
+			}
+		}
+		else
+		{
+			InterfaceLog(LOG_ERROR, sMessage.c_str());
+		}
+	}
+
+	void CPlugin::WriteToTargetLog(PyObject* pTarget, const char* sLevel, const char* Message, ...)
+	{
+		va_list argList;
+		char cbuffer[1024];
+		va_start(argList, Message);
+		vsnprintf(cbuffer, sizeof(cbuffer), Message, argList);
+		va_end(argList);
+
+		WriteToTargetLog(pTarget, sLevel, std::string(cbuffer));
+	}
+	
 	void CPlugin::InterfaceLog(const _eLogLevel level, const char* Message, ...)
 	{
 		va_list argList;
@@ -355,7 +393,7 @@ namespace Plugins {
 		}
 	}
 
-	void CPlugin::LogPythonException()
+	void CPlugin::LogPythonException(PyObject* pTarget)
 	{
 		PyTracebackObject	*pTraceback;
 		PyObjPtr			pExcept;
@@ -501,7 +539,7 @@ namespace Plugins {
 		if (pTraceback) Py_XDECREF(pTraceback);
 	}
 
-	void CPlugin::LogPythonException(const std::string &sHandler)
+	void CPlugin::LogPythonException(PyObject* pTarget, const std::string &sHandler)
 	{
 		PyTracebackObject	*pTraceback;
 		PyObjPtr			pExcept;
@@ -789,13 +827,13 @@ namespace Plugins {
 				}
 				else
 				{
-					PyObject* pFunc = PyObject_GetAttrString((PyObject*)pSiteModule, "getsitepackages");
+					PyObjPtr pFunc = PyObject_GetAttrString((PyObject*)pSiteModule, "getsitepackages");
 					if (pFunc && PyCallable_Check(pFunc))
 					{
-						PyObject* pSites = PyObject_CallObject(pFunc, NULL);
+						PyObjPtr pSites = PyObject_CallObject(pFunc, NULL);
 						if (!pSites)
 						{
-							LogPythonException("getsitepackages");
+							LogPythonException(pSites, "getsitepackages");
 						}
 						else
 							for (Py_ssize_t i = 0; i < PyList_Size(pSites); i++)
@@ -808,7 +846,6 @@ namespace Plugins {
 									sPath += sSeparator + ssPath.str();
 								}
 							}
-						Py_XDECREF(pSites);
 					}
 				}
 			}
@@ -833,10 +870,10 @@ namespace Plugins {
 				}
 				else
 				{
-					PyObject* pFunc = PyObject_GetAttrString((PyObject*)pFaultModule, "enable");
+					PyObjPtr pFunc = PyObject_GetAttrString((PyObject*)pFaultModule, "enable");
 					if (pFunc && PyCallable_Check(pFunc))
 					{
-						PyObject_CallObject(pFunc, NULL);
+						PyObjPtr pRetObj = PyObject_CallObject(pFunc, NULL);
 					}
 				}
 			}
@@ -909,7 +946,7 @@ namespace Plugins {
 				pModState->pPlugin = this;
 
 				// Define code in the newly created module
-				PyObject* pyValue = PyRun_String(result[0][0].c_str(), Py_file_input, localDict, localDict);
+				PyObjPtr pyValue = PyRun_String(result[0][0].c_str(), Py_file_input, localDict, localDict);
 				if (!pyValue)
 				{
 					InterfaceLog(LOG_ERROR, "Module load failed.");
@@ -956,7 +993,7 @@ namespace Plugins {
 	Error:
 		if (PyErr_Occurred())
 		{
-			LogPythonException();
+			LogPythonException(m_PyModule);
 		}
 		PyEval_SaveThread();
 		m_bIsStarting = false;
@@ -1046,7 +1083,7 @@ namespace Plugins {
 Error:
 		if (PyErr_Occurred())
 		{
-			LogPythonException("Start");
+			LogPythonException((PyObject*)m_Interface, "Start");
 		}
 		m_bIsStarting = false;
 		return false;
@@ -1396,33 +1433,49 @@ Error:
 					{
 						if (PyObject_IsTrue(pDebugging))
 						{
-							PyObjPtr pDebug = PyObject_GetAttrString(pTarget, "Debug");
-							if (pDebug && PyCallable_Check(pDebug))
-							{
-								PyObjPtr argList = Py_BuildValue("(s)", std::string("Calling message handler '"+sHandler+"'.").c_str());
-								if (!argList)
-								{
-									_log.Log(LOG_ERROR, "Building Device argument list failed for Debug call.");
-									return;
-								}
-								PyErr_Clear();
-								PyObjPtr pReturnValue = PyObject_CallObject(pDebug, argList);
-							}
+							WriteToTargetLog(pTarget, "Debug", std::string("Calling message handler '" + sHandler + "'."));
 						}
 					}
 
 					if (PyErr_Occurred())
 					{
-						_log.Log(LOG_ERROR, "Python exception set prior to callback '%s'.", sHandler.c_str());
 						PyErr_Clear();
+						WriteToTargetLog(pTarget, "Error", std::string("Python exception set prior to callback '"+ sHandler +"'"));
 					}
 					PyObjPtr	pReturnValue = PyObject_CallObject(pFunc, (PyObject*)pParams);
 					if (!pReturnValue || PyErr_Occurred())
 					{
-						LogPythonException(sHandler);
+						LogPythonException(pTarget, sHandler);
 						if (PyErr_Occurred())
 						{
 							PyErr_Clear();
+						}
+						// See if additional information is available
+						PyObjPtr	pLocals = PyObject_Dir(pTarget);
+						if (PyList_Check(pLocals))
+						{
+							WriteToTargetLog(pTarget, "Error", std::string("("+ m_Name +") Local context:"));
+							PyObjPtr	pIter = PyObject_GetIter(pLocals);
+							PyObjPtr	pItem = PyIter_Next(pIter);
+							while (pItem)
+							{
+								std::string	sAttrName = PyUnicode_AsUTF8(pItem);
+								if (sAttrName.substr(0, 2) != "__")  // ignore system stuff
+								{
+									if (PyObject_HasAttrString(pTarget, sAttrName.c_str()))
+									{
+										PyObjPtr	pValue = PyObject_GetAttrString(pTarget, sAttrName.c_str());
+										if (!PyCallable_Check(pValue))	// Filter out methods
+										{
+											PyObjPtr	pString = PyObject_Str(pValue);
+											std::string	sUTF = PyUnicode_AsUTF8(pString);
+											std::string	sBlank(20 - sAttrName.length(), ' ');
+											WriteToTargetLog(pTarget, "Error", std::string("(" + m_Name + ") ----> '" + sAttrName + "' " + sBlank + " '" + sUTF + "'"));
+										}
+									}
+								}
+								pItem = PyIter_Next(pIter);
+							}
 						}
 					}
 				}
@@ -1478,7 +1531,9 @@ Error:
 			}
 			if (m_Interface)
 			{
-				if (m_Interface->ob_base.ob_refcnt != 1)
+				if (m_Interface->ob_base.ob_refcnt > 1)
+					WriteToTargetLog((PyObject*)m_Interface, "Error", "%s: Interface '%d' Reference Count not one: %d.", __func__, m_InterfaceID, m_Interface->ob_base.ob_refcnt);
+				if (m_Interface->ob_base.ob_refcnt < 1)
 					_log.Log(LOG_ERROR, "%s: Interface '%d' Reference Count not one: %d.", __func__, m_InterfaceID, m_Interface->ob_base.ob_refcnt);
 				Py_XDECREF(m_Interface);
 				m_Interface = NULL;

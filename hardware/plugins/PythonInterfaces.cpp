@@ -12,7 +12,6 @@
 namespace Plugins {
 
 	extern struct PyModuleDef DomoticzModuleDef;
-	extern void LogPythonException(CPlugin* pPlugin, const std::string& sHandler);
 
 	void InterfaceLog(CInterface* self, const _eLogLevel level, const char* Message, ...)
 	{
@@ -89,7 +88,7 @@ namespace Plugins {
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
 				InterfaceLog(self, LOG_ERROR, "Expected: Interface.Log(Message=\"\")");
-				LogPythonException(pPlugin, __func__);
+				self->pPlugin->LogPythonException((PyObject*)self, __func__);
 			}
 		}
 		catch (std::exception* e)
@@ -142,7 +141,7 @@ namespace Plugins {
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
 				InterfaceLog(self, LOG_ERROR, "Expected: Interface.Log(Message=\"\")");
-				LogPythonException(pPlugin, __func__);
+				self->pPlugin->LogPythonException((PyObject*)self, __func__);
 			}
 		}
 		catch (std::exception* e)
@@ -195,7 +194,7 @@ namespace Plugins {
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
 				InterfaceLog(self, LOG_ERROR, "Expected: Interface.Log(Message=\"\")");
-				LogPythonException(pPlugin, __func__);
+				self->pPlugin->LogPythonException((PyObject*)self, __func__);
 			}
 		}
 		catch (std::exception* e)
@@ -269,7 +268,7 @@ namespace Plugins {
 	Error:
 		if (PyErr_Occurred())
 		{
-			pPlugin->LogPythonException("CInterface_AddDeviceToDict");
+			pPlugin->LogPythonException((PyObject*)this, __func__);
 		}
 
 		// If not NULL the caller will need to decref
@@ -334,7 +333,7 @@ namespace Plugins {
 			int	isDevice = PyObject_IsInstance((PyObject*)pDevice, (PyObject*)pModState->pDeviceClass);
 			if (isDevice == -1)
 			{
-				self->pPlugin->LogPythonException("Error determining type of Python object during dealloc");
+				self->pPlugin->LogPythonException((PyObject*)self, "Error determining type of Python object during dealloc");
 			}
 			else if (isDevice == 0)
 			{
@@ -471,7 +470,7 @@ namespace Plugins {
 
 		if (PyErr_Occurred())
 		{
-			self->pPlugin->LogPythonException("Start");
+			self->pPlugin->LogPythonException((PyObject*)self, "Start");
 		}
 		return 0;
 	}

@@ -13,7 +13,6 @@
 namespace Plugins {
 
 	extern struct PyModuleDef DomoticzModuleDef;
-	extern void LogPythonException(CPlugin* pPlugin, const std::string& sHandler);
 
 	void DeviceLog(CDevice* self, const _eLogLevel level, const char* Message, ...)
 	{
@@ -90,7 +89,7 @@ namespace Plugins {
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
 				DeviceLog(self, LOG_ERROR, "Expected: Device.Log(Message=\"\")");
-				LogPythonException(pPlugin, __func__);
+				self->pPlugin->LogPythonException((PyObject*)self, __func__);
 			}
 		}
 		catch (std::exception* e)
@@ -143,7 +142,7 @@ namespace Plugins {
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
 				DeviceLog(self, LOG_ERROR, "Expected: Device.Log(Message=\"\")");
-				LogPythonException(pPlugin, __func__);
+				self->pPlugin->LogPythonException((PyObject*)self, __func__);
 			}
 		}
 		catch (std::exception* e)
@@ -196,7 +195,7 @@ namespace Plugins {
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
 				DeviceLog(self, LOG_ERROR, "Expected: Device.Log(Message=\"\")");
-				LogPythonException(pPlugin, __func__);
+				self->pPlugin->LogPythonException((PyObject*)self, __func__);
 			}
 		}
 		catch (std::exception* e)
@@ -268,7 +267,7 @@ namespace Plugins {
 	Error:
 		if (PyErr_Occurred())
 		{
-			pPlugin->LogPythonException("CDevice_AddValueToDict");
+			pPlugin->LogPythonException((PyObject*)this, __func__);
 		}
 
 		// If not NULL the caller will need to decref
@@ -333,7 +332,7 @@ namespace Plugins {
 			int	isValue = PyObject_IsInstance((PyObject*)pValue, (PyObject*)pModState->pValueClass);
 			if (isValue == -1)
 			{
-				self->pPlugin->LogPythonException("Error determining type of Python object during dealloc");
+				self->pPlugin->LogPythonException((PyObject*)self, "Error determining type of Python object during dealloc");
 			}
 			else if (isValue == 0)
 			{
@@ -507,7 +506,7 @@ namespace Plugins {
 					CPlugin* pPlugin = NULL;
 					if (pModState) pPlugin = pModState->pPlugin;
 					_log.Log(LOG_ERROR, "Expected: myDevice = domoticz.Device(Name=\"myDevice\", InternalID=\"xxxxxxx\", Address=\"192.168.0.xxx\", Enabled=True)");
-					LogPythonException(pPlugin, __func__);
+					self->pPlugin->LogPythonException((PyObject*)self, __func__);
 				}
 			}
 		}
@@ -522,7 +521,7 @@ namespace Plugins {
 
 		if (PyErr_Occurred())
 		{
-			self->pPlugin->LogPythonException("CDevice_init");
+			self->pPlugin->LogPythonException((PyObject*)self, __func__);
 		}
 		return 0;
 	}

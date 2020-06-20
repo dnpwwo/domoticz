@@ -19,6 +19,7 @@ namespace Plugins {
 		// Interface functions NOT exposed to Python
 		CDevice*	AddDeviceToDict(long lDeviceID);
 		CDevice*	FindDevice(long lDeviceID);
+		operator PyObject* () const { return (PyObject*)this; }
 	};
 
 	void CInterface_dealloc(CInterface* self);

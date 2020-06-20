@@ -12,7 +12,6 @@
 namespace Plugins {
 
 	extern struct PyModuleDef DomoticzModuleDef;
-	extern void LogPythonException(CPlugin* pPlugin, const std::string& sHandler);
 
 	void ValueLog(CValue* self, const _eLogLevel level, const char* Message, ...)
 	{
@@ -89,7 +88,7 @@ namespace Plugins {
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
 				ValueLog(self, LOG_ERROR, "Expected: Value.Log(Message=\"\")");
-				LogPythonException(pPlugin, __func__);
+				self->pPlugin->LogPythonException((PyObject*)self, __func__);
 			}
 		}
 		catch (std::exception* e)
@@ -142,7 +141,7 @@ namespace Plugins {
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
 				ValueLog(self, LOG_ERROR, "Expected: Value.Log(Message=\"\")");
-				LogPythonException(pPlugin, __func__);
+				self->pPlugin->LogPythonException((PyObject*)self, __func__);
 			}
 		}
 		catch (std::exception* e)
@@ -195,7 +194,7 @@ namespace Plugins {
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
 				ValueLog(self, LOG_ERROR, "Expected: Value.Log(Message=\"\")");
-				LogPythonException(pPlugin, __func__);
+				self->pPlugin->LogPythonException((PyObject*)self, __func__);
 			}
 		}
 		catch (std::exception* e)
@@ -368,7 +367,7 @@ namespace Plugins {
 					CPlugin* pPlugin = NULL;
 					if (pModState) pPlugin = pModState->pPlugin;
 					_log.Log(LOG_ERROR, "Expected: myValue = domoticz.Value(Name=\"myValue\", DeviceID=1, UnitID=1, Value=\"1.0\")");
-					LogPythonException(pPlugin, __func__);
+					self->pPlugin->LogPythonException((PyObject*)self, __func__);
 				}
 			}
 
@@ -385,7 +384,7 @@ namespace Plugins {
 		Error:
 		if (PyErr_Occurred())
 		{
-			self->pPlugin->LogPythonException("CValue_init");
+			self->pPlugin->LogPythonException((PyObject*)self, "CValue_init");
 		}
 		return 0;
 	}

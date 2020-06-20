@@ -20,6 +20,7 @@ namespace Plugins {
 		PyObject*	Timestamp;
 		CDevice*	Parent;
 		CPlugin*	pPlugin;
+		operator PyObject* () const { return (PyObject*)this; }
 	};
 
 	void CValue_dealloc(CValue* self);

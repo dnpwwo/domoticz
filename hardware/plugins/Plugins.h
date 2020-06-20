@@ -77,7 +77,11 @@ namespace Plugins {
 		void	Callback(PyObject*, std::string, void*);
 		void	Stop();
 
-		void	LogPythonException(const std::string&);
+		void	WriteToTargetLog(PyObject* pTarget, const char* sLevel, std::string& sMessage);
+		void	WriteToTargetLog(PyObject* pTarget, const char* sLevel, const char* Message, ...);
+
+		void	LogPythonException(PyObject*, const std::string&);
+		void	LogPythonException(PyObject*);
 		void	InterfaceLog(const _eLogLevel level, const char* Message, ...);
 
 		void	WriteDebugBuffer(const std::vector<byte>& Buffer, bool Incoming);
