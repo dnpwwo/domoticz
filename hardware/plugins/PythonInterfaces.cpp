@@ -573,7 +573,7 @@ namespace Plugins {
 
 	PyObject* CInterface_str(CInterface* self)
 	{
-		PyObject* pRetVal = PyUnicode_FromFormat("ID: %d, Name: %U, InterfaceID: %d, Configuration: %U, Active: '%s'",
+		PyObject* pRetVal = PyUnicode_FromFormat("ID: %d, Name: %U, InterfaceID: %d, Configuration: %S, Active: '%s'",
 			self->InterfaceID, self->Name, self->InterfaceID, self->Configuration, (self->Active?"True":"False"));
 		return pRetVal;
 	}

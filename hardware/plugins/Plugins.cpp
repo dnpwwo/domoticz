@@ -1466,8 +1466,8 @@ Error:
 											if (pString)
 											{
 												std::string	sUTF = PyUnicode_AsUTF8(pString);
-												std::string	sBlank(20 - sAttrName.length(), ' ');
-												WriteToTargetLog(pTarget, "Error", "(%s) ----> '%s' %s '%s'", m_Name.c_str(), sAttrName.c_str(), sBlank.c_str(), sUTF.c_str());
+												std::string	sBlank((sAttrName.length() < 20) ? 20 - sAttrName.length() : 0, ' ');
+												WriteToTargetLog(pTarget, "Error", "(%s) ----> '%s'%s '%s'", m_Name.c_str(), sAttrName.c_str(), sBlank.c_str(), sUTF.c_str());
 											}
 										}
 									}
