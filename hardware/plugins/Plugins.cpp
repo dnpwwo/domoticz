@@ -1463,9 +1463,12 @@ Error:
 										if (!PyCallable_Check(pValue))	// Filter out methods
 										{
 											PyObjPtr	pString = PyObject_Str(pValue);
-											std::string	sUTF = PyUnicode_AsUTF8(pString);
-											std::string	sBlank(20 - sAttrName.length(), ' ');
-											WriteToTargetLog(pTarget, "Error", "(%s) ----> '%s' %s '%s'", m_Name.c_str(), sAttrName.c_str(), sBlank.c_str(), sUTF.c_str());
+											if (pString)
+											{
+												std::string	sUTF = PyUnicode_AsUTF8(pString);
+												std::string	sBlank(20 - sAttrName.length(), ' ');
+												WriteToTargetLog(pTarget, "Error", "(%s) ----> '%s' %s '%s'", m_Name.c_str(), sAttrName.c_str(), sBlank.c_str(), sUTF.c_str());
+											}
 										}
 									}
 								}

@@ -574,6 +574,7 @@ bool CSQLHelper::OpenDatabase()
 		query("UPDATE TableAccess SET CanPOST=false, CanPATCH=false, CanDELETE=false WHERE Name='TableAccess'");
 
 		// Units that Values can be associated with
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('On/Off', 0, 1, 'Push48_Off.png,Push48_On.png', 'Off,On')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Light On/Off', 0, 1, 'Light48_Off.png,Light48_On.png', 'Off,On')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Fan On/Off', 0, 1, 'Fan48_Off.png,Fan48_On.png', 'Off,On')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Laptop On/Off', 0, 1, 'Computer48_Off.png,Computer48_On.png', 'Off,On')");
@@ -589,6 +590,7 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Unit (Name) VALUES ('Text')");
 		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Type', 'Media48_Off.png,Media48_On.png', 'None,Audio,Video')");
 		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Status', 'Media48_Off.png,Media48_On.png', 'None,Playing,Paused')");
+		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Device Power', 'Push48_Off.png,pushon48.png,Push48_On.png', 'Off,Standby,On')");
 
 		sqlite3_wal_checkpoint(m_dbase, NULL);
 	}
