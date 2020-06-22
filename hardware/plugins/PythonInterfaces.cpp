@@ -22,7 +22,7 @@ namespace Plugins {
 		va_end(argList);
 
 		// Firstly do standard log behaviour
-		_log.Log(level, cbuffer);
+		_log.Log(level, "%s", cbuffer);
 
 		// Build SQL statement
 		std::string sMessage = cbuffer;
@@ -213,6 +213,7 @@ namespace Plugins {
 	CInterface* CInterface::Copy()
 	{
 		CInterface* pRetVal = NULL;
+		Py_ssize_t pos = 0;
 
 		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
 		if (!pModule)
@@ -250,7 +251,6 @@ namespace Plugins {
 
 		PyObject* key;
 		CValue* pDevice;
-		Py_ssize_t pos = 0;
 		while (PyDict_Next(Devices, &pos, &key, (PyObject * *)& pDevice))
 		{
 			// And insert it into the Interface's Devices dictionary

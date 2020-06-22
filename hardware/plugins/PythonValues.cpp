@@ -75,7 +75,7 @@ namespace Plugins {
 		va_end(argList);
 
 		// Firstly do standard log behaviour
-		_log.Log(level, cbuffer);
+		_log.Log(level, "%s", cbuffer);
 
 		// Build SQL statement
 		std::string sMessage = cbuffer;
