@@ -214,6 +214,7 @@ namespace Plugins {
 	CDevice* CDevice::Copy()
 	{
 		CDevice* pRetVal = NULL;
+		module_state* pModState;
 		Py_ssize_t pos = 0;
 
 		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
@@ -223,7 +224,7 @@ namespace Plugins {
 			goto Error;
 		}
 
-		module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+		pModState = ((struct module_state*)PyModule_GetState(pModule));
 		if (!pModState)
 		{
 			_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);

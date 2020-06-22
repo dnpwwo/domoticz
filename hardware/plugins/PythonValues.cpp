@@ -16,6 +16,7 @@ namespace Plugins {
 	CValue* CValue::Copy()
 	{
 		CValue* pRetVal = NULL;
+		module_state* pModState;
 
 		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
 		if (!pModule)
@@ -24,7 +25,7 @@ namespace Plugins {
 			goto Error;
 		}
 
-		module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+		pModState = ((struct module_state*)PyModule_GetState(pModule));
 		if (!pModState)
 		{
 			_log.Log(LOG_ERROR, "CValue:%s, unable to obtain module state.", __func__);
