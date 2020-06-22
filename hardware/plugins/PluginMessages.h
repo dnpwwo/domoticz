@@ -186,17 +186,21 @@ public:
 protected:
 	virtual void ProcessLocked()
 	{
+		CInterface* pCurrent = NULL;
 		{
 			AccessPython	Guard(m_pPlugin);
 			if (m_Target)
 			{
+				pCurrent = ((CInterface*)m_Target)->Copy();
 				CInterface_refresh((CInterface*)m_Target);
 			}
 		}
 
 		if (m_Target)
 		{
-			Callback(NULL);
+			Callback(Py_BuildValue("(O)", pCurrent));
+			AccessPython	Guard(m_pPlugin);
+			Py_DECREF(pCurrent);
 		}
 	};
 };
@@ -243,21 +247,23 @@ protected:
 	protected:
 		virtual void ProcessLocked()
 		{
+			CDevice* pCurrent = NULL;
 			{
 				AccessPython	Guard(m_pPlugin);
-				CInterface* pInterface = (CInterface*)m_pPlugin->m_Interface;
-				m_Target = (PyObject*)pInterface->FindDevice(m_DeviceID);
+				m_Target = (PyObject*)m_pPlugin->m_Interface->FindDevice(m_DeviceID);
 				if (m_Target)
 				{
+					pCurrent = ((CDevice*)m_Target)->Copy();
 					CDevice_refresh((CDevice*)m_Target);
 				}
 			}
 
 			if (m_Target)
 			{
-				Callback(NULL);
+				Callback(Py_BuildValue("(O)", pCurrent));
 				AccessPython	Guard(m_pPlugin);
 				Py_DECREF(m_Target);
+				Py_DECREF(pCurrent);
 			}
 		};
 	};
@@ -351,6 +357,8 @@ protected:
 	protected:
 		virtual void ProcessLocked()
 		{	
+			CValue* pCurrent = NULL;
+
 			// Iterate through all Plugins (Interfaces)
 			CPluginSystem	PluginSystem;
 			for (std::map<int, CDomoticzHardwareBase*>::iterator it = PluginSystem.GetHardware()->begin(); it != PluginSystem.GetHardware()->end(); it++)
@@ -360,12 +368,13 @@ protected:
 
 				CInterface* pInterface = (CInterface*)m_pPlugin->m_Interface;
 				CDevice*	pDevice = pInterface->FindDevice(m_DeviceID);
-				if (pDevice) // This the Device the Value has been added to
+				if (pDevice) // This the Device the Value belongs to
 				{
 					m_Target = (PyObject*)pDevice->FindValue(m_ValueID);
 					Py_DECREF(pDevice);
 					if (m_Target)
 					{
+						pCurrent = ((CValue*)m_Target)->Copy();
 						CValue_refresh((CValue*)m_Target);
 					}
 					break;
@@ -374,9 +383,10 @@ protected:
 
 			if (m_Target)
 			{
-				Callback(NULL);
+				Callback(Py_BuildValue("(O)", pCurrent));
 				AccessPython	Guard(m_pPlugin);
 				Py_DECREF(m_Target);
+				Py_DECREF(pCurrent);
 			}
 		};
 	};

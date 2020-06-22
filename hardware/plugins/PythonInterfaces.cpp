@@ -210,6 +210,66 @@ namespace Plugins {
 		return Py_None;
 	}
 
+	CInterface* CInterface::Copy()
+	{
+		CInterface* pRetVal = NULL;
+
+		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
+		if (!pModule)
+		{
+			InterfaceLog(this, LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
+			goto Error;
+		}
+
+		module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+		if (!pModState)
+		{
+			InterfaceLog(this, LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
+			goto Error;
+		}
+
+		pRetVal = (CInterface*)CInterface_new(pModState->pInterfaceClass, NULL, NULL);
+		if (!pRetVal)
+		{
+			InterfaceLog(this, LOG_ERROR, "CInterface:%s, failed to create Interface object.", __func__);
+			goto Error;
+		}
+
+		pRetVal->sanityCheck = false; // Reference counts will not be 1 during dealloc so suppress checking
+
+		pRetVal->InterfaceID = InterfaceID;
+		Py_INCREF(Name);
+		Py_DECREF(pRetVal->Name);
+		pRetVal->Name = Name;
+		Py_INCREF(Configuration);
+		Py_DECREF(pRetVal->Configuration);
+		pRetVal->Configuration = Configuration;
+		pRetVal->Debug = Debug;
+		pRetVal->Active = Active;
+		pRetVal->pPlugin = pPlugin;
+
+		PyObject* key;
+		CValue* pDevice;
+		Py_ssize_t pos = 0;
+		while (PyDict_Next(Devices, &pos, &key, (PyObject * *)& pDevice))
+		{
+			// And insert it into the Interface's Devices dictionary
+			if (PyDict_SetItem(pRetVal->Devices, pDevice->InternalID, (PyObject*)pDevice) == -1)
+			{
+				InterfaceLog(this, LOG_ERROR, "Failed to add device number '%d' to Devices dictionary for Interface %d.", pDevice->DeviceID, pRetVal->InterfaceID);
+				goto Error;
+			}
+		}
+
+	Error:
+		if (PyErr_Occurred())
+		{
+			pPlugin->LogPythonException((PyObject*)this, __func__);
+		}
+
+		return pRetVal;
+	}
+
 	CDevice* CInterface::AddDeviceToDict(long lDeviceID)
 	{
 		CDevice* pDevice = NULL;
@@ -327,7 +387,7 @@ namespace Plugins {
 		CDevice*	pDevice;
 		Py_ssize_t	pos = 0;
 		// Sanity check to make sure the reference counbting is all good.
-		while (PyDict_Next(self->Devices, &pos, &key, (PyObject**)&pDevice))
+		while (self->sanityCheck && PyDict_Next(self->Devices, &pos, &key, (PyObject**)&pDevice))
 		{
 			// Dictionary should be full of Devices but Python script can make this assumption false, log warning if this has happened
 			int	isDevice = PyObject_IsInstance((PyObject*)pDevice, (PyObject*)pModState->pDeviceClass);
@@ -388,6 +448,8 @@ namespace Plugins {
 				self->Active = false;
 				self->Devices = PyDict_New();
 				self->pPlugin = NULL;
+
+				self->sanityCheck = true;	// Check reference counts during deletee
 			}
 		}
 		catch (std::exception* e)

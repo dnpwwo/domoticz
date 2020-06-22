@@ -586,7 +586,7 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Celsius', -25, 100, 'temp48.png', '°C')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Temperature', 0, 6, 'temp-0-5.png,temp-5-10.png,temp-10-15.png,temp-15-20.png,temp-20-25.png,temp-25-30.png,temp-gt-30.png', 'Cold,Chilly,Cool,Mild,Warm,Hot,Baking')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Wind Direction', 0, 15, 'WindN.png,WindNNE.png,WindNE.png,WindENE.png,WindE.png,WindESE.png,WindSE.png,WindSSE.png,WindS.png,WindSSW.png,WindSW.png,WindWSW.png,WindW.png,WindWNW.png,WindNW.png,WindNNW.png', 'N,NNE,NE,ENE,E,ESE,SE,SSE,S,SSW,SW,WSW,W,WNW,NW,NNW')");
-		query("INSERT INTO Unit (Name, Minimum, Maximum, RetentionDays, RetentionInterval, IconList, TextLabels) VALUES ('Audible', 0, 1, 1, 300, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,On')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, RetentionDays, RetentionInterval, IconList, TextLabels) VALUES ('Audible', 0, 1, 1, 300, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,Audible')");
 		query("INSERT INTO Unit (Name) VALUES ('Text')");
 		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Type', 'Media48_Off.png,Media48_On.png', 'None,Audio,Video')");
 		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Status', 'Media48_Off.png,Media48_On.png', 'None,Playing,Paused')");

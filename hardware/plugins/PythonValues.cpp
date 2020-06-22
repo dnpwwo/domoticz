@@ -13,6 +13,59 @@ namespace Plugins {
 
 	extern struct PyModuleDef DomoticzModuleDef;
 
+	CValue* CValue::Copy()
+	{
+		CValue* pRetVal = NULL;
+
+		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
+		if (!pModule)
+		{
+			_log.Log(LOG_ERROR, "CValue:%s, unable to find module for current interpreter.", __func__);
+			goto Error;
+		}
+
+		module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+		if (!pModState)
+		{
+			_log.Log(LOG_ERROR, "CValue:%s, unable to obtain module state.", __func__);
+			goto Error;
+		}
+
+		pRetVal = (CValue*)CValue_new(pModState->pValueClass, NULL, NULL);
+		if (!pRetVal)
+		{
+			_log.Log(LOG_ERROR, "CValue:%s, failed to create Device object.", __func__);
+			goto Error;
+		}
+
+		pRetVal->ValueID = ValueID;
+		pRetVal->DeviceID = DeviceID;
+		Py_INCREF(Name);
+		Py_DECREF(pRetVal->Name);
+		pRetVal->Name = Name;
+		Py_INCREF(InternalID);
+		Py_DECREF(pRetVal->InternalID);
+		pRetVal->InternalID = InternalID;
+		pRetVal->UnitID = UnitID;
+		Py_INCREF(Value);
+		Py_DECREF(pRetVal->Value);
+		pRetVal->Value = Value;
+		pRetVal->Debug = Debug;
+		Py_INCREF(Timestamp);
+		Py_DECREF(pRetVal->Timestamp);
+		pRetVal->Timestamp = Timestamp;
+		pRetVal->Parent = Parent;
+		pRetVal->pPlugin = pPlugin;
+
+	Error:
+		if (PyErr_Occurred())
+		{
+			pPlugin->LogPythonException((PyObject*)this, __func__);
+		}
+
+		return pRetVal;
+	}
+
 	void ValueLog(CValue* self, const _eLogLevel level, const char* Message, ...)
 	{
 		va_list argList;

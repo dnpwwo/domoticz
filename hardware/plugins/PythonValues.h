@@ -20,6 +20,8 @@ namespace Plugins {
 		PyObject*	Timestamp;
 		CDevice*	Parent;
 		CPlugin*	pPlugin;
+		// Value functions NOT exposed to Python
+		CValue*		Copy();
 		operator PyObject* () const { return (PyObject*)this; }
 	};
 

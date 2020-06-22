@@ -211,6 +211,75 @@ namespace Plugins {
 		return Py_None;
 	}
 
+	CDevice* CDevice::Copy()
+	{
+		CDevice* pRetVal = NULL;
+		
+		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
+		if (!pModule)
+		{
+			_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
+			goto Error;
+		}
+
+		module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+		if (!pModState)
+		{
+			_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
+			goto Error;
+		}
+
+		pRetVal = (CDevice*)CDevice_new(pModState->pDeviceClass, NULL, NULL);
+		if (!pRetVal)
+		{
+			_log.Log(LOG_ERROR, "CDevice:%s, failed to create Device object.", __func__);
+			goto Error;
+		}
+
+		pRetVal->sanityCheck = false; // Reference counts will not be 1 during dealloc so suppress checking
+
+		pRetVal->DeviceID = DeviceID;
+		pRetVal->InterfaceID = InterfaceID;
+		Py_INCREF(Name);
+		Py_DECREF(pRetVal->Name);
+		pRetVal->Name = Name;
+		Py_INCREF(InternalID);
+		Py_DECREF(pRetVal->InternalID);
+		pRetVal->InternalID = InternalID;
+		Py_INCREF(Address);
+		Py_DECREF(pRetVal->Address);
+		pRetVal->Address = Address;
+		pRetVal->Debug = Debug;
+		pRetVal->Enabled = Enabled;
+		pRetVal->Active = Active;
+		Py_INCREF(Timestamp);
+		Py_DECREF(pRetVal->Timestamp);
+		pRetVal->Timestamp = Timestamp;
+		pRetVal->Parent = Parent;
+		pRetVal->pPlugin = pPlugin;
+
+		PyObject* key;
+		CValue* pValue;
+		Py_ssize_t pos = 0;
+		while (PyDict_Next(Values, &pos, &key, (PyObject * *)& pValue))
+		{
+			// And insert it into the Device's Values dictionary
+			if (PyDict_SetItem(pRetVal->Values, pValue->InternalID, (PyObject*)pValue) == -1)
+			{
+				DeviceLog(this, LOG_ERROR, "Failed to add value number '%d' to Values dictionary for Device %d.", pValue->ValueID, pRetVal->DeviceID);
+				goto Error;
+			}
+		}
+
+	Error:
+		if (PyErr_Occurred())
+		{
+			pPlugin->LogPythonException((PyObject*)this, __func__);
+		}
+
+		return pRetVal;
+	}
+
 	CValue* CDevice::AddValueToDict(long lValueID)
 	{
 		CValue* pValue = NULL;
@@ -325,8 +394,8 @@ namespace Plugins {
 		PyObject* key;
 		CValue* pValue;
 		Py_ssize_t pos = 0;
-		// Sanity check to make sure the reference counbting is all good.
-		while (PyDict_Next(self->Values, &pos, &key, (PyObject**)&pValue))
+		// Sanity check to make sure the reference counting is all good.
+		while (self->sanityCheck && PyDict_Next(self->Values, &pos, &key, (PyObject**)&pValue))
 		{
 			// Dictionary should be full of Values but Python script can make this assumption false, log warning if this has happened
 			int	isValue = PyObject_IsInstance((PyObject*)pValue, (PyObject*)pModState->pValueClass);
@@ -402,6 +471,8 @@ namespace Plugins {
 				}
 				self->Values = PyDict_New();
 				self->pPlugin = NULL;
+
+				self->sanityCheck = true;	// Check reference counts during deletee
 			}
 		}
 		catch (std::exception* e)

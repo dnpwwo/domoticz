@@ -17,6 +17,8 @@ namespace Plugins {
 		PyObject*	Devices;
 		CPlugin*	pPlugin;
 		// Interface functions NOT exposed to Python
+		bool		sanityCheck;
+		CInterface* Copy();
 		CDevice*	AddDeviceToDict(long lDeviceID);
 		CDevice*	FindDevice(long lDeviceID);
 		operator PyObject* () const { return (PyObject*)this; }

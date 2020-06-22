@@ -23,7 +23,9 @@ namespace Plugins {
 		PyObject*	Values;
 		CInterface*	Parent;
 		CPlugin*	pPlugin;
-		// Interface functions NOT exposed to Python
+		// Device functions NOT exposed to Python
+		bool		sanityCheck;
+		CDevice*	Copy();
 		CValue*		AddValueToDict(long lValueID);
 		CValue*		FindValue(long lValueID);
 		operator PyObject* () const { return (PyObject*)this; }
