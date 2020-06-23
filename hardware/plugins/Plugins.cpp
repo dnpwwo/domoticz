@@ -1536,6 +1536,10 @@ Error:
 				Py_XDECREF(m_Interface);
 				m_Interface = NULL;
 			}
+
+			// Remove any residual messages from the queue
+			ClearMessageQueue();
+
 			if (m_PyModule)
 			{
 				Py_XDECREF(m_PyModule);
@@ -1557,7 +1561,6 @@ Error:
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown releasing Interpreter", __func__);
 		}
 
-		ClearMessageQueue();
 		m_bIsStarted = false;
 	}
 
