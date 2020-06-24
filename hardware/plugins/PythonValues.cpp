@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "PythonValues.h"
+#include "PythonInterfaces.h"
 #include "PluginProtocols.h"
 
 //
@@ -553,6 +554,13 @@ namespace Plugins {
 					{
 						std::vector<std::string> sd = *itt;
 						self->ValueID = atoi(sd[0].c_str());
+						// Set the parent by finding it in the Plugin's interface
+						CDevice* pParent = self->pPlugin->m_Interface->FindDevice(self->DeviceID);
+						if (pParent)
+						{
+							self->Parent = pParent;
+							Py_DECREF(pParent);
+						}
 					}
 
 					_log.Log(LOG_NORM, "Insert into 'Value' succeeded with ID %ld, %d record(s) created.", self->ValueID, iRowCount);

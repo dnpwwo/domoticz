@@ -687,6 +687,7 @@ namespace Plugins {
 					{
 						std::vector<std::string> sd = *itt;
 						self->DeviceID = atoi(sd[0].c_str());
+						self->Parent = self->pPlugin->m_Interface;
 					}
 
 					_log.Log(LOG_NORM, "Insert into 'Device' succeeded with ID %ld, %d record(s) created.", self->DeviceID, iRowCount);

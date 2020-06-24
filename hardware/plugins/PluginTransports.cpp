@@ -541,7 +541,7 @@ namespace Plugins {
 		{
 			m_bConnected = false;
 
-			_log.Log(LOG_ERROR, "Plugin: UDP Listen Exception: '%s' connecting to '%s:%s'", e.what(), m_IP.c_str(), m_Port.c_str());
+			//_log.Log(LOG_ERROR, "Plugin: UDP Listen Exception: '%s' connecting to '%s:%s'", e.what(), m_IP.c_str(), m_Port.c_str());
 			CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
 			pPlugin->MessagePlugin(new onConnectCallback(pPlugin, m_pConnection, -1, std::string(e.what())));
 			return false;
