@@ -1227,9 +1227,16 @@ Error:
 	void CPlugin::ConnectionRead(CPluginMessageBase * pMess)
 	{
 		ReadEvent*	pMessage = (ReadEvent*)pMess;
-		CConnection*	pConnection = (CConnection*)pMessage->m_pConnection;
 		m_LastHeartbeatReceive = mytime(NULL);
-		pConnection->pProtocol->ProcessInbound(pMessage);
+		if (pMessage->m_pConnection->pProtocol)
+		{
+			AccessPython(this);
+			pMessage->m_pConnection->pProtocol->ProcessInbound(pMessage);
+		}
+		else
+		{
+			_log.Log(LOG_ERROR, "(%s) No protocol object to handle read.", m_Name.c_str());
+		}
 	}
 
 	void CPlugin::ConnectionWrite(CDirectiveBase* pMess)
