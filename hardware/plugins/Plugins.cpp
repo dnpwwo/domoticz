@@ -281,7 +281,7 @@ namespace Plugins {
 				if (type == 1) type = PDM_ALL;
 
 				pModState->pPlugin->m_bDebug = (PluginDebugMask)type;
-				_log.Log(LOG_NORM, "(%s) Debug logging mask set to: %s%s%s%s%s%s%s%s%s", pModState->pPlugin->m_Name.c_str(),
+				_log.Log(LOG_NORM, "(%s) Debug logging mask set to: %s%s%s%s%s%s%s%s%s%s", pModState->pPlugin->m_Name.c_str(),
 					(type == PDM_NONE ? "NONE" : ""),
 					(type & PDM_PYTHON ? "PYTHON " : ""),
 					(type & PDM_PLUGIN ? "PLUGIN " : ""),
@@ -464,24 +464,24 @@ namespace Plugins {
 		if (PyErr_Occurred())
 		{
 			_log.Log(LOG_NORM, "Clearing Python error during Thread Restore.");
-			LogPythonException(pPlugin, "Unknown");
+			LogPythonException(pPlugin, m_Text);
 			PyErr_Clear();
 		}
 	}
 
 	AccessPython::~AccessPython()
 	{
-		if (m_Python)
+		if (m_Python && m_pPlugin)
 		{
 			m_bHasThreadState = false;
 			if (!PyEval_SaveThread())
 			{
-				_log.Log(LOG_ERROR, "Python Save state returned NULL value.");
+				_log.Log(LOG_ERROR, "(%s) Python Save state returned NULL value for '%s'", m_pPlugin->m_Name.c_str(), m_Text);
 			}
 		}
 		if (m_Lock)
 		{
-			if (m_pPlugin->m_bDebug & PDM_LOCKING)
+			if (m_pPlugin && m_pPlugin->m_bDebug & PDM_LOCKING)
 			{
 				_log.Log(LOG_NORM, "(%s) Releasing lock for '%s'", m_pPlugin->m_Name.c_str(), m_Text);
 			}
@@ -1424,7 +1424,6 @@ Error:
 		m_LastHeartbeatReceive = mytime(NULL);
 		if (pMessage->m_pConnection->pProtocol)
 		{
-			AccessPython	Guard(this, "CPlugin::ConnectionRead");
 			pMessage->m_pConnection->pProtocol->ProcessInbound(pMessage);
 		}
 		else
