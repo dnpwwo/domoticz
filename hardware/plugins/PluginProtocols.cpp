@@ -785,8 +785,8 @@ namespace Plugins {
 			{
 				std::string		User;
 				std::string		Pass;
-				PyObject *pModule = (PyObject*)WriteMessage->m_pPlugin->PythonModule();
-				PyObject *pDict = PyObject_GetAttrString(pModule, "Parameters");
+				PyObject *		pModule = (PyObject*)WriteMessage->m_pPlugin->PythonModule();
+				PyObjPtr		pDict = PyObject_GetAttrString(pModule, "Parameters");
 				if (pDict)
 				{
 					PyObject *pUser = PyDict_GetItemString(pDict, "Username");

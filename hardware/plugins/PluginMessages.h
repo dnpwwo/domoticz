@@ -76,7 +76,10 @@ namespace Plugins {
 	protected:
 		PyObject* m_Target;
 		std::string	m_Callback;
-		virtual void ProcessLocked() = 0;
+		virtual void ProcessLocked()
+		{
+			_log.Log(LOG_ERROR, "(%s) CCallbackBase::ProcessLocked called in error.", m_Name.c_str());
+		};
 	public:
 		CCallbackBase(CPlugin* pPlugin, const std::string& Callback) : CPluginMessageBase(pPlugin), m_Callback(Callback), m_Target(NULL) {};
 		CCallbackBase(CPlugin* pPlugin, PyObject* pTarget, const std::string& Callback) : CPluginMessageBase(pPlugin), m_Callback(Callback), m_Target(pTarget) {};
@@ -184,11 +187,11 @@ static std::string get_utf8_from_ansi(const std::string &utf8, int codepage)
 public:
 	onUpdateInterfaceCallback(CPlugin* pPlugin) : CCallbackBase(pPlugin, "onUpdate") { m_Target = (PyObject*)pPlugin->m_Interface; };
 protected:
-	virtual void ProcessLocked()
+	virtual void Process()
 	{
 		CInterface* pCurrent = NULL;
 		{
-			AccessPython	Guard(m_pPlugin);
+			AccessPython	Guard(m_pPlugin, "onUpdateInterfaceCallback 1");
 			if (m_Target)
 			{
 				pCurrent = ((CInterface*)m_Target)->Copy();
@@ -199,7 +202,7 @@ protected:
 		if (m_Target)
 		{
 			Callback(Py_BuildValue("(O)", pCurrent));
-			AccessPython	Guard(m_pPlugin);
+			AccessPython	Guard(m_pPlugin, "onUpdateInterfaceCallback 2");
 			Py_DECREF(pCurrent);
 		}
 	};
@@ -212,12 +215,12 @@ protected:
 	public:
 		onCreateDeviceCallback(CPlugin* pPlugin, long lDeviceID) : m_DeviceID(lDeviceID), CCallbackBase(pPlugin, "onCreate") { };
 	protected:
-		virtual void ProcessLocked()
+		virtual void Process()
 		{
 			CDevice* pDevice = NULL;
 
 			{
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onCreateDeviceCallback 1");
 
 				// Check the device has not been manually added by plugin
 				pDevice = ((CInterface*)m_pPlugin->m_Interface)->FindDevice(m_DeviceID);
@@ -232,7 +235,7 @@ protected:
 			{
 				m_Target = (PyObject*)pDevice;
 				Callback(NULL);
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onCreateDeviceCallback 2");
 				Py_DECREF(m_Target);
 			}
 		};
@@ -245,11 +248,11 @@ protected:
 	public:
 		onUpdateDeviceCallback(CPlugin* pPlugin, long lDeviceID) : m_DeviceID(lDeviceID), CCallbackBase(pPlugin, "onUpdate") { };
 	protected:
-		virtual void ProcessLocked()
+		virtual void Process()
 		{
 			CDevice* pCurrent = NULL;
 			{
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onUpdateDeviceCallback 1");
 				m_Target = (PyObject*)m_pPlugin->m_Interface->FindDevice(m_DeviceID);
 				if (m_Target)
 				{
@@ -261,7 +264,7 @@ protected:
 			if (m_Target)
 			{
 				Callback(Py_BuildValue("(O)", pCurrent));
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onUpdateDeviceCallback 2");
 				Py_DECREF(m_Target);
 				Py_DECREF(pCurrent);
 			}
@@ -275,14 +278,14 @@ protected:
 	public:
 		onDeleteDeviceCallback(long lDeviceID) : m_DeviceID(lDeviceID), CCallbackBase(NULL, "onDelete") { };
 	protected:
-		virtual void ProcessLocked()
+		virtual void Process()
 		{
 			// Only detail available is the DeviceID so cycle through plugins and find it
 			CPluginSystem	PluginSystem;
 			for (std::map<int, CDomoticzHardwareBase*>::iterator it = PluginSystem.GetHardware()->begin(); it != PluginSystem.GetHardware()->end(); it++)
 			{
 				m_pPlugin = (CPlugin*)it->second;
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onDeleteDeviceCallback 1");
 
 				CInterface* pInterface = (CInterface*)m_pPlugin->m_Interface;
 				m_Target = (PyObject*)pInterface->FindDevice(m_DeviceID);
@@ -297,7 +300,7 @@ protected:
 			if (m_Target)
 			{
 				Callback(NULL);
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onDeleteDeviceCallback 2");
 				Py_DECREF(m_Target);
 			}
 		};
@@ -312,7 +315,7 @@ protected:
 	public:
 		onCreateValueCallback(long lDeviceID, long lValueID) : m_DeviceID(lDeviceID), m_ValueID(lValueID), CCallbackBase(NULL, "onCreate") { };
 	protected:
-		virtual void ProcessLocked()
+		virtual void Process()
 		{
 			{
 				// Iterate through all Plugins (Interfaces)
@@ -320,7 +323,7 @@ protected:
 				for (std::map<int, CDomoticzHardwareBase*>::iterator it = PluginSystem.GetHardware()->begin(); it != PluginSystem.GetHardware()->end(); it++)
 				{
 					m_pPlugin = (CPlugin*)it->second;
-					AccessPython	Guard(m_pPlugin);
+					AccessPython	Guard(m_pPlugin, "onCreateValueCallback 1");
 
 					CInterface* pInterface = (CInterface*)m_pPlugin->m_Interface;
 					CDevice* pDevice = pInterface->FindDevice(m_DeviceID);
@@ -341,7 +344,7 @@ protected:
 			if (m_Target)
 			{
 				Callback(NULL);
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onCreateValueCallback 2");
 				Py_DECREF(m_Target);
 			}
 		};
@@ -355,7 +358,7 @@ protected:
 	public:
 		onUpdateValueCallback(long lDeviceID, long lValueID) : m_DeviceID(lDeviceID), m_ValueID(lValueID), CCallbackBase(NULL, "onUpdate") { };
 	protected:
-		virtual void ProcessLocked()
+		virtual void Process()
 		{	
 			CValue* pCurrent = NULL;
 
@@ -364,7 +367,7 @@ protected:
 			for (std::map<int, CDomoticzHardwareBase*>::iterator it = PluginSystem.GetHardware()->begin(); it != PluginSystem.GetHardware()->end(); it++)
 			{
 				m_pPlugin = (CPlugin*)it->second;
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onUpdateValueCallback 1");
 
 				CInterface* pInterface = (CInterface*)m_pPlugin->m_Interface;
 				CDevice*	pDevice = pInterface->FindDevice(m_DeviceID);
@@ -384,7 +387,7 @@ protected:
 			if (m_Target)
 			{
 				Callback(Py_BuildValue("(O)", pCurrent));
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onUpdateValueCallback 2");
 				Py_DECREF(m_Target);
 				Py_DECREF(pCurrent);
 			}
@@ -398,14 +401,14 @@ protected:
 	public:
 		onDeleteValueCallback(long lValueID) : m_ValueID(lValueID), CCallbackBase(NULL, "onDelete") { };
 	protected:
-		virtual void ProcessLocked()
+		virtual void Process()
 		{
 			// Only detail available is the DeviceID so cycle through plugins and find it
 			CPluginSystem	PluginSystem;
 			for (std::map<int, CDomoticzHardwareBase*>::iterator it = PluginSystem.GetHardware()->begin(); !m_Target && (it != PluginSystem.GetHardware()->end()); it++)
 			{
 				m_pPlugin = (CPlugin*)it->second;
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onDeleteValueCallback 1");
 
 				PyObject* pDevicesDict = PyObject_GetAttrString((PyObject*)m_pPlugin->m_Interface, "Devices");
 				if (!pDevicesDict || !PyDict_Check(pDevicesDict))
@@ -444,7 +447,7 @@ protected:
 			if (m_Target)
 			{
 				Callback(NULL);
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onDeleteValueCallback 2");
 				Py_DECREF(m_Target);
 			}
 		};
@@ -463,7 +466,7 @@ protected:
 			int						m_Status;
 			std::string				m_Text;
 		protected:
-			virtual void ProcessLocked()
+			virtual void Process()
 			{
 	#ifdef _WIN32
 				std::string textUTF8 = get_utf8_from_ansi(m_Text, GetACP());
@@ -477,7 +480,7 @@ protected:
 					{
 						// Non-connection based transports only call this on error and connection based protocol will be connected if it wasn't an error so
 						// if not connected this is the last event for the connection before another 'Connect' (or 'Listen') so release reference to the target
-						AccessPython	Guard(m_pPlugin);
+						AccessPython	Guard(m_pPlugin, "onConnectCallback");
 						Py_DECREF(m_Target);
 						((CConnection*)m_pConnection)->Target = NULL;
 					}
@@ -508,7 +511,7 @@ protected:
 		PyObject* m_Data;
 
 	protected:
-		virtual void ProcessLocked()
+		virtual void Process()
 		{
 			PyObject* pParams = NULL;
 
@@ -522,7 +525,7 @@ protected:
 			if (m_Data)
 			{
 				Callback(((CConnection*)m_pConnection)->Target, Py_BuildValue("OO", m_pConnection, m_Data));
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onMessageCallback");
 				Py_XDECREF(m_Data);
 			}
 		}
@@ -537,12 +540,12 @@ protected:
 			m_Target = m_pConnection->Target;
 		};
 	protected:
-		virtual void ProcessLocked()
+		virtual void Process()
 		{
 			if (m_Target)
 			{
 				Callback(m_Target, Py_BuildValue("(O)", m_pConnection));  // 0 is success else socket failure code
-				AccessPython	Guard(m_pPlugin);
+				AccessPython	Guard(m_pPlugin, "onDisconnectCallback");
 				// This is the last event for the connection before another 'Connect' so release reference to the target
 				Py_DECREF(m_Target);
 				m_pConnection->Target = NULL;
@@ -575,7 +578,7 @@ protected:
 		float					m_fLevel;
 
 	protected:
-		virtual void ProcessLocked()
+		virtual void Process()
 		{
 			PyObject*	pParams;
 			if (m_fLevel != -273.15f)
@@ -603,7 +606,7 @@ protected:
 		std::string		m_Description;
 
 	protected:
-		virtual void ProcessLocked()
+		virtual void Process()
 		{
 			PyObject*	pParams = Py_BuildValue("is", m_iLevel, m_Description.c_str());
 			Callback(pParams);
@@ -641,7 +644,7 @@ protected:
 		std::string				m_ImageFile;
 
 	protected:
-		virtual void ProcessLocked()
+		virtual void Process()
 		{
 			PyObject*	pParams = Py_BuildValue("ssssiss", m_SuppliedName.c_str(), m_Subject.c_str(), m_Text.c_str(), m_Status.c_str(), m_Priority, m_Sound.c_str(), m_ImageFile.c_str());
 			Callback(pParams);
@@ -656,7 +659,7 @@ protected:
 	public:
 		CDirectiveBase(CPlugin* pPlugin) : CPluginMessageBase(pPlugin) {};
 		virtual void Process() {
-			AccessPython	Guard(m_pPlugin);
+			AccessPython	Guard(m_pPlugin, "CDirectiveBase");
 			ProcessLocked();
 		};
 	};
@@ -736,6 +739,10 @@ protected:
 		virtual void ProcessLocked() = 0;
 	public:
 		CEventBase(CPlugin* pPlugin) : CPluginMessageBase(pPlugin) {};
+		virtual void Process() {
+			AccessPython	Guard(m_pPlugin, "CEventBase");
+			ProcessLocked();
+		};
 	};
 
 	class ReadEvent : public CEventBase, public CHasConnection

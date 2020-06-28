@@ -306,7 +306,7 @@ namespace Plugins {
 					if (Message->m_pPlugin)
 					{
 						// Lock Python if Plugin is known
-						AccessPython	Guard((CPlugin*)Message->Plugin());
+						AccessPython	Guard((CPlugin*)Message->Plugin(), "CPluginSystem::Do_Work");
 						delete Message;
 					}
 					else

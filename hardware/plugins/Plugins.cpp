@@ -132,6 +132,96 @@ namespace Plugins {
 		if (pTraceback) Py_XDECREF(pTraceback);
 	}
 
+	int PyDomoticz_ProfileFunc(PyObject* self, PyFrameObject* frame, int what, PyObject* arg)
+	{
+		module_state* pModState = ((struct module_state*)PyModule_GetState(self));
+		if (!pModState)
+		{
+			_log.Log(LOG_ERROR, "CPlugin:%s, unable to obtain module state.", __func__);
+		}
+		else if (!pModState->pPlugin)
+		{
+			_log.Log(LOG_ERROR, "CPlugin:%s, illegal operation, Plugin has not started yet.", __func__);
+		}
+		else
+		{
+			int lineno = PyFrame_GetLineNumber(frame);
+			std::string	sFuncName = "Unknown";
+			PyCodeObject* pCode = frame->f_code;
+			if (pCode && pCode->co_filename)
+			{
+				PyBytesObject* pFileBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_filename);
+				sFuncName = pFileBytes->ob_sval;
+			}
+			if (pCode && pCode->co_name)
+			{
+				if (!sFuncName.empty()) sFuncName += "\\";
+				PyBytesObject* pFuncBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_name);
+				sFuncName = pFuncBytes->ob_sval;
+			}
+
+			switch (what)
+			{
+			case PyTrace_CALL:
+				_log.Log(LOG_NORM, "(%s) Calling function at line %d in '%s'", pModState->pPlugin->m_Name.c_str(), lineno, sFuncName.c_str());
+				break;
+			case PyTrace_RETURN:
+				_log.Log(LOG_NORM, "(%s) Returning from line %d in '%s'", pModState->pPlugin->m_Name.c_str(), lineno, sFuncName.c_str());
+				break;
+			case PyTrace_EXCEPTION:
+				_log.Log(LOG_NORM, "(%s) Exception at line %d in '%s'", pModState->pPlugin->m_Name.c_str(), lineno, sFuncName.c_str());
+				break;
+			}
+		}
+
+		return 0;
+	}
+
+	int PyDomoticz_TraceFunc(PyObject* self, PyFrameObject* frame, int what, PyObject* arg)
+	{
+		module_state* pModState = ((struct module_state*)PyModule_GetState(self));
+		if (!pModState)
+		{
+			_log.Log(LOG_ERROR, "CPlugin:%s, unable to obtain module state.", __func__);
+		}
+		else if (!pModState->pPlugin)
+		{
+			_log.Log(LOG_ERROR, "CPlugin:%s, illegal operation, Plugin has not started yet.", __func__);
+		}
+		else
+		{
+			int lineno = PyFrame_GetLineNumber(frame);
+			std::string	sFuncName = "Unknown";
+			PyCodeObject* pCode = frame->f_code;
+			if (pCode && pCode->co_filename)
+			{
+				PyBytesObject* pFileBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_filename);
+				sFuncName = pFileBytes->ob_sval;
+			}
+			if (pCode && pCode->co_name)
+			{
+				if (!sFuncName.empty()) sFuncName += "\\";
+				PyBytesObject* pFuncBytes = (PyBytesObject*)PyUnicode_AsASCIIString(pCode->co_name);
+				sFuncName = pFuncBytes->ob_sval;
+			}
+
+			switch (what)
+			{
+			case PyTrace_CALL:
+				_log.Log(LOG_NORM, "(%s) Calling function at line %d in '%s'", pModState->pPlugin->m_Name.c_str(), lineno, sFuncName.c_str());
+				break;
+			case PyTrace_LINE:
+				_log.Log(LOG_NORM, "(%s) Executing line %d in '%s'", pModState->pPlugin->m_Name.c_str(), lineno, sFuncName.c_str());
+				break;
+			case PyTrace_EXCEPTION:
+				_log.Log(LOG_NORM, "(%s) Exception at line %d in '%s'", pModState->pPlugin->m_Name.c_str(), lineno, sFuncName.c_str());
+				break;
+			}
+		}
+
+		return 0;
+	}
+
 	static PyObject* PyDomoticz_Register(PyObject* self, PyObject* args, PyObject* kwds)
 	{
 		static char* kwlist[] = { "Interface", "Device", "Value", "Connection", NULL };
@@ -166,8 +256,94 @@ namespace Plugins {
 		return Py_None;
 	}
 
+	static PyObject* PyDomoticz_Debugging(PyObject* self, PyObject* args)
+	{
+		module_state* pModState = ((struct module_state*)PyModule_GetState(self));
+		if (!pModState)
+		{
+			_log.Log(LOG_ERROR, "CPlugin:PyDomoticz_Debugging, unable to obtain module state.");
+		}
+		else if (!pModState->pPlugin)
+		{
+			_log.Log(LOG_ERROR, "CPlugin:PyDomoticz_Debugging, illegal operation, Plugin has not started yet.");
+		}
+		else
+		{
+			unsigned int		type;
+			if (!PyArg_ParseTuple(args, "i", &type))
+			{
+				_log.Log(LOG_ERROR, "(%s) failed to parse parameters, integer expected.", pModState->pPlugin->m_Name.c_str());
+				LogPythonException(pModState->pPlugin, std::string(__func__));
+			}
+			else
+			{
+				// Maintain backwards compatibility
+				if (type == 1) type = PDM_ALL;
+
+				pModState->pPlugin->m_bDebug = (PluginDebugMask)type;
+				_log.Log(LOG_NORM, "(%s) Debug logging mask set to: %s%s%s%s%s%s%s%s%s", pModState->pPlugin->m_Name.c_str(),
+					(type == PDM_NONE ? "NONE" : ""),
+					(type & PDM_PYTHON ? "PYTHON " : ""),
+					(type & PDM_PLUGIN ? "PLUGIN " : ""),
+					(type & PDM_QUEUE ? "QUEUE " : ""),
+					(type & PDM_IMAGE ? "IMAGE " : ""),
+					(type & PDM_DEVICE ? "DEVICE " : ""),
+					(type & PDM_CONNECTION ? "CONNECTION " : ""),
+					(type & PDM_MESSAGE ? "MESSAGE " : ""),
+					(type & PDM_LOCKING ? "LOCKING " : ""),
+					(type == PDM_ALL ? "ALL" : ""));
+			}
+		}
+
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+
+	static PyObject* PyDomoticz_Trace(PyObject* self, PyObject* args)
+	{
+		module_state* pModState = ((struct module_state*)PyModule_GetState(self));
+		if (!pModState)
+		{
+			_log.Log(LOG_ERROR, "CPlugin:%s, unable to obtain module state.", __func__);
+		}
+		else if (!pModState->pPlugin)
+		{
+			_log.Log(LOG_ERROR, "CPlugin:%s, illegal operation, Plugin has not started yet.", __func__);
+		}
+		else
+		{
+			int		bTrace = 0;
+			if (!PyArg_ParseTuple(args, "p", &bTrace))
+			{
+				_log.Log(LOG_ERROR, "(%s) failed to parse parameter, True/False expected.", pModState->pPlugin->m_Name.c_str());
+				LogPythonException(pModState->pPlugin, std::string(__func__));
+			}
+			else
+			{
+				pModState->pPlugin->m_bTracing = (bool)bTrace;
+				_log.Log(LOG_NORM, "(%s) Low level Python tracing %s.", pModState->pPlugin->m_Name.c_str(), (pModState->pPlugin->m_bTracing ? "ENABLED" : "DISABLED"));
+
+				if (pModState->pPlugin->m_bTracing)
+				{
+					PyEval_SetProfile(PyDomoticz_ProfileFunc, self);
+					PyEval_SetTrace(PyDomoticz_TraceFunc, self);
+				}
+				else
+				{
+					PyEval_SetProfile(NULL, NULL);
+					PyEval_SetTrace(NULL, NULL);
+				}
+			}
+		}
+
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+
 	static PyMethodDef DomoticzMethods[] = {
 		{ "Register", (PyCFunction)PyDomoticz_Register, METH_VARARGS | METH_KEYWORDS, "Register Interface,Device and Value override classes." },
+		{ "Debugging", PyDomoticz_Debugging, METH_VARARGS, "Set logging level for framework. 1 set verbose logging, all other values use default level" },
+		{ "Trace", PyDomoticz_Trace, METH_VARARGS, "Enable/Disable line level Python tracing." },
 		{ NULL, NULL, 0, NULL }
 	};
 
@@ -247,17 +423,28 @@ namespace Plugins {
 	std::mutex	AccessPython::PythonMutex;
 	volatile bool	AccessPython::m_bHasThreadState = false;
 
-	AccessPython::AccessPython(CPlugin* pPlugin) : m_Python(NULL)
+	AccessPython::AccessPython(CPlugin* pPlugin, const char* sWhat) : m_Python(NULL)
 	{
+		m_pPlugin = pPlugin;
+		m_Text = sWhat;
+
 		m_Lock = new std::unique_lock<std::mutex>(PythonMutex, std::defer_lock);
 		if (!m_Lock->try_lock())
 		{
-			_log.Log(LOG_NORM, "Python lock in use, will wait.");
+			if (m_pPlugin)
+			{
+				_log.Log(LOG_NORM, "(%s) Requesting lock for '%s', waiting...", m_pPlugin->m_Name.c_str(), m_Text);
+			}
+			else _log.Log(LOG_NORM, "Python lock requested for '%s' in use, will wait.", m_Text);
 			m_Lock->lock();
 		}
 
 		if (pPlugin)
 		{
+			if (pPlugin->m_bDebug & PDM_LOCKING)
+			{
+				_log.Log(LOG_NORM, "(%s) Acquiring lock for '%s'", pPlugin->m_Name.c_str(), m_Text);
+			}
 			m_Python = pPlugin->PythonInterpreter();
 			if (m_Python)
 			{
@@ -294,6 +481,10 @@ namespace Plugins {
 		}
 		if (m_Lock)
 		{
+			if (m_pPlugin->m_bDebug & PDM_LOCKING)
+			{
+				_log.Log(LOG_NORM, "(%s) Releasing lock for '%s'", m_pPlugin->m_Name.c_str(), m_Text);
+			}
 			delete m_Lock;
 		}
 	}
@@ -1019,7 +1210,7 @@ namespace Plugins {
 			m_LastHeartbeat = mytime(NULL);
 			m_LastHeartbeatReceive = mytime(NULL);
 
-			AccessPython	Guard(this);
+			AccessPython	Guard(this, "CPlugin::Start");
 
 			if (PyErr_Occurred())
 			{
@@ -1068,6 +1259,9 @@ namespace Plugins {
 
 			m_bIsStarted = true;
 			m_bIsStarting = false;
+
+			m_bDebug = (PluginDebugMask)(PDM_MESSAGE & PDM_LOCKING);
+
 			return true;
 		}
 		catch (...)
@@ -1230,7 +1424,7 @@ Error:
 		m_LastHeartbeatReceive = mytime(NULL);
 		if (pMessage->m_pConnection->pProtocol)
 		{
-			AccessPython(this);
+			AccessPython	Guard(this, "CPlugin::ConnectionRead");
 			pMessage->m_pConnection->pProtocol->ProcessInbound(pMessage);
 		}
 		else
@@ -1242,7 +1436,7 @@ Error:
 	void CPlugin::ConnectionWrite(CDirectiveBase* pMess)
 	{
 		WriteDirective*	pMessage = (WriteDirective*)pMess;
-		CConnection*	pConnection = (CConnection*)pMessage->m_pConnection;
+		CConnection*	pConnection = pMessage->m_pConnection;
 		std::string	sTransport = PyUnicode_AsUTF8(pConnection->Transport);
 		std::string	sConnection = PyUnicode_AsUTF8(pConnection->Name);
 		if (pConnection->pTransport)
@@ -1290,8 +1484,6 @@ Error:
 		}
 
 		std::vector<byte>	vWriteData = pConnection->pProtocol->ProcessOutbound(pMessage);
-		WriteDebugBuffer(vWriteData, false);
-
 		pConnection->pTransport->handleWrite(vWriteData);
 
 		// UDP is connectionless so remove the transport after write
@@ -1411,7 +1603,7 @@ Error:
 	{
 		try
 		{
-			AccessPython	Guard(this);
+			AccessPython	Guard(this, "CPlugin::Callback");
 
 			// Signal that plugin is still servicing events
 			m_LastHeartbeat = mytime(NULL);

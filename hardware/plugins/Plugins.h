@@ -28,6 +28,7 @@ namespace Plugins {
 		PDM_IMAGE = 32,
 		PDM_MESSAGE = 64,
 		PDM_QUEUE = 128,
+		PDM_LOCKING = 256,
 		PDM_ALL = 65535
 	};
 
@@ -123,8 +124,11 @@ namespace Plugins {
 		std::unique_lock<std::mutex>*	m_Lock;
 		PyThreadState* m_Python;
 
+		CPlugin* m_pPlugin;
+		const char* m_Text;
+
 	public:
-		AccessPython(CPlugin* pPlugin);
+		AccessPython(CPlugin* pPlugin, const char* sWhat);
 		~AccessPython();
 	};
 
