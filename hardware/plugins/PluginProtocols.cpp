@@ -742,6 +742,12 @@ namespace Plugins {
 		PyObject *pHeaders = PyDict_GetItemString(WriteMessage->m_Object, "Headers");
 		PyObject *pData = PyDict_GetItemString(WriteMessage->m_Object, "Data");
 
+		if (PyErr_Occurred())
+		{
+			_log.Log(LOG_NORM, "Python error");
+			PyErr_Clear();
+		}
+
 		//
 		//	Assume Request if 'Verb' specified
 		//
@@ -786,14 +792,18 @@ namespace Plugins {
 				std::string		User;
 				std::string		Pass;
 				PyObject *		pModule = (PyObject*)WriteMessage->m_pPlugin->PythonModule();
-				PyObjPtr		pDict = PyObject_GetAttrString(pModule, "Parameters");
-				if (pDict)
+				if (PyObject_HasAttrString(pModule, "Parameters"))
 				{
-					PyObject *pUser = PyDict_GetItemString(pDict, "Username");
-					if (pUser) User = PyUnicode_AsUTF8(pUser);
-					PyObject *pPass = PyDict_GetItemString(pDict, "Password");
-					if (pPass) Pass = PyUnicode_AsUTF8(pPass);
-					Py_DECREF(pDict);
+					// TODO: The username password needs to come from the plugin->m_Interface->Configuration
+					PyObjPtr		pDict = PyObject_GetAttrString(pModule, "Parameters");
+					if (pDict)
+					{
+						PyObject* pUser = PyDict_GetItemString(pDict, "Username");
+						if (pUser) User = PyUnicode_AsUTF8(pUser);
+						PyObject* pPass = PyDict_GetItemString(pDict, "Password");
+						if (pPass) Pass = PyUnicode_AsUTF8(pPass);
+						Py_DECREF(pDict);
+					}
 				}
 				if (User.length() > 0 || Pass.length() > 0)
 				{

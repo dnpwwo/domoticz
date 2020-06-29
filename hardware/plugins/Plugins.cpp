@@ -460,19 +460,19 @@ namespace Plugins {
 		{
 			_log.Log(LOG_ERROR, "Attempt to aquire the GIL with NULL Plugin details.");
 		}
-
-		if (PyErr_Occurred())
-		{
-			_log.Log(LOG_NORM, "Clearing Python error during Thread Restore.");
-			LogPythonException(pPlugin, m_Text);
-			PyErr_Clear();
-		}
 	}
 
 	AccessPython::~AccessPython()
 	{
 		if (m_Python && m_pPlugin)
 		{
+			if (PyErr_Occurred())
+			{
+				_log.Log(LOG_NORM, "(%s) Python error was set during unlock for '%s'", m_pPlugin->m_Name.c_str(), m_Text);
+				LogPythonException(m_pPlugin, m_Text);
+				PyErr_Clear();
+			}
+
 			m_bHasThreadState = false;
 			if (!PyEval_SaveThread())
 			{
@@ -1259,8 +1259,6 @@ namespace Plugins {
 
 			m_bIsStarted = true;
 			m_bIsStarting = false;
-
-			m_bDebug = (PluginDebugMask)(PDM_MESSAGE & PDM_LOCKING);
 
 			return true;
 		}
