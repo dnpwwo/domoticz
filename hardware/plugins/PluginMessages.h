@@ -475,7 +475,13 @@ protected:
 	#endif
 				if (m_Target)
 				{
-					Callback(m_Target, Py_BuildValue("Ois", m_pConnection, m_Status, textUTF8.c_str()));  // 0 is success else socket failure code
+					PyObject* pParams = NULL;
+					{
+						AccessPython	Guard(m_pPlugin, "onConnectCallback");
+						pParams = Py_BuildValue("Ois", m_pConnection, m_Status, textUTF8.c_str());
+					}
+
+					Callback(m_Target, pParams);  // 0 is success else socket failure code
 					if (!((CConnection*)m_pConnection)->pTransport->IsConnected())
 					{
 						// Non-connection based transports only call this on error and connection based protocol will be connected if it wasn't an error so
@@ -518,16 +524,20 @@ protected:
 			// Data is stored in a single vector of bytes
 			if (m_Buffer.size())
 			{
-				Callback(((CConnection*)m_pConnection)->Target, Py_BuildValue("Oy#", m_pConnection, &m_Buffer[0], m_Buffer.size()));
+				AccessPython	Guard(m_pPlugin, "onMessageCallback");
+				pParams = Py_BuildValue("Oy#", m_pConnection, &m_Buffer[0], m_Buffer.size());
 			}
 
 			// Data is in a dictionary
 			if (m_Data)
 			{
-				Callback(((CConnection*)m_pConnection)->Target, Py_BuildValue("OO", m_pConnection, m_Data));
 				AccessPython	Guard(m_pPlugin, "onMessageCallback");
+				pParams = Py_BuildValue("OO", m_pConnection, m_Data);
 				Py_XDECREF(m_Data);
 			}
+
+			// Callback will decrement the parameter reference count
+			Callback(((CConnection*)m_pConnection)->Target, pParams);
 		}
 	};
 
@@ -544,7 +554,13 @@ protected:
 		{
 			if (m_Target)
 			{
-				Callback(m_Target, Py_BuildValue("(O)", m_pConnection));  // 0 is success else socket failure code
+				PyObject* pParams = NULL;
+				{
+					AccessPython	Guard(m_pPlugin, "onDisconnectCallback");
+					pParams = Py_BuildValue("(O)", m_pConnection);
+				}
+
+				Callback(m_Target, pParams);  // 0 is success else socket failure code
 				AccessPython	Guard(m_pPlugin, "onDisconnectCallback");
 				// This is the last event for the connection before another 'Connect' so release reference to the target
 				Py_DECREF(m_Target);
