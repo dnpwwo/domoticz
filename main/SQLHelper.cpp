@@ -590,7 +590,7 @@ bool CSQLHelper::OpenDatabase()
 		query("INSERT INTO Unit (Name, Minimum, Maximum, RetentionDays, RetentionInterval, IconList, TextLabels) VALUES ('Audible', 0, 1, 1, 300, 'Speaker48_Off.png,Speaker48_On.png', 'Muted,Audible')");
 		query("INSERT INTO Unit (Name) VALUES ('Text')");
 		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Type', 'Media48_Off.png,Media48_On.png', 'None,Image,Audio,Video')");
-		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Status', 'Media48_Off.png,Media48_On.png', 'None,Playing,Paused')");
+		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Media Status', 'Media48_Off.png,Media48_On.png', 'None,Playing,Paused,Buffering')");
 		query("INSERT INTO Unit (Name, IconList, TextLabels) VALUES ('Device Power', 'Push48_Off.png,pushon48.png,Push48_On.png', 'Off,Standby,On')");
 
 		sqlite3_wal_checkpoint(m_dbase, NULL);
