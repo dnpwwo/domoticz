@@ -34,6 +34,7 @@ namespace Plugins {
 	PyObject* CInterface_debug(CInterface* self, PyObject* args, PyObject* kwds);
 	PyObject* CInterface_log(CInterface* self, PyObject* args, PyObject* kwds);
 	PyObject* CInterface_error(CInterface* self, PyObject* args, PyObject* kwds);
+	PyObject* CInterface_timeout(CInterface* self, PyObject* args, PyObject* kwds);
 
 	static PyMemberDef CInterface_members[] = {
 		{ "InterfaceID", T_LONG, offsetof(CInterface, InterfaceID), READONLY, "Internal Interface Number" },
@@ -46,11 +47,12 @@ namespace Plugins {
 	};
 
 	static PyMethodDef CInterface_methods[] = {
-		{ "Refresh",(PyCFunction)CInterface_refresh, METH_NOARGS, "Refresh the Interface from the database" },
-		{ "Update", (PyCFunction)CInterface_update, METH_NOARGS, "Update the Interface" },
-		{ "Debug",	(PyCFunction)CInterface_debug,	METH_VARARGS | METH_KEYWORDS, "Write a debug message to the Interface's log." },
-		{ "Log",	(PyCFunction)CInterface_log,	METH_VARARGS | METH_KEYWORDS, "Write a message to the Interface's log." },
-		{ "Error",	(PyCFunction)CInterface_error,	METH_VARARGS | METH_KEYWORDS, "Write a error message to the Interface's log." },
+		{ "Refresh",	(PyCFunction)CInterface_refresh,	METH_NOARGS, "Refresh the Interface from the database" },
+		{ "Update",		(PyCFunction)CInterface_update,		METH_NOARGS, "Update the Interface" },
+		{ "Debug",		(PyCFunction)CInterface_debug,		METH_VARARGS | METH_KEYWORDS, "Write a debug message to the Interface's log." },
+		{ "Log",		(PyCFunction)CInterface_log,		METH_VARARGS | METH_KEYWORDS, "Write a message to the Interface's log." },
+		{ "Error",		(PyCFunction)CInterface_error,		METH_VARARGS | METH_KEYWORDS, "Write a error message to the Interface's log." },
+		{ "Timeout",	(PyCFunction)CInterface_timeout,	METH_VARARGS | METH_KEYWORDS, "Enable/Disable restart if data not seen for an hour." },
 		{ NULL }  /* Sentinel */
 	};
 

@@ -87,7 +87,7 @@ namespace Plugins {
 			{
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
-				InterfaceLog(self, LOG_ERROR, "Expected: Interface.Log(Message=\"\")");
+				InterfaceLog(self, LOG_ERROR, "Expected: Interface.Debug(Message=\"\")");
 				self->pPlugin->LogPythonException((PyObject*)self, __func__);
 			}
 		}
@@ -193,7 +193,66 @@ namespace Plugins {
 			{
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
-				InterfaceLog(self, LOG_ERROR, "Expected: Interface.Log(Message=\"\")");
+				InterfaceLog(self, LOG_ERROR, "Expected: Interface.Error(Message=\"\")");
+				self->pPlugin->LogPythonException((PyObject*)self, __func__);
+			}
+		}
+		catch (std::exception* e)
+		{
+			_log.Log(LOG_ERROR, "%s: Execption thrown: %s", __func__, e->what());
+		}
+		catch (...)
+		{
+			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
+		}
+
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+
+	PyObject* CInterface_timeout(CInterface* self, PyObject* args, PyObject* kwds)
+	{
+		int bTimeout = true;
+		static char* kwlist[] = { "Enable", NULL };
+
+		try
+		{
+			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!pModule)
+			{
+				_log.Log(LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
+				return 0;
+			}
+
+			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			if (!pModState)
+			{
+				_log.Log(LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
+				return 0;
+			}
+
+			if (!pModState->pPlugin)
+			{
+				_log.Log(LOG_ERROR, "CInterface:%s, illegal operation, Plugin has not started yet.", __func__);
+				return 0;
+			}
+
+			if (PyArg_ParseTupleAndKeywords(args, kwds, "p", kwlist, &bTimeout))
+			{
+				if (bTimeout)
+				{
+					self->pPlugin->m_DataTimeout = 3600;
+				}
+				else
+				{
+					self->pPlugin->m_DataTimeout = 0;
+				}
+			}
+			else
+			{
+				CPlugin* pPlugin = NULL;
+				if (pModState) pPlugin = pModState->pPlugin;
+				InterfaceLog(self, LOG_ERROR, "Expected: Interface.Timeout(Enable=\"\")");
 				self->pPlugin->LogPythonException((PyObject*)self, __func__);
 			}
 		}

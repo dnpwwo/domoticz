@@ -92,7 +92,7 @@ void MainWorker::AddAllDomoticzHardware()
 			{
 				pHardware->m_Name = Name;
 				pHardware->m_ShortName = "Python Plugin";
-				//pHardware->m_DataTimeout = 3600;  // this will disable checking of data arriving
+				pHardware->m_DataTimeout = 3600; 
 				AddDomoticzHardware(pHardware);
 
 				pHardware->Start();
