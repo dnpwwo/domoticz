@@ -602,15 +602,17 @@ bool CSQLHelper::OpenDatabase()
 	std::string sValue;
 	std::string	sTrue = "True";
 	std::string	sDomoticz = "Domoticz";
-	std::string	sLang = "en";
 	GetPreferencesVar("Title", sValue, sDomoticz);
 	GetPreferencesVar("UseAutoUpdate", sValue, sTrue);
 	GetPreferencesVar("UseAutoBackup", sValue, sTrue);
+	std::string	sLang = "en";
 	GetPreferencesVar("Language", sValue, sLang);
 	GetPreferencesVar("AuthenticationMethod", &nValue, 0);
 	GetPreferencesVar("AcceptNewHardware", sValue, sTrue);
-	GetPreferencesVar("Latitude", sValue, std::string("-37.000000"));
-	GetPreferencesVar("Longitude", sValue, std::string("145.000000"));
+	std::string	sLatitude("-37.000000");
+	GetPreferencesVar("Latitude", sValue, sLatitude);
+	std::string	sLongitude("145.000000");
+	GetPreferencesVar("Longitude", sValue, sLongitude);
 	m_bAcceptNewHardware = (sValue == "True");
 
 	//Start background thread
