@@ -481,6 +481,7 @@ namespace Plugins {
 			else
 			{
 				if ((e.value() != boost::asio::error::eof) &&
+					(e.value() != boost::asio::ssl::error::stream_truncated) && // seen when server abruptly closes connection rather than shutting it down for performance reasons
 					(e.value() != 121) &&	// Semaphore timeout expiry or end of file aka 'lost contact'
 					(e.value() != 125) &&	// Operation canceled
 					(e != boost::asio::error::operation_aborted) &&
