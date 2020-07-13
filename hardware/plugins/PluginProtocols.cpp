@@ -113,62 +113,26 @@ namespace Plugins {
 
 	static void AddBytesToDict(PyObject* pDict, const char* key, const std::string &value)
 	{
-		PyObject*	pObj = Py_BuildValue("y#", value.c_str(), value.length());
-		PyObject*	pKey = PyUnicode_FromString(key);
+		PyObjPtr	pKey = PyUnicode_FromString(key);
+		PyObjPtr	pObj = Py_BuildValue("y#", value.c_str(), value.length());
 		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
 			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, key, value.c_str());
-		Py_DECREF(pObj);
-		Py_DECREF(pKey);
 	}
 
 	static void AddStringToDict(PyObject* pDict, const char* key, const std::string &value)
 	{
-		PyObject*	pObj = Py_BuildValue("s#", value.c_str(), value.length());
-		PyObject*	pKey = PyUnicode_FromString(key);
+		PyObjPtr	pKey = PyUnicode_FromString(key);
+		PyObjPtr	pObj = Py_BuildValue("s#", value.c_str(), value.length());
 		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
 			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, key, value.c_str());
-		Py_DECREF(pObj);
-		Py_DECREF(pKey);
 	}
 
 	static void AddIntToDict(PyObject* pDict, const char* key, const int value)
 	{
-		PyObject*	pObj = Py_BuildValue("i", value);
-		PyObject*	pKey = PyUnicode_FromString(key);
+		PyObjPtr	pKey = PyUnicode_FromString(key);
+		PyObjPtr	pObj = Py_BuildValue("i", value);
 		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
 			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%d' to dictionary.", __func__, key, value);
-		Py_DECREF(pObj);
-		Py_DECREF(pKey);
-	}
-
-	static void AddUIntToDict(PyObject* pDict, const char* key, const unsigned int value)
-	{
-		PyObject*	pObj = Py_BuildValue("I", value);
-		PyObject*	pKey = PyUnicode_FromString(key);
-		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
-			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%d' to dictionary.", __func__, key, value);
-		Py_DECREF(pObj);
-		Py_DECREF(pKey);
-	}
-
-	static void AddDoubleToDict(PyObject* pDict, const char* key, const double value)
-	{
-		PyObject*	pObj = Py_BuildValue("d", value);
-		PyObject*	pKey = PyUnicode_FromString(key);
-		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
-			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%f' to dictionary.", __func__, key, value);
-		Py_DECREF(pObj);
-		Py_DECREF(pKey);
-	}
-
-	static void AddBoolToDict(PyObject* pDict, const char* key, const bool value)
-	{
-		PyObject* pObj = Py_BuildValue("N", PyBool_FromLong(value));
-		PyObject* pKey = PyUnicode_FromString(key);
-		if (PyDict_SetItem(pDict, pKey, pObj) == -1)
-			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%d' to dictionary.", __func__, key, value);
-		Py_DECREF(pObj);
-		Py_DECREF(pKey);
 	}
 
 	PyObject*	CPluginProtocolJSON::JSONtoPython(Json::Value*	pJSON)
@@ -182,6 +146,7 @@ namespace Plugins {
 			for (Json::ValueIterator it = pJSON->begin(); it != pJSON->end(); ++it)
 			{
 				Json::ValueIterator::reference	pRef = *it;
+				// NOTE: PyList_SetItem does NOT increment the reference count
 				if (it->isArray() || it->isObject())
 				{
 					PyObject*	pObj = JSONtoPython(&pRef);
@@ -222,21 +187,45 @@ namespace Plugins {
 			pRetVal = PyDict_New();
 			for (Json::ValueIterator it = pJSON->begin(); it != pJSON->end(); ++it)
 			{
-				std::string						KeyName = it.name();
 				Json::ValueIterator::reference	pRef = *it;
+				std::string	KeyName = it.name();
+				PyObjPtr	pKey = PyUnicode_FromString(KeyName.c_str());
+
 				if (it->isArray() || it->isObject())
 				{
-					PyObject*	pObj = JSONtoPython(&pRef);
-					PyObject*	pKey = PyUnicode_FromString(KeyName.c_str());
+					PyObjPtr	pObj = JSONtoPython(&pRef);
 					if (!pObj || (PyDict_SetItem(pRetVal, pKey, pObj) == -1))
 						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', to dictionary for object.", __func__, KeyName.c_str());
-					Py_DECREF(pKey);
 				}
-				else if (it->isUInt()) AddUIntToDict(pRetVal, KeyName.c_str(), it->asUInt());
-				else if (it->isInt()) AddIntToDict(pRetVal, KeyName.c_str(), it->asInt());
-				else if (it->isBool()) AddBoolToDict(pRetVal, KeyName.c_str(), it->asInt());
-				else if (it->isDouble()) AddDoubleToDict(pRetVal, KeyName.c_str(), it->asDouble());
-				else if (it->isConvertibleTo(Json::stringValue)) AddStringToDict(pRetVal, KeyName.c_str(), it->asString());
+				else if (it->isUInt())
+				{
+					PyObjPtr	pObj = Py_BuildValue("I", it->asUInt());
+					if (PyDict_SetItem(pRetVal, pKey, pObj) == -1)
+						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', unsigned integer value '%d' to dictionary.", __func__, KeyName.c_str(), it->asUInt());
+				}
+				else if (it->isInt())
+				{
+					PyObjPtr	pObj = Py_BuildValue("i", it->asInt());
+					if (PyDict_SetItem(pRetVal, pKey, pObj) == -1)
+						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', integer value '%d' to dictionary.", __func__, KeyName.c_str(), it->asInt());
+				}
+				else if (it->isBool())
+				{
+					//PyObject* pObj = Py_BuildValue("N", PyBool_FromLong(it->asBool()));	// "N" does not increment the ref count
+					PyObjPtr pObj = Py_BuildValue("O", PyBool_FromLong(it->asBool()));
+					if (PyDict_SetItem(pRetVal, pKey, pObj) == -1)
+						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', boolean value '%d' to dictionary.", __func__, KeyName.c_str(), it->asBool());
+				}
+				else if (it->isDouble())
+				{
+					PyObjPtr	pObj = Py_BuildValue("d", it->asDouble());
+					if (PyDict_SetItem(pRetVal, pKey, pObj) == -1)
+						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', double value '%lf' to dictionary.", __func__, KeyName.c_str(), it->asDouble());
+				}
+				else if (it->isConvertibleTo(Json::stringValue))
+				{
+					AddStringToDict(pRetVal, KeyName.c_str(), it->asString());
+				}
 				else _log.Log(LOG_ERROR, "(%s) failed to process entry for '%s'.", __func__, KeyName.c_str());
 			}
 		}
@@ -469,12 +458,16 @@ namespace Plugins {
 			{
 				m_ContentLength = atoi(sHeaderText.c_str());
 			}
-			if (uHeaderName == "TRANSFER-ENCODING")
+			else if (uHeaderName == "TRANSFER-ENCODING")
 			{
 				std::string		uHeaderText = sHeaderText;
 				stdupper(uHeaderText);
 				if (uHeaderText == "CHUNKED")
 					m_Chunked = true;
+			}
+			else if ((uHeaderName == "CONTENT-TYPE") && (sHeaderText.find("application/json") != std::string::npos))
+			{
+				m_JSON = true;
 			}
 			PyObject* pObj = Py_BuildValue("s", sHeaderText.c_str());
 			PyObject* pPrevObj = PyDict_GetItemString((PyObject*)m_Headers, sHeaderName.c_str());
@@ -584,15 +577,15 @@ namespace Plugins {
 					// If full message then return it
 					if ((m_ContentLength == sData.length()) || (!Message->m_Buffer.size()))
 					{
-						PyObject*	pDataDict = PyDict_New();
+						PyDictObject*	pDataDict = (PyDictObject*)PyDict_New();
 						PyObject*	pObj = Py_BuildValue("s", m_Status.c_str());
-						if (PyDict_SetItemString(pDataDict, "Status", pObj) == -1)
+						if (PyDict_SetItemString((PyObject*)pDataDict, "Status", pObj) == -1)
 							_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "Status", m_Status.c_str());
 						Py_DECREF(pObj);
 
 						if (m_Headers)
 						{
-							if (PyDict_SetItemString(pDataDict, "Headers", (PyObject*)m_Headers) == -1)
+							if (PyDict_SetItemString((PyObject*)pDataDict, "Headers", (PyObject*)m_Headers) == -1)
 								_log.Log(LOG_ERROR, "(%s) failed to add key '%s' to dictionary.", "HTTP", "Headers");
 							Py_DECREF((PyObject*)m_Headers);
 							m_Headers = NULL;
@@ -600,13 +593,25 @@ namespace Plugins {
 
 						if (sData.length())
 						{
-							pObj = Py_BuildValue("y#", sData.c_str(), sData.length());
-							if (PyDict_SetItemString(pDataDict, "Data", pObj) == -1)
-								_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "Data", sData.c_str());
-							Py_DECREF(pObj);
+							// If the payload is JSON then translate it
+							if (m_JSON)
+							{
+								CPluginProtocolJSON	oJSON;
+								PyDictObject* pJsonDict = (PyDictObject*)oJSON.JSONtoPython(sData);
+								if (PyDict_SetItemString((PyObject*)pDataDict, "Data", (PyObject*)pJsonDict) == -1)
+									_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "Data", sData.c_str());
+								Py_DECREF(pJsonDict);
+							}
+							else
+							{
+								PyBytesObject* pBytes = (PyBytesObject*)Py_BuildValue("y#", sData.c_str(), sData.length());
+								if (PyDict_SetItemString((PyObject*)pDataDict, "Data", (PyObject*)pBytes) == -1)
+									_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "Data", sData.c_str());
+								Py_DECREF(pBytes);
+							}
 						}
 
-						Message->m_pPlugin->MessagePlugin(new onMessageCallback(Message->m_pPlugin, Message->m_pConnection, pDataDict));
+						Message->m_pPlugin->MessagePlugin(new onMessageCallback(Message->m_pPlugin, Message->m_pConnection, (PyObject*)pDataDict));
 						m_sRetainedData.clear();
 					}
 				}

@@ -56,11 +56,12 @@ namespace Plugins {
 		void*			m_Headers;
 		bool			m_Chunked;
 		size_t			m_RemainingChunk;
+		bool			m_JSON;
 	protected:
 		void			ExtractHeaders(std::string*	pData);
 		void			Flush(CPlugin* pPlugin, CConnection* pConnection);
 	public:
-		CPluginProtocolHTTP(bool Secure) : m_ContentLength(0), m_Headers(NULL), m_Chunked(false), m_RemainingChunk(0) { m_Secure = Secure; };
+		CPluginProtocolHTTP(bool Secure) : m_ContentLength(0), m_Headers(NULL), m_Chunked(false), m_RemainingChunk(0), m_JSON(false) { m_Secure = Secure; };
 		virtual void				ProcessInbound(const ReadEvent* Message);
 		virtual std::vector<byte>	ProcessOutbound(const WriteDirective* WriteMessage);
 	};

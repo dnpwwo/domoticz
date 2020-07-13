@@ -291,8 +291,7 @@ protected:
 				m_Target = (PyObject*)pInterface->FindDevice(m_DeviceID);
 				if (m_Target)
 				{
-					PyObjPtr pKey = PyLong_FromLong(m_DeviceID);
-					PyDict_DelItem(pInterface->Devices, pKey);
+					PyDict_DelItem(pInterface->Devices, ((CDevice*)m_Target)->InternalID);
 					break; // This one
 				}
 			}
@@ -410,7 +409,7 @@ protected:
 				m_pPlugin = (CPlugin*)it->second;
 				AccessPython	Guard(m_pPlugin, "onDeleteValueCallback 1");
 
-				PyObject* pDevicesDict = PyObject_GetAttrString((PyObject*)m_pPlugin->m_Interface, "Devices");
+				PyObjPtr pDevicesDict = PyObject_GetAttrString((PyObject*)m_pPlugin->m_Interface, "Devices");
 				if (!pDevicesDict || !PyDict_Check(pDevicesDict))
 				{
 					continue; // Should never happen
@@ -419,28 +418,31 @@ protected:
 				PyObject* key, * pDevice;
 				Py_ssize_t pos = 0;
 				// For delete we don't know the 'owning' DeviceID so search all
-				while (PyDict_Next(pDevicesDict, &pos, &key, &pDevice))
+				while (!m_Target && PyDict_Next(pDevicesDict, &pos, &key, &pDevice))
 				{
 					// And locate it into the Device's Values dictionary
-					PyObject* pValuesDict = PyObject_GetAttrString(pDevice, "Values");
+					PyObjPtr pValuesDict = PyObject_GetAttrString(pDevice, "Values");
 					if (!pValuesDict || !PyDict_Check(pValuesDict))
 					{
 						continue; // Should never happen
 					}
 
-					PyObject* pKey = PyLong_FromLong(m_ValueID);
-					m_Target = PyDict_GetItem(pValuesDict, pKey);
-					if (m_Target)
+					PyObject* key, * pValue;
+					Py_ssize_t pos = 0;
+					// For delete we don't know the 'owning' DeviceID so search all
+					while (!m_Target && PyDict_Next(pValuesDict, &pos, &key, &pValue))
 					{
-						// Delete it from the Device's Values dictionary
-						Py_INCREF(m_Target);
-						PyDict_DelItem(pValuesDict, pKey);
-						Py_DECREF(pKey);
-						Py_DECREF(pValuesDict);
-						break;
+						if (((CValue*)pValue)->ValueID == m_ValueID)
+						{
+							m_Target = PyDict_GetItem(pValuesDict, ((CValue*)pValue)->InternalID);
+							if (m_Target)
+							{
+								// Delete it from the Device's Values dictionary
+								Py_INCREF(m_Target);
+								PyDict_DelItem(pValuesDict, ((CValue*)pValue)->InternalID);
+							}
+						}
 					}
-
-					Py_DECREF(pValuesDict);
 				}
 			}
 

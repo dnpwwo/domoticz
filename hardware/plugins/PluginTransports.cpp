@@ -85,7 +85,7 @@ namespace Plugins {
 	void CPluginTransportTCP::handleAsyncResolve(const boost::system::error_code & err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleAsyncResolve");
+		//AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleAsyncResolve");
 
 		if (!err)
 		{
@@ -108,7 +108,7 @@ namespace Plugins {
 	void CPluginTransportTCP::handleAsyncConnect(const boost::system::error_code & err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleAsyncConnect");
+		//AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleAsyncConnect");
 
 		pPlugin->MessagePlugin(new onConnectCallback(pPlugin, m_pConnection, err.value(), err.message()));
 
@@ -238,7 +238,7 @@ namespace Plugins {
 	void CPluginTransportTCP::handleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleRead");
+		//AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleRead");
 		if (!e)
 		{
 			pPlugin->MessagePlugin(new ReadEvent(pPlugin, m_pConnection, bytes_transferred, m_Buffer));
@@ -384,7 +384,7 @@ namespace Plugins {
 	void CPluginTransportTCPSecure::handleAsyncConnect(const boost::system::error_code & err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleRead");
+		//AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleRead");
 
 		if (!err)
 		{
@@ -453,7 +453,7 @@ namespace Plugins {
 	void CPluginTransportTCPSecure::handleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		AccessPython	Guard(pPlugin, "CPluginTransportTCPSecure::handleRead");
+		//AccessPython	Guard(pPlugin, "CPluginTransportTCPSecure::handleRead");
 		if (!pPlugin)
 			return;
 		if (!e)
@@ -553,7 +553,7 @@ namespace Plugins {
 	void CPluginTransportUDP::handleRead(const boost::system::error_code& ec, std::size_t bytes_transferred)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		AccessPython	Guard(pPlugin, "CPluginTransportUDP::handleRead");
+		//AccessPython	Guard(pPlugin, "CPluginTransportUDP::handleRead");
 		if (!ec)
 		{
 			std::string sAddress = m_remote_endpoint.address().to_string();
@@ -716,7 +716,7 @@ namespace Plugins {
 		else
 		{
 			CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
-			AccessPython	Guard(pPlugin, "CPluginTransportICMP::handleAsyncResolve");
+			//AccessPython	Guard(pPlugin, "CPluginTransportICMP::handleAsyncResolve");
 			pPlugin->MessagePlugin(new DisconnectedEvent(pPlugin, m_pConnection));
 		}
 		m_bConnecting = false;
@@ -763,7 +763,7 @@ namespace Plugins {
 	void CPluginTransportICMP::handleTimeout(const boost::system::error_code& ec)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		AccessPython	Guard(pPlugin, "CPluginTransportICMP::handleTimeout");
+		//AccessPython	Guard(pPlugin, "CPluginTransportICMP::handleTimeout");
 
 		if (!ec)  // Timeout, no response
 		{
@@ -789,7 +789,7 @@ namespace Plugins {
 	void CPluginTransportICMP::handleRead(const boost::system::error_code & ec, std::size_t bytes_transferred)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		AccessPython	Guard(pPlugin, "CPluginTransportICMP::handleRead");
+		//AccessPython	Guard(pPlugin, "CPluginTransportICMP::handleRead");
 		if (!pPlugin)
 			return;
 
@@ -995,7 +995,7 @@ namespace Plugins {
 		if (bytes_transferred)
 		{
 			CPlugin*	pPlugin = m_pConnection->pPlugin;
-			AccessPython	Guard(pPlugin, "CPluginTransportSerial::handleRead");
+			//AccessPython	Guard(pPlugin, "CPluginTransportSerial::handleRead");
 			pPlugin->MessagePlugin(new ReadEvent(pPlugin, m_pConnection, bytes_transferred, (const unsigned char*)data));
 
 			m_tLastSeen = time(0);

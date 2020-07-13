@@ -11,6 +11,7 @@ namespace Plugins {
 		PyObject_HEAD
 		long		InterfaceID;
 		PyObject*	Name;
+		PyObject*	Settings;
 		PyObject*	Configuration;
 		bool		Debug;
 		bool		Active;

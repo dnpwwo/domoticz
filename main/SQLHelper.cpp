@@ -609,6 +609,8 @@ bool CSQLHelper::OpenDatabase()
 	GetPreferencesVar("Language", sValue, sLang);
 	GetPreferencesVar("AuthenticationMethod", &nValue, 0);
 	GetPreferencesVar("AcceptNewHardware", sValue, sTrue);
+	GetPreferencesVar("Latitude", sValue, std::string("-37.000000"));
+	GetPreferencesVar("Longitude", sValue, std::string("145.000000"));
 	m_bAcceptNewHardware = (sValue == "True");
 
 	//Start background thread
