@@ -676,7 +676,8 @@ namespace Plugins {
 				}
 				else
 				{
-					_log.Log(LOG_NORM, "Update to 'Interface' succeeded, %d records updated.", iRowCount);
+					if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
+						_log.Log(LOG_NORM, "Update to 'Interface' succeeded, %d records updated.", iRowCount);
 				}
 			}
 			else

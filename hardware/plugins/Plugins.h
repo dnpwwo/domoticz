@@ -29,6 +29,7 @@ namespace Plugins {
 		PDM_MESSAGE = 64,
 		PDM_QUEUE = 128,
 		PDM_LOCKING = 256,
+		PDM_PUB_SUB = 512,
 		PDM_ALL = 65535
 	};
 

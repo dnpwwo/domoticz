@@ -617,7 +617,8 @@ namespace Plugins {
 				else
 				{
 					std::string	sName = PyUnicode_AsUTF8(self->Name);
-					ValueLog(self, LOG_NORM, "Update to Value '%s' succeeded, %d records updated.", sName.c_str(), iRowCount);
+					if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
+						ValueLog(self, LOG_NORM, "Update to Value '%s' succeeded, %d records updated.", sName.c_str(), iRowCount);
 				}
 			}
 			else
