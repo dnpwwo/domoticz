@@ -563,7 +563,8 @@ namespace Plugins {
 						}
 					}
 
-					_log.Log(LOG_NORM, "Insert into 'Value' succeeded with ID %ld, %d record(s) created.", self->ValueID, iRowCount);
+					if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
+						_log.Log(LOG_NORM, "Insert into 'Value' succeeded with ID %ld, %d record(s) created.", self->ValueID, iRowCount);
 				}
 			}
 			else
@@ -582,53 +583,60 @@ namespace Plugins {
 
 	PyObject* CValue_update(CValue* self)
 	{
-		if (self->pPlugin)
+		if (self)
 		{
-			if (self->ValueID != -1)
+			if (self->pPlugin)
 			{
-				std::string		sSQL = "UPDATE Value SET Value=?, Timestamp=CURRENT_TIMESTAMP WHERE ValueID=" + std::to_string(self->ValueID) + ";";
-				std::vector<std::string> vValues;
-				if (PyUnicode_Check(self->Value))
+				if (self->ValueID != -1)
 				{
-					vValues.push_back(std::string(PyUnicode_AsUTF8(self->Value)));
-				}
-				else
-				{
-					PyObject* pStringObj = PyObject_Str(self->Value);
-					if (pStringObj)
+					std::string		sSQL = "UPDATE Value SET Value=?, Timestamp=CURRENT_TIMESTAMP WHERE ValueID=" + std::to_string(self->ValueID) + ";";
+					std::vector<std::string> vValues;
+					if (PyUnicode_Check(self->Value))
 					{
-						vValues.push_back(PyUnicode_AsUTF8(pStringObj));
-						Py_DECREF(pStringObj);
+						vValues.push_back(std::string(PyUnicode_AsUTF8(self->Value)));
 					}
 					else
 					{
-						ValueLog(self, LOG_ERROR, "(%s) Unable to derive string for Value", self->pPlugin->m_Name.c_str());
-						vValues.push_back(std::string(""));
+						PyObject* pStringObj = PyObject_Str(self->Value);
+						if (pStringObj)
+						{
+							vValues.push_back(PyUnicode_AsUTF8(pStringObj));
+							Py_DECREF(pStringObj);
+						}
+						else
+						{
+							ValueLog(self, LOG_ERROR, "(%s) Unable to derive string for Value", self->pPlugin->m_Name.c_str());
+							vValues.push_back(std::string(""));
+						}
 					}
-				}
 
-				int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
+					int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
-				// Handle any data we get back
-				if (!iRowCount)
-				{
-					ValueLog(self, LOG_ERROR, "Update to 'Value' failed to update any records for ID %ld", self->ValueID);
+					// Handle any data we get back
+					if (!iRowCount)
+					{
+						ValueLog(self, LOG_ERROR, "Update to 'Value' failed to update any records for ID %ld", self->ValueID);
+					}
+					else
+					{
+						std::string	sName = PyUnicode_AsUTF8(self->Name);
+						if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
+							ValueLog(self, LOG_NORM, "Update to Value '%s' succeeded, %d records updated.", sName.c_str(), iRowCount);
+					}
 				}
 				else
 				{
-					std::string	sName = PyUnicode_AsUTF8(self->Name);
-					if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
-						ValueLog(self, LOG_NORM, "Update to Value '%s' succeeded, %d records updated.", sName.c_str(), iRowCount);
+					_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%ld', must already be set.", self->pPlugin->m_Name.c_str(), (long)self->ValueID);
 				}
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "(%s) Invalid Value ID '%ld', must already be set.", self->pPlugin->m_Name.c_str(), (long)self->ValueID);
+				_log.Log(LOG_ERROR, "Value update failed, Value object is not associated with a plugin.");
 			}
 		}
 		else
 		{
-			_log.Log(LOG_ERROR, "Value update failed, Value object is not associated with a plugin.");
+			_log.Log(LOG_ERROR, "Value update failed, NULL Value object passed.");
 		}
 
 		Py_INCREF(Py_None);
@@ -654,7 +662,8 @@ namespace Plugins {
 				}
 				else
 				{
-					_log.Log(LOG_NORM, "Delete from 'Value' succeeded, %s records removed.", result[0][0].c_str());
+					if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
+						_log.Log(LOG_NORM, "Delete from 'Value' succeeded, %s records removed.", result[0][0].c_str());
 				}
 			}
 			else

@@ -690,7 +690,8 @@ namespace Plugins {
 						self->Parent = self->pPlugin->m_Interface;
 					}
 
-					_log.Log(LOG_NORM, "Insert into 'Device' succeeded with ID %ld, %d record(s) created.", self->DeviceID, iRowCount);
+					if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
+						_log.Log(LOG_NORM, "Insert into 'Device' succeeded with ID %ld, %d record(s) created.", self->DeviceID, iRowCount);
 				}
 			}
 			else
@@ -765,7 +766,8 @@ namespace Plugins {
 				}
 				else
 				{
-					_log.Log(LOG_NORM, "Delete from 'Device' succeeded, %s records removed.", result[0][0].c_str());
+					if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
+						_log.Log(LOG_NORM, "Delete from 'Device' succeeded, %s records removed.", result[0][0].c_str());
 				}
 			}
 			else

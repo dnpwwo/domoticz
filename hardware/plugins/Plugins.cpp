@@ -420,7 +420,7 @@ namespace Plugins {
 		return pModule;
 	}
 
-	std::mutex	AccessPython::PythonMutex;
+	std::mutex		AccessPython::PythonMutex;
 	volatile bool	AccessPython::m_bHasThreadState = false;
 
 	AccessPython::AccessPython(CPlugin* pPlugin, const char* sWhat) : m_Python(NULL)

@@ -120,13 +120,12 @@ namespace Plugins {
 	class AccessPython
 	{
 	private:
-		static	std::mutex	PythonMutex;
+		static	std::mutex			PythonMutex;
 		static  volatile bool		m_bHasThreadState;
 		std::unique_lock<std::mutex>*	m_Lock;
-		PyThreadState* m_Python;
-
-		CPlugin* m_pPlugin;
-		const char* m_Text;
+		PyThreadState*				m_Python;
+		CPlugin*					m_pPlugin;
+		const char*					m_Text;
 
 	public:
 		AccessPython(CPlugin* pPlugin, const char* sWhat);
