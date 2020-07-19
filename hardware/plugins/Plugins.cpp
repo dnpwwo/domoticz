@@ -1718,6 +1718,9 @@ Error:
 				}
 			}
 
+			// Remove any residual messages from the queue
+			ClearMessageQueue();
+
 			// Stop Python
 			if (m_SettingsDict && PyDict_Size(m_SettingsDict))
 			{
@@ -1732,9 +1735,6 @@ Error:
 				Py_XDECREF(m_Interface);
 				m_Interface = NULL;
 			}
-
-			// Remove any residual messages from the queue
-			ClearMessageQueue();
 
 			if (m_PyModule)
 			{

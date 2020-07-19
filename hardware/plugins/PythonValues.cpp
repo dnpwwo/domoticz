@@ -591,37 +591,43 @@ namespace Plugins {
 				{
 					std::string		sSQL = "UPDATE Value SET Value=?, Timestamp=CURRENT_TIMESTAMP WHERE ValueID=" + std::to_string(self->ValueID) + ";";
 					std::vector<std::string> vValues;
-					if (PyUnicode_Check(self->Value))
+					if (self->Value)
 					{
-						vValues.push_back(std::string(PyUnicode_AsUTF8(self->Value)));
-					}
-					else
-					{
-						PyObject* pStringObj = PyObject_Str(self->Value);
-						if (pStringObj)
+						if (PyUnicode_Check(self->Value))
 						{
-							vValues.push_back(PyUnicode_AsUTF8(pStringObj));
-							Py_DECREF(pStringObj);
+							vValues.push_back(std::string(PyUnicode_AsUTF8(self->Value)));
 						}
 						else
 						{
-							ValueLog(self, LOG_ERROR, "(%s) Unable to derive string for Value", self->pPlugin->m_Name.c_str());
-							vValues.push_back(std::string(""));
+							PyObjPtr pStringObj = PyObject_Str(self->Value);
+							if (pStringObj)
+							{
+								vValues.push_back(std::string(PyUnicode_AsUTF8(pStringObj)));
+							}
+							else
+							{
+								ValueLog(self, LOG_ERROR, "(%s) Unable to derive string for Value", self->pPlugin->m_Name.c_str());
+								vValues.push_back(std::string(""));
+							}
 						}
-					}
 
-					int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
+						int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
-					// Handle any data we get back
-					if (!iRowCount)
-					{
-						ValueLog(self, LOG_ERROR, "Update to 'Value' failed to update any records for ID %ld", self->ValueID);
+						// Handle any data we get back
+						if (!iRowCount)
+						{
+							ValueLog(self, LOG_ERROR, "Update to 'Value' failed to update any records for ID %ld", self->ValueID);
+						}
+						else
+						{
+							std::string	sName = PyUnicode_AsUTF8(self->Name);
+							if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
+								ValueLog(self, LOG_NORM, "Update to Value '%s' succeeded, %d records updated.", sName.c_str(), iRowCount);
+						}
 					}
 					else
 					{
-						std::string	sName = PyUnicode_AsUTF8(self->Name);
-						if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
-							ValueLog(self, LOG_NORM, "Update to Value '%s' succeeded, %d records updated.", sName.c_str(), iRowCount);
+						_log.Log(LOG_ERROR, "Value update failed, Value object is not NULL.");
 					}
 				}
 				else
