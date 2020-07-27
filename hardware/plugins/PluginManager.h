@@ -4,6 +4,7 @@
 #include <boost/signals2.hpp>
 #include <string>
 #include "../main/UpdatePublisher.h"
+#include "Plugins.h"
 
 //
 //	Domoticz Plugin System - Dnpwwo, 2016
@@ -37,11 +38,13 @@ namespace Plugins {
 		bool StartPluginSystem();
 		std::map<int, CDomoticzHardwareBase*>* GetHardware() { return &m_pPlugins; };
 		CDomoticzHardwareBase* RegisterPlugin(const int HwdID, const std::string &Name);
-		bool	 RestartPlugin(const int InterfaceID);
-		void	 DeregisterPlugin(const int HwdID);
-		bool	StopPluginSystem();
-		void	AllPluginsStarted() { m_bAllPluginsStarted = true; };
-		void*	PythonThread() { return m_InitialPythonThread; };
+		bool		RestartPlugin(const int InterfaceID);
+		void		DeregisterPlugin(const int HwdID);
+		bool		StopPluginSystem();
+		void		AllPluginsStarted() { m_bAllPluginsStarted = true; };
+		void*		PythonThread() { return m_InitialPythonThread; };
+		CPlugin*	PluginFromDeviceID(long DeviceID);
+		CPlugin*	PluginFromValueID(long ValueID);
 		virtual void DatabaseUpdate(CUpdateEntry*);
 	};
 };

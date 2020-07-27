@@ -243,19 +243,19 @@ namespace Plugins {
 		pRetVal->DeviceID = DeviceID;
 		pRetVal->InterfaceID = InterfaceID;
 		Py_INCREF(Name);
-		Py_DECREF(pRetVal->Name);
+		Py_XDECREF(pRetVal->Name);
 		pRetVal->Name = Name;
 		Py_INCREF(InternalID);
-		Py_DECREF(pRetVal->InternalID);
+		Py_XDECREF(pRetVal->InternalID);
 		pRetVal->InternalID = InternalID;
 		Py_INCREF(Address);
-		Py_DECREF(pRetVal->Address);
+		Py_XDECREF(pRetVal->Address);
 		pRetVal->Address = Address;
 		pRetVal->Debug = Debug;
 		pRetVal->Enabled = Enabled;
 		pRetVal->Active = Active;
 		Py_INCREF(Timestamp);
-		Py_DECREF(pRetVal->Timestamp);
+		Py_XDECREF(pRetVal->Timestamp);
 		pRetVal->Timestamp = Timestamp;
 		pRetVal->Parent = Parent;
 		pRetVal->pPlugin = pPlugin;
@@ -449,17 +449,17 @@ namespace Plugins {
 				self->InterfaceID = -1;
 				self->Name = PyUnicode_FromString("");
 				if (self->Name == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 				self->InternalID = PyUnicode_FromString("");
 				if (self->InternalID == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 				self->Address = PyUnicode_FromString("");
 				if (self->Address == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 				self->Debug = false;
@@ -467,7 +467,7 @@ namespace Plugins {
 				self->Active = false;
 				self->Timestamp = PyUnicode_FromString("");
 				if (self->Timestamp == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 				self->Values = PyDict_New();
@@ -556,19 +556,19 @@ namespace Plugins {
 					std::string	sName = szName ? szName : "";
 					if (sName.length())
 					{
-						Py_DECREF(self->Name);
+						Py_XDECREF(self->Name);
 						self->Name = PyUnicode_FromString(sName.c_str());
 					}
 					std::string	sInternalID = szInternalID ? szInternalID : "";
 					if (sInternalID.length())
 					{
-						Py_DECREF(self->InternalID);
+						Py_XDECREF(self->InternalID);
 						self->InternalID = PyUnicode_FromString(sInternalID.c_str());
 					}
 					std::string	sAddress = szAddress ? szAddress : "";
 					if (sAddress.length())
 					{
-						Py_DECREF(self->Address);
+						Py_XDECREF(self->Address);
 						self->Address = PyUnicode_FromString(sAddress.c_str());
 					}
 					self->Enabled = bEnabled;

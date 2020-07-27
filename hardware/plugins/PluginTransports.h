@@ -40,7 +40,7 @@ namespace Plugins {
 		virtual	bool		handleDisconnect() { return false; };
 		virtual ~CPluginTransport()
 		{
-			Py_DECREF(m_pConnection);
+			Py_XDECREF(m_pConnection);
 		}
 
 		bool				IsConnecting() { return m_bConnecting; };

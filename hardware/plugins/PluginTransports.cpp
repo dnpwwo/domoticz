@@ -177,7 +177,7 @@ namespace Plugins {
 
 			CConnection* pConnection = (CConnection*)CConnection_new(&CConnectionType, (PyObject*)NULL, (PyObject*)NULL);
 			CPluginTransportTCP* pTcpTransport = new CPluginTransportTCP(m_HwdID, pConnection, sAddress, sPort);
-			Py_DECREF(pConnection);
+			Py_XDECREF(pConnection);
 
 			// Configure transport object
 			pTcpTransport->m_pConnection = pConnection;
@@ -586,7 +586,7 @@ namespace Plugins {
 			m_iTotalBytes += bytes_transferred;
 
 			// Make sure only the only Message objects are referring to Connection so that it is cleaned up right after plugin onMessage
-			Py_DECREF(pConnection);
+			Py_XDECREF(pConnection);
 
 			// Set up listener again
 			if (m_bConnected)

@@ -10,7 +10,6 @@
 #include <inttypes.h>
 
 #include "PluginManager.h"
-#include "Plugins.h"
 #include "PluginMessages.h"
 #include "PluginTransports.h"
 #include "PythonInterfaces.h"
@@ -60,7 +59,6 @@ namespace Plugins {
 	PyMODINIT_FUNC PyInit_Domoticz(void);
 
 	std::mutex PluginMutex;	// controls accessto the message queue and m_pPlugins map
-	std::deque<CPluginMessageBase*>	PluginMessageQueue;
 	boost::asio::io_service ios;
 
 	std::map<int, CDomoticzHardwareBase*>	CPluginSystem::m_pPlugins;
@@ -79,13 +77,6 @@ namespace Plugins {
 
 	bool CPluginSystem::StartPluginSystem()
 	{
-		// Flush the message queue (should already be empty)
-		std::lock_guard<std::mutex> l(PluginMutex);
-		while (!PluginMessageQueue.empty())
-		{
-			PluginMessageQueue.pop_front();
-		}
-
 		m_pPlugins.clear();
 
 		if (!Py_LoadLibrary())
@@ -160,19 +151,6 @@ namespace Plugins {
 			m_thread.reset();
 		}
 
-		// Hardware should already be stopped so just flush the queue (should already be empty)
-		std::lock_guard<std::mutex> l(PluginMutex);
-		while (!PluginMessageQueue.empty())
-		{
-			CPluginMessageBase* Message = PluginMessageQueue.front();
-			const CPlugin* pPlugin = Message->Plugin();
-			if (pPlugin)
-			{
-				_log.Log(LOG_NORM, "(" + pPlugin->m_Name + ") ' flushing " + std::string(Message->Name()) + "' queue entry");
-			}
-			PluginMessageQueue.pop_front();
-		}
-
 		m_pPlugins.clear();
 
 		if (Py_LoadLibrary() && m_InitialPythonThread)
@@ -231,7 +209,6 @@ namespace Plugins {
 
 	void BoostWorkers()
 	{
-		
 		ios.run();
 	}
 
@@ -255,66 +232,8 @@ namespace Plugins {
 			SetThreadName(bt->native_handle(), "Plugin_ASIO");
 		}
 
-		while (!IsStopRequested(50))
+		while (!IsStopRequested(500))
 		{
-			time_t	Now = time(0);
-			bool	bProcessed = true;
-			while (bProcessed)
-			{
-				CPluginMessageBase* Message = NULL;
-				bProcessed = false;
-
-				// Cycle once through the queue looking for the 1st message that is ready to process
-				{
-					std::lock_guard<std::mutex> l(PluginMutex);
-					for (size_t i = 0; i < PluginMessageQueue.size(); i++)
-					{
-						CPluginMessageBase* FrontMessage = PluginMessageQueue.front();
-						PluginMessageQueue.pop_front();
-						if (!FrontMessage->m_Delay || FrontMessage->m_When <= Now)
-						{
-							// Message is ready now or was already ready (this is the case for almost all messages)
-							Message = FrontMessage;
-							break;
-						}
-						// Message is for sometime in the future so requeue it (this happens when the 'Delay' parameter is used on a Send)
-						PluginMessageQueue.push_back(FrontMessage);
-					}
-				}
-
-				if (Message)
-				{
-					bProcessed = true;
-
-					try
-					{
-						const CPlugin* pPlugin = Message->Plugin();
-						if (pPlugin && (pPlugin->m_bDebug & PDM_QUEUE))
-						{
-							_log.Log(LOG_NORM, "(" + pPlugin->m_Name + ") Processing '" + std::string(Message->Name()) + "' message");
-						}
-						Message->Process();
-					}
-					catch(...)
-					{
-						_log.Log(LOG_ERROR, "PluginSystem: Exception processing message.");
-					}
-				}
-				// Free the memory for the message
-				if (Message)
-				{
-					if (Message->m_pPlugin)
-					{
-						// Lock Python if Plugin is known
-						AccessPython	Guard((CPlugin*)Message->Plugin(), "CPluginSystem::Do_Work");
-						delete Message;
-					}
-					else
-					{
-						delete Message;
-					}
-				}
-			}
 		}
 
 		// Shutdown IO workers
@@ -335,6 +254,65 @@ namespace Plugins {
 		}
 		return "";
 	}
+
+	CPlugin* CPluginSystem::PluginFromDeviceID(long	DeviceID)
+	{
+		for (std::map<int, CDomoticzHardwareBase*>::iterator it = GetHardware()->begin(); it != GetHardware()->end(); it++)
+		{
+			CPlugin*	pPlugin = (CPlugin*)it->second;
+			//AccessPython	Guard(pPlugin, "PluginFromDeviceID");
+
+			PyObjPtr	pDevice = (PyObject*)pPlugin->m_Interface->FindDevice(DeviceID);
+			if (pDevice)
+			{
+				return pPlugin;
+			}
+		}
+	
+		return NULL;
+	}
+
+	CPlugin* CPluginSystem::PluginFromValueID(long	ValueID)
+	{
+		// Only detail available is the ValueID so cycle through plugins and find it
+		for (std::map<int, CDomoticzHardwareBase*>::iterator it = GetHardware()->begin(); it != GetHardware()->end(); it++)
+		{
+			CPlugin* pPlugin = (CPlugin*)it->second;
+			//AccessPython	Guard(pPlugin, "PluginFromValueID");
+
+			PyObjPtr pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
+			if (!pDevicesDict || !PyDict_Check(pDevicesDict))
+			{
+				continue; // Should never happen
+			}
+
+			PyObject* key, * pDevice;
+			Py_ssize_t pos = 0;
+			// we don't know the 'owning' DeviceID so search all
+			while (PyDict_Next(pDevicesDict, &pos, &key, &pDevice))
+			{
+				// And locate it into the Device's Values dictionary
+				PyObjPtr pValuesDict = PyObject_GetAttrString(pDevice, "Values");
+				if (!pValuesDict || !PyDict_Check(pValuesDict))
+				{
+					continue; // Should never happen
+				}
+
+				PyObject* key, * pValue;
+				Py_ssize_t pos = 0;
+				// For delete we don't know the 'owning' DeviceID so search all
+				while (PyDict_Next(pValuesDict, &pos, &key, &pValue))
+				{
+					if (((CValue*)pValue)->ValueID == ValueID)
+					{
+						return pPlugin;
+					}
+				}
+			}
+		}
+
+		return NULL;
+	};
 
 	void CPluginSystem::DatabaseUpdate(CUpdateEntry*	pEntry)
 	{
@@ -369,7 +347,10 @@ namespace Plugins {
 						if (m_pPlugins.count(InterfaceID))
 						{
 							CPlugin* pPlugin = (CPlugin*)m_pPlugins.find(InterfaceID)->second;
-							pPlugin->MessagePlugin(new onUpdateInterfaceCallback(pPlugin));
+							if (pPlugin)
+							{
+								pPlugin->MessagePlugin(new onUpdateInterfaceCallback(pPlugin));
+							}
 						}
 					}
 				}
@@ -394,7 +375,6 @@ namespace Plugins {
 
 				try
 				{
-
 					// locate the Plugin related to the Device
 					if (lInterfaceID)
 					{
@@ -421,8 +401,11 @@ namespace Plugins {
 					}
 					else if (pEntry->m_Action == "Delete") 
 					{
-						std::lock_guard<std::mutex> l(PluginMutex);
-						PluginMessageQueue.push_back(new onDeleteDeviceCallback(lDeviceID));
+						CPlugin* pPlugin = PluginFromDeviceID(lDeviceID);
+						if (pPlugin)
+						{
+							pPlugin->MessagePlugin(new onDeleteDeviceCallback(pPlugin, lDeviceID));
+						}
 					}
 					else
 					{
@@ -443,18 +426,27 @@ namespace Plugins {
 
 				if (pEntry->m_Action == "Insert")
 				{
-					std::lock_guard<std::mutex> l(PluginMutex);
-					PluginMessageQueue.push_back(new onCreateValueCallback(lDeviceID, lValueID));
+					CPlugin* pPlugin = PluginFromDeviceID(lDeviceID);
+					if (pPlugin)
+					{
+						pPlugin->MessagePlugin(new onCreateValueCallback(pPlugin, lDeviceID, lValueID));
+					}
 				}
 				else if (pEntry->m_Action == "Update")
 				{
-					std::lock_guard<std::mutex> l(PluginMutex);
-					PluginMessageQueue.push_back(new onUpdateValueCallback(lDeviceID, lValueID));
+					CPlugin* pPlugin = PluginFromDeviceID(lDeviceID);
+					if (pPlugin)
+					{
+						pPlugin->MessagePlugin(new onUpdateValueCallback(pPlugin, lDeviceID, lValueID));
+					}
 				}
 				else if (pEntry->m_Action == "Delete") 
 				{
-					std::lock_guard<std::mutex> l(PluginMutex);
-					PluginMessageQueue.push_back(new onDeleteValueCallback(lValueID));
+					CPlugin* pPlugin = PluginFromValueID(lValueID);
+					if (pPlugin)
+					{
+						pPlugin->MessagePlugin(new onDeleteValueCallback(pPlugin, lValueID));
+					}
 				}
 				else
 				{

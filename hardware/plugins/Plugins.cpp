@@ -34,7 +34,6 @@ extern MainWorker m_mainworker;
 namespace Plugins {
 
 	extern std::mutex PluginMutex;	// controls access to the message queue
-	extern std::deque<CPluginMessageBase*>	PluginMessageQueue;
 
 	void LogPythonException(CPlugin* pPlugin, const std::string &sHandler)
 	{
@@ -835,45 +834,42 @@ namespace Plugins {
 	{
 		if (m_bIsStarted) StopHardware();
 
+		m_bIsStarting = true;
 		RequestStart();
 
-		//	Add start command to message queue
-		m_bIsStarting = true;
-		MessagePlugin(new InitializeMessage(this));
-
-		InterfaceLog(LOG_STATUS, "%s interface started.", m_Name.c_str());
-
-		return true;
-	}
-
-	void CPlugin::ClearMessageQueue()
-	{
-		// Copy the event queue to a temporary one, then copy back the events for other plugins
-		std::lock_guard<std::mutex> l(PluginMutex);
-		std::queue<CPluginMessageBase*>	TempMessageQueue(PluginMessageQueue);
-		while (!PluginMessageQueue.empty())
-			PluginMessageQueue.pop_front();
-
-		while (!TempMessageQueue.empty())
+		// Flush the message queue (should already be empty)
 		{
-			CPluginMessageBase* FrontMessage = TempMessageQueue.front();
-			TempMessageQueue.pop();
-			if (FrontMessage->m_pPlugin == this)
+			std::lock_guard<std::mutex> l(PluginMutex);
+			while (!m_MessageQueue.empty())
 			{
-				// log events that will not be processed
-				CCallbackBase* pCallback = dynamic_cast<CCallbackBase*>(FrontMessage);
-				if (pCallback)
-					InterfaceLog(LOG_ERROR, "(%s) Callback event '%s' (Python call '%s') discarded.", m_Name.c_str(), FrontMessage->Name(), pCallback->PythonName());
-				else
-					InterfaceLog(LOG_ERROR, "(%s) Non-callback event '%s' discarded.", m_Name.c_str(), FrontMessage->Name());
+				m_MessageQueue.pop_front();
+			}
+		}
+
+		//Start worker thread
+		try
+		{
+			std::lock_guard<std::mutex> l(PluginMutex);
+			m_thread = std::make_shared<std::thread>(&CPlugin::Do_Work, this);
+			if (!m_thread)
+			{
+				InterfaceLog(LOG_ERROR, "Failed start interface worker thread.");
 			}
 			else
 			{
-				// Message is for a different plugin so requeue it
-				_log.Log(LOG_NORM, "(%s) requeuing '%s' message for '%s'", m_Name.c_str(), FrontMessage->Name(), FrontMessage->Plugin()->m_Name.c_str());
-				PluginMessageQueue.push_back(FrontMessage);
+				SetThreadName(m_thread->native_handle(), m_Name.c_str());
+				InterfaceLog(LOG_STATUS, "%s interface started.", m_Name.c_str());
 			}
 		}
+		catch (...)
+		{
+			InterfaceLog(LOG_ERROR, "Exception caught in '%s'.", __func__);
+		}
+
+		//	Add start command to message queue
+		MessagePlugin(new InitializeMessage(this));
+
+		return true;
 	}
 
 	bool CPlugin::StopHardware()
@@ -887,8 +883,6 @@ namespace Plugins {
 			{
 				sleep_milliseconds(100);
 			}
-
-			RequestStop();
 
 			if (m_bIsStarted)
 			{
@@ -907,11 +901,10 @@ namespace Plugins {
 						}
 					}
 				}
-				else
-				{
-					// otherwise just signal stop
-					MessagePlugin(new onStopCallback(this));
-				}
+
+				// otherwise just signal stop
+				_log.Log(LOG_STATUS, "%s: '%s' queueing stop.", __func__, m_Name.c_str());
+				MessagePlugin(new onStopCallback(this));
 			}
 		}
 		catch (...)
@@ -925,37 +918,126 @@ namespace Plugins {
 	void CPlugin::Do_Work()
 	{
 		InterfaceLog(LOG_STATUS, "(%s) Entering work loop.", m_Name.c_str());
-		int scounter = m_iPollInterval * 2;
-		while (!IsStopRequested(500))
+		time_t nextPoll = time(0) + m_iPollInterval;
+		try
 		{
-			if (!--scounter)
+			while (!IsStopRequested(50))
 			{
-				//	Add heartbeat to message queue
-				MessagePlugin(new onHeartbeatCallback(this));
-				scounter = m_iPollInterval * 2;
-				m_LastHeartbeat = mytime(NULL);
-			}
-
-			// Check all connections are still valid, vector could be affected by a disconnect on another thread
-			try
-			{
-				std::lock_guard<std::mutex> lTransports(m_TransportsMutex);
-				if (m_Transports.size())
+				time_t	Now = time(0);
+				bool	bProcessed = true;
+				while (bProcessed)
 				{
-					for (std::vector<CPluginTransport*>::iterator itt = m_Transports.begin(); itt != m_Transports.end(); itt++)
+					CPluginMessageBase* Message = NULL;
+					bProcessed = false;
+
+					// Cycle once through the queue looking for the 1st message that is ready to process
 					{
-						//std::lock_guard<std::mutex> l(PythonMutex); // Take mutex to guard access to CPluginTransport::m_pConnection
-						CPluginTransport*	pPluginTransport = *itt;
-						pPluginTransport->VerifyConnection();
+						std::lock_guard<std::mutex> l(PluginMutex);
+						for (size_t i = 0; i < m_MessageQueue.size(); i++)
+						{
+							CPluginMessageBase* FrontMessage = m_MessageQueue.front();
+							m_MessageQueue.pop_front();
+							if (!FrontMessage->m_Delay || FrontMessage->m_When <= Now)
+							{
+								// Message is ready now or was already ready (this is the case for almost all messages)
+								Message = FrontMessage;
+								break;
+							}
+							// Message is for sometime in the future so requeue it (this happens when the 'Delay' parameter is used on a Send & Stop)
+							if (m_bDebug & PDM_QUEUE)
+							{
+								InterfaceLog(LOG_NORM, "(%s) Requeuing '%s' message, queue has %d entries", m_Name.c_str(), FrontMessage->m_Name.c_str(), m_MessageQueue.size());
+							}
+							m_MessageQueue.push_back(FrontMessage);
+						}
+					}
+
+					if (Message)
+					{
+						bProcessed = true;
+
+						try
+						{
+							const CPlugin* pPlugin = Message->Plugin();
+							// for stop messages make sure the queue is empty and transports are all gone before processing
+							onStopCallback* pStop = dynamic_cast<onStopCallback*>(Message);
+							if (pStop && (!m_MessageQueue.empty() || m_Transports.size()))
+							{
+								InterfaceLog(LOG_NORM, "(%s) Requeuing Stop message, queue has %d entries, %d connections.", pPlugin->m_Name.c_str(), m_MessageQueue.size(), m_Transports.size());
+								Message->m_Delay = Now + 1;
+								m_MessageQueue.push_back(Message);
+								continue;
+							}
+							else
+							{
+								if (m_PyInterpreter || m_bIsStarting)
+								{
+									if (m_bDebug & PDM_QUEUE)
+									{
+										InterfaceLog(LOG_NORM, "(%s) Processing '%s' message", m_Name.c_str(), Message->m_Name.c_str());
+									}
+									Message->Process();
+								}
+								else
+								{
+									InterfaceLog(LOG_ERROR, "(%s) Python interpreter has been destroyed. Processing '%s' message", m_Name.c_str(), Message->m_Name.c_str());
+								}
+							}
+
+							// Free the memory for the message special cases for Initialise and Stop messages
+							if (!pStop && (m_PyInterpreter || !m_bIsStarting))
+							{
+								// Lock Python if Plugin is known
+								{
+									AccessPython	Guard(this, "CPlugin::Do_Work");
+									delete Message;
+								}
+							}
+							else
+							{
+								// Stop messages can't lock because interpreter is destroyed
+								delete Message;
+							}
+						}
+						catch (...)
+						{
+							InterfaceLog(LOG_ERROR, "(%s) Exception processing message in %s.", m_Name.c_str(), __func__);
+						}
+					}
+
+					//	Add heartbeat to message queue if its time
+					if (m_PyInterpreter && (nextPoll <= Now))
+					{
+						MessagePlugin(new onHeartbeatCallback(this));
+						nextPoll = Now + m_iPollInterval;
+						m_LastHeartbeat = mytime(NULL);
+					}
+
+					// Check all connections are still valid, vector could be affected by a disconnect on another thread
+					try
+					{
+						std::lock_guard<std::mutex> lTransports(m_TransportsMutex);
+						if (m_Transports.size())
+						{
+							for (std::vector<CPluginTransport*>::iterator itt = m_Transports.begin(); itt != m_Transports.end(); itt++)
+							{
+								//std::lock_guard<std::mutex> l(PythonMutex); // Take mutex to guard access to CPluginTransport::m_pConnection
+								CPluginTransport* pPluginTransport = *itt;
+								pPluginTransport->VerifyConnection();
+							}
+						}
+					}
+					catch (...)
+					{
+						InterfaceLog(LOG_NORM, "(%s) Transport vector changed during %s loop, continuing.", m_Name.c_str(), __func__);
 					}
 				}
 			}
-			catch (...)
-			{
-				InterfaceLog(LOG_NORM, "(%s) Transport vector changed during %s loop, continuing.", m_Name.c_str(), __func__);
-			}
 		}
-
+		catch (...)
+		{
+			InterfaceLog(LOG_ERROR, "Exception caught in '%s'.", __func__);
+		}
 		InterfaceLog(LOG_STATUS, "(%s) Exiting work loop.", m_Name.c_str());
 	}
 
@@ -1101,14 +1183,14 @@ namespace Plugins {
 					goto Error;
 				}
 
-				PyObject* localDict = PyModule_GetDict((PyObject*)m_PyModule);   // Returns a borrowed reference: no need to Py_DECREF() it once we are done
+				PyObject* localDict = PyModule_GetDict((PyObject*)m_PyModule);   // Returns a borrowed reference: no need to Py_XDECREF() it once we are done
 				if (!localDict)
 				{
 					InterfaceLog(LOG_ERROR, "Local dictionary not returned, module intialisation failed.");
 					goto Error;
 				}
 
-				PyObject* builtins = PyEval_GetBuiltins();  // Returns a borrowed reference: no need to Py_DECREF() it once we are done
+				PyObject* builtins = PyEval_GetBuiltins();  // Returns a borrowed reference: no need to Py_XDECREF() it once we are done
 				if (!builtins)
 				{
 					InterfaceLog(LOG_ERROR, "Builtins not returned, module intialisation failed.");
@@ -1145,20 +1227,9 @@ namespace Plugins {
 				PyErr_Clear();
 			}
 
-			//Start worker thread
-			m_thread = std::make_shared<std::thread>(&CPlugin::Do_Work, this);
-			std::string plugin_name = "Plugin_" + std::to_string(m_InterfaceID);
-			SetThreadName(m_thread->native_handle(), plugin_name.c_str());
-
 			if (PyErr_Occurred())
 			{
 				InterfaceLog(LOG_ERROR, "Uncaught error during initialisation.");
-				goto Error;
-			}
-
-			if (!m_thread)
-			{
-				InterfaceLog(LOG_ERROR, "Failed start worker thread.");
 				goto Error;
 			}
 
@@ -1188,14 +1259,6 @@ namespace Plugins {
 
 	bool CPlugin::Finalise()
 	{
-		InterfaceLog(LOG_DEBUG_INT, "Stopping threads.", m_Name.c_str());
-
-		if (m_thread)
-		{
-			m_thread->join();
-			m_thread.reset();
-		}
-
 		InterfaceLog(LOG_STATUS, "%s interface stopped.", m_Name.c_str());
 
 		m_bIsStarting = false;
@@ -1209,8 +1272,6 @@ namespace Plugins {
 			// Reset heartbeats in case plugin is restarting
 			m_LastHeartbeat = mytime(NULL);
 			m_LastHeartbeatReceive = mytime(NULL);
-
-			AccessPython	Guard(this, "CPlugin::Start");
 
 			if (PyErr_Occurred())
 			{
@@ -1522,12 +1583,6 @@ Error:
 				RemoveConnection(pConnection->pTransport);
 				delete pConnection->pTransport;
 				pConnection->pTransport = NULL;
-
-				// Plugin exiting and all connections have disconnect messages queued
-				if (IsStopRequested(0) && !m_Transports.size())
-				{
-					MessagePlugin(new onStopCallback(this));
-				}
 			}
 			else
 			{
@@ -1538,14 +1593,22 @@ Error:
 
 	void CPlugin::MessagePlugin(CPluginMessageBase *pMessage)
 	{
-		if (m_bDebug & PDM_QUEUE)
+		if (!IsStopRequested(1))
 		{
-			_log.Log(LOG_NORM, "(" + m_Name + ") Pushing '" + std::string(pMessage->Name()) + "' on to queue");
-		}
 
-		// Add message to queue
-		std::lock_guard<std::mutex> l(PluginMutex);
-		PluginMessageQueue.push_back(pMessage);
+			if (m_bDebug & PDM_QUEUE)
+			{
+				_log.Log(LOG_NORM, "(" + m_Name + ") Pushing '" + std::string(pMessage->Name()) + "' on to queue");
+			}
+
+			// Add message to queue
+			std::lock_guard<std::mutex> l(PluginMutex);
+			m_MessageQueue.push_back(pMessage);
+		}
+		else
+		{
+			_log.Log(LOG_ERROR, "(" + m_Name + ") Message '" + std::string(pMessage->Name()) + "' NOT pushed onto queue, plugin stopping.");
+		}
 	}
 
 	void CPlugin::DisconnectEvent(CEventBase * pMess)
@@ -1587,12 +1650,6 @@ Error:
 				Py_XDECREF(pConnection->Target);
 				pConnection->Target = NULL;
 			}
-
-			// Plugin exiting and all connections have disconnect messages queued
-			if (IsStopRequested(0) && !m_Transports.size())
-			{
-				MessagePlugin(new onStopCallback(this));
-			}
 		}
 	}
 
@@ -1600,8 +1657,6 @@ Error:
 	{
 		try
 		{
-			AccessPython	Guard(this, "CPlugin::Callback");
-
 			// Signal that plugin is still servicing events
 			m_LastHeartbeat = mytime(NULL);
 
@@ -1682,8 +1737,6 @@ Error:
 					}
 				}
 			}
-
-			if (pParams) Py_XDECREF(pParams);
 		}
 		catch (std::exception *e)
 		{
@@ -1699,6 +1752,8 @@ Error:
 	{
 		try
 		{
+			RequestStop();
+
 			if (PyErr_Occurred())
 			{
 				PyErr_Clear();
@@ -1717,9 +1772,6 @@ Error:
 					Py_XDECREF(pPluginTransport);
 				}
 			}
-
-			// Remove any residual messages from the queue
-			ClearMessageQueue();
 
 			// Stop Python
 			if (m_SettingsDict && PyDict_Size(m_SettingsDict))
@@ -1770,7 +1822,7 @@ Error:
 			InterfaceLog(LOG_ERROR, "Failed to add Settings dictionary.");
 			return false;
 		}
-		Py_DECREF(m_SettingsDict);
+		Py_XDECREF(m_SettingsDict);
 
 		// load associated settings to make them available to python
 		std::vector<std::vector<std::string> > result;

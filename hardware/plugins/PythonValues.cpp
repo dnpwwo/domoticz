@@ -43,18 +43,18 @@ namespace Plugins {
 		pRetVal->ValueID = ValueID;
 		pRetVal->DeviceID = DeviceID;
 		Py_INCREF(Name);
-		Py_DECREF(pRetVal->Name);
+		Py_XDECREF(pRetVal->Name);
 		pRetVal->Name = Name;
 		Py_INCREF(InternalID);
-		Py_DECREF(pRetVal->InternalID);
+		Py_XDECREF(pRetVal->InternalID);
 		pRetVal->InternalID = InternalID;
 		pRetVal->UnitID = UnitID;
 		Py_INCREF(Value);
-		Py_DECREF(pRetVal->Value);
+		Py_XDECREF(pRetVal->Value);
 		pRetVal->Value = Value;
 		pRetVal->Debug = Debug;
 		Py_INCREF(Timestamp);
-		Py_DECREF(pRetVal->Timestamp);
+		Py_XDECREF(pRetVal->Timestamp);
 		pRetVal->Timestamp = Timestamp;
 		pRetVal->Parent = Parent;
 		pRetVal->pPlugin = pPlugin;
@@ -290,24 +290,24 @@ namespace Plugins {
 				self->DeviceID = -1;
 				self->Name = PyUnicode_FromString("");
 				if (self->Name == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 				self->InternalID = PyUnicode_FromString("");
 				if (self->InternalID == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 				self->UnitID = -1;
 				self->Value = PyUnicode_FromString("");
 				if (self->Value == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 				self->Debug = false;
 				self->Timestamp = PyUnicode_FromString("");
 				if (self->Timestamp == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 				self->pPlugin = NULL;
@@ -379,7 +379,7 @@ namespace Plugins {
 					std::string	sInternalID = szInternalID ? szInternalID : "";
 					if (sInternalID.length())
 					{
-						Py_DECREF(self->InternalID);
+						Py_XDECREF(self->InternalID);
 						self->InternalID = PyUnicode_FromString(sInternalID.c_str());
 					}
 					self->DeviceID = lDeviceID;
@@ -409,7 +409,7 @@ namespace Plugins {
 						if (pStringObj)
 						{
 							self->Value = pStringObj;
-							Py_DECREF(pSafeAssign);
+							Py_XDECREF(pSafeAssign);
 						}
 						else
 						{
@@ -529,7 +529,7 @@ namespace Plugins {
 					if (pStringObj)
 					{
 						vValues.push_back(PyUnicode_AsUTF8(pStringObj));
-						Py_DECREF(pStringObj);
+						Py_XDECREF(pStringObj);
 					}
 					else
 					{
@@ -559,7 +559,7 @@ namespace Plugins {
 						if (pParent)
 						{
 							self->Parent = pParent;
-							Py_DECREF(pParent);
+							Py_XDECREF(pParent);
 						}
 					}
 

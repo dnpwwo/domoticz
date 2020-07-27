@@ -72,7 +72,7 @@ namespace Plugins {
 			else {
 				self->Name = PyUnicode_FromString("");
 				if (self->Name == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 
@@ -81,31 +81,31 @@ namespace Plugins {
 
 				self->Address = PyUnicode_FromString("");
 				if (self->Address == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 
 				self->Port = PyUnicode_FromString("");
 				if (self->Port == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 
 				self->LastSeen = PyUnicode_FromString("");
 				if (self->LastSeen == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 
 				self->Transport = PyUnicode_FromString("");
 				if (self->Transport == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 
 				self->Protocol = PyUnicode_FromString("None");
 				if (self->Protocol == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 

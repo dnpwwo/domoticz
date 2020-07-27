@@ -43,6 +43,7 @@ namespace Plugins {
 
 		std::mutex	m_TransportsMutex;
 		std::vector<CPluginTransport*>	m_Transports;
+		std::deque<CPluginMessageBase*>	m_MessageQueue;
 
 		std::shared_ptr<std::thread> m_thread;
 
@@ -165,6 +166,7 @@ namespace Plugins {
 				}
 				else
 				{
+					//Py_CLEAR(m_pObject);  // Need to look into using clear more broadly
 					Py_XDECREF(m_pObject);
 				}
 			}

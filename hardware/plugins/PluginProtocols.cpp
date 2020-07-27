@@ -289,7 +289,7 @@ namespace Plugins {
 			{
 				PyObject* pKeyString = PyObject_Str(key);
 				sJson += '"' + std::string(PyUnicode_AsUTF8(pKeyString)) + "\" :" + PythontoJSON(value) + ',';
-				Py_DECREF(pKeyString);
+				Py_XDECREF(pKeyString);
 			}
 			sJson[sJson.length()-1] = '}';
 		}
@@ -442,7 +442,7 @@ namespace Plugins {
 		// Remove headers
 		if (m_Headers)
 		{
-			Py_DECREF(m_Headers);
+			Py_XDECREF(m_Headers);
 		}
 		m_Headers = (PyObject*)PyDict_New();
 
@@ -486,7 +486,7 @@ namespace Plugins {
 					PyList_SetItem(pListObj, 0, pPrevObj);
 					Py_INCREF(pPrevObj);
 					PyDict_SetItemString((PyObject*)m_Headers, sHeaderName.c_str(), pListObj);
-					Py_DECREF(pListObj);
+					Py_XDECREF(pListObj);
 				}
 				// Append new value to the list
 				if (PyList_Append(pListObj, pObj) == -1) {
@@ -496,7 +496,7 @@ namespace Plugins {
 			else if (PyDict_SetItemString((PyObject*)m_Headers, sHeaderName.c_str(), pObj) == -1) {
 				_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to headers.", __func__, sHeaderName.c_str(), sHeaderText.c_str());
 			}
-			Py_DECREF(pObj);
+			Py_XDECREF(pObj);
 			*pData = pData->substr(pData->find_first_of('\n') + 1);
 		}
 	}
@@ -581,13 +581,13 @@ namespace Plugins {
 						PyObject*	pObj = Py_BuildValue("s", m_Status.c_str());
 						if (PyDict_SetItemString((PyObject*)pDataDict, "Status", pObj) == -1)
 							_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "Status", m_Status.c_str());
-						Py_DECREF(pObj);
+						Py_XDECREF(pObj);
 
 						if (m_Headers)
 						{
 							if (PyDict_SetItemString((PyObject*)pDataDict, "Headers", (PyObject*)m_Headers) == -1)
 								_log.Log(LOG_ERROR, "(%s) failed to add key '%s' to dictionary.", "HTTP", "Headers");
-							Py_DECREF((PyObject*)m_Headers);
+							Py_XDECREF((PyObject*)m_Headers);
 							m_Headers = NULL;
 						}
 
@@ -600,14 +600,13 @@ namespace Plugins {
 								PyDictObject* pJsonDict = (PyDictObject*)oJSON.JSONtoPython(sData);
 								if (PyDict_SetItemString((PyObject*)pDataDict, "Data", (PyObject*)pJsonDict) == -1)
 									_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "Data", sData.c_str());
-								Py_DECREF(pJsonDict);
+								Py_XDECREF(pJsonDict);
 							}
 							else
 							{
-								PyBytesObject* pBytes = (PyBytesObject*)Py_BuildValue("y#", sData.c_str(), sData.length());
-								if (PyDict_SetItemString((PyObject*)pDataDict, "Data", (PyObject*)pBytes) == -1)
+								PyObjPtr pBytes = Py_BuildValue("y#", sData.c_str(), sData.length());
+								if (PyDict_SetItemString((PyObject*)pDataDict, "Data", pBytes) == -1)
 									_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "Data", sData.c_str());
-								Py_DECREF(pBytes);
 							}
 						}
 
@@ -633,16 +632,15 @@ namespace Plugins {
 							if (!m_RemainingChunk)	// last chunk is zero length
 							{
 								PyObject*	pDataDict = PyDict_New();
-								PyObject*	pObj = Py_BuildValue("s", m_Status.c_str());
+								PyObjPtr	pObj = Py_BuildValue("s", m_Status.c_str());
 								if (PyDict_SetItemString(pDataDict, "Status", pObj) == -1)
 									_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "Status", m_Status.c_str());
-								Py_DECREF(pObj);
 
 								if (m_Headers)
 								{
 									if (PyDict_SetItemString(pDataDict, "Headers", (PyObject*)m_Headers) == -1)
 										_log.Log(LOG_ERROR, "(%s) failed to add key '%s' to dictionary.", "HTTP", "Headers");
-									Py_DECREF((PyObject*)m_Headers);
+									Py_XDECREF((PyObject*)m_Headers);
 									m_Headers = NULL;
 								}
 
@@ -651,7 +649,6 @@ namespace Plugins {
 									pObj = Py_BuildValue("y#", sPayload.c_str(), sPayload.length());
 									if (PyDict_SetItemString(pDataDict, "Data", pObj) == -1)
 										_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "Data", sPayload.c_str());
-									Py_DECREF(pObj);
 								}
 
 								Message->m_pPlugin->MessagePlugin(new onMessageCallback(Message->m_pPlugin, Message->m_pConnection, pDataDict));
@@ -697,19 +694,19 @@ namespace Plugins {
 					PyObject*	pObj = Py_BuildValue("s", sVerb.c_str());
 					if (PyDict_SetItemString(DataDict, "Verb", pObj) == -1)
 						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "Verb", sVerb.c_str());
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					std::string		sURL = sFirstLine.substr(sVerb.length() + 1, sFirstLine.find_first_of(' ', sVerb.length() + 1));
 					pObj = Py_BuildValue("s", sURL.c_str());
 					if (PyDict_SetItemString(DataDict, "URL", pObj) == -1)
 						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "URL", sURL.c_str());
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					if (m_Headers)
 					{
 						if (PyDict_SetItemString(DataDict, "Headers", (PyObject*)m_Headers) == -1)
 							_log.Log(LOG_ERROR, "(%s) failed to add key '%s' to dictionary.", "HTTP", "Headers");
-						Py_DECREF((PyObject*)m_Headers);
+						Py_XDECREF((PyObject*)m_Headers);
 						m_Headers = NULL;
 					}
 
@@ -718,7 +715,7 @@ namespace Plugins {
 						pObj = Py_BuildValue("y#", sPayload.c_str(), sPayload.length());
 						if (PyDict_SetItemString(DataDict, "Data", pObj) == -1)
 							_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "HTTP", "Data", sPayload.c_str());
-						Py_DECREF(pObj);
+						Py_XDECREF(pObj);
 					}
 
 					Message->m_pPlugin->MessagePlugin(new onMessageCallback(Message->m_pPlugin, Message->m_pConnection, DataDict));
@@ -807,7 +804,7 @@ namespace Plugins {
 						if (pUser) User = PyUnicode_AsUTF8(pUser);
 						PyObject* pPass = PyDict_GetItemString(pDict, "Password");
 						if (pPass) Pass = PyUnicode_AsUTF8(pPass);
-						Py_DECREF(pDict);
+						Py_XDECREF(pDict);
 					}
 				}
 				if (User.length() > 0 || Pass.length() > 0)
@@ -941,10 +938,10 @@ namespace Plugins {
 									const char* pByteArray = PyByteArray_AsString(item);
 									sHttp += sKey + ": " + pByteArray + "\r\n";
 								}
-								Py_DECREF(item);
+								Py_XDECREF(item);
 							}
 
-							Py_DECREF(iterator);
+							Py_XDECREF(iterator);
 						}
 					}
 				}
@@ -1072,43 +1069,43 @@ namespace Plugins {
 
 					pObj = Py_BuildValue("s", pIPv4->source_address().to_string().c_str());
 					PyDict_SetItemString(pIPv4Dict, "Source", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("s", pIPv4->destination_address().to_string().c_str());
 					PyDict_SetItemString(pIPv4Dict, "Destination", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("b", pIPv4->version());
 					PyDict_SetItemString(pIPv4Dict, "Version", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("b", pIPv4->protocol());
 					PyDict_SetItemString(pIPv4Dict, "Protocol", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("b", pIPv4->type_of_service());
 					PyDict_SetItemString(pIPv4Dict, "TypeOfService", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("h", pIPv4->header_length());
 					PyDict_SetItemString(pIPv4Dict, "HeaderLength", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("h", pIPv4->total_length());
 					PyDict_SetItemString(pIPv4Dict, "TotalLength", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("h", pIPv4->identification());
 					PyDict_SetItemString(pIPv4Dict, "Identification", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("h", pIPv4->header_checksum());
 					PyDict_SetItemString(pIPv4Dict, "HeaderChecksum", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("i", pIPv4->time_to_live());
 					PyDict_SetItemString(pIPv4Dict, "TimeToLive", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					iTotalData = pIPv4->total_length();
 					iDataOffset = pIPv4->header_length();
@@ -1130,16 +1127,16 @@ namespace Plugins {
 					{
 						pObj = Py_BuildValue("I", Message->m_ElapsedMs);
 						PyDict_SetItemString(pDataDict, "ElapsedMs", pObj);
-						Py_DECREF(pObj);
+						Py_XDECREF(pObj);
 					}
 
 					pObj = Py_BuildValue("b", pICMP->type());
 					PyDict_SetItemString(pIcmpDict, "Type", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("b", pICMP->type());
 					PyDict_SetItemString(pDataDict, "Status", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					switch (pICMP->type())
 					{
@@ -1157,23 +1154,23 @@ namespace Plugins {
 					}
 
 					PyDict_SetItemString(pDataDict, "Description", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("b", pICMP->code());
 					PyDict_SetItemString(pIcmpDict, "Code", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("h", pICMP->checksum());
 					PyDict_SetItemString(pIcmpDict, "Checksum", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("h", pICMP->identifier());
 					PyDict_SetItemString(pIcmpDict, "Identifier", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					pObj = Py_BuildValue("h", pICMP->sequence_number());
 					PyDict_SetItemString(pIcmpDict, "SequenceNumber", pObj);
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 
 					iDataOffset += sizeof(icmp_header);
 					if (pICMP->type() == icmp_header::destination_unreachable)
@@ -1189,11 +1186,11 @@ namespace Plugins {
 		{
 			pObj = Py_BuildValue("b", icmp_header::time_exceeded);
 			PyDict_SetItemString(pDataDict, "Status", pObj);
-			Py_DECREF(pObj);
+			Py_XDECREF(pObj);
 
 			pObj = Py_BuildValue("s", "time_exceeded");
 			PyDict_SetItemString(pDataDict, "Description", pObj);
-			Py_DECREF(pObj);
+			Py_XDECREF(pObj);
 		}
 
 		std::string		sData(Message->m_Buffer.begin(), Message->m_Buffer.end());
@@ -1201,7 +1198,7 @@ namespace Plugins {
 		pObj = Py_BuildValue("y#", sData.c_str(), sData.length());
 		if (PyDict_SetItemString(pDataDict, "Data", pObj) == -1)
 			_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", "ICMP", "Data", sData.c_str());
-		Py_DECREF(pObj);
+		Py_XDECREF(pObj);
 
 		if (pDataDict)
 		{
@@ -1354,7 +1351,7 @@ namespace Plugins {
 						_log.Log(LOG_ERROR, "(%s) failed to add key '%s' to dictionary.", __func__, "Topics");
 						break;
 					}
-					Py_DECREF(pResponsesList);
+					Py_XDECREF(pResponsesList);
 
 					while (it != pktend)
 					{
@@ -1380,7 +1377,7 @@ namespace Plugins {
 							break;
 						}
 						PyList_Append(pResponsesList, pResponseDict);
-						Py_DECREF(pResponseDict);
+						Py_XDECREF(pResponseDict);
 					}
 				}
 				else
@@ -1627,7 +1624,7 @@ namespace Plugins {
 					if (pUser) User = PyUnicode_AsUTF8(pUser);
 					PyObject *pPass = PyDict_GetItemString(pDict, "Password");
 					if (pPass) Pass = PyUnicode_AsUTF8(pPass);
-					Py_DECREF(pDict);
+					Py_XDECREF(pDict);
 				}
 				if (User.length())
 				{
@@ -1951,7 +1948,7 @@ namespace Plugins {
 			PyObject *pObj = Py_BuildValue("N", PyBool_FromLong(bFinish));
 			if (PyDict_SetItemString(pDataDict, "Finish", pObj) == -1)
 				_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, "Finish", bFinish ? "True" : "False");
-			Py_DECREF(pObj);
+			Py_XDECREF(pObj);
 
 			// Masked data?
 			if (lMaskingKey)
@@ -1964,7 +1961,7 @@ namespace Plugins {
 				PyObject*	pObj = Py_BuildValue("i", lMaskingKey);
 				if (PyDict_SetItemString(pDataDict, "Mask", pObj) == -1)
 					_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%ld' to dictionary.", __func__, "Mask", lMaskingKey);
-				Py_DECREF(pObj);
+				Py_XDECREF(pObj);
 			}
 
 			switch (iOpCode)
@@ -1982,7 +1979,7 @@ namespace Plugins {
 				PyObject*	pObj = Py_BuildValue("s", "Close");
 				if (PyDict_SetItemString(pDataDict, "Operation", pObj) == -1)
 					_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, "Operation", "Close");
-				Py_DECREF(pObj);
+				Py_XDECREF(pObj);
 				if (vPayload.size() == 2)
 				{
 					int		iReasonCode = (vPayload[0] << 8) + vPayload[1];
@@ -1996,7 +1993,7 @@ namespace Plugins {
 				PyObject*	pObj = Py_BuildValue("s", "Ping");
 				if (PyDict_SetItemString(pDataDict, "Operation", pObj) == -1)
 					_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, "Operation", "Ping");
-				Py_DECREF(pObj);
+				Py_XDECREF(pObj);
 				break;
 			}
 			case 0x0A:	// Pong
@@ -2005,7 +2002,7 @@ namespace Plugins {
 				PyObject*	pObj = Py_BuildValue("s", "Pong");
 				if (PyDict_SetItemString(pDataDict, "Operation", pObj) == -1)
 					_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, "Operation", "Pong");
-				Py_DECREF(pObj);
+				Py_XDECREF(pObj);
 				break;
 			}
 			default:
@@ -2023,7 +2020,7 @@ namespace Plugins {
 			{
 				if (PyDict_SetItemString(pDataDict, "Payload", pPayload) == -1)
 					_log.Log(LOG_ERROR, "(%s) failed to add key '%s' to dictionary.", __func__, "Payload");
-				Py_DECREF(pPayload);
+				Py_XDECREF(pPayload);
 			}
 
 			Message->m_pPlugin->MessagePlugin(new onMessageCallback(Message->m_pPlugin, Message->m_pConnection, pDataDict)); 
@@ -2082,7 +2079,7 @@ namespace Plugins {
 					PyObject*	pObj = Py_BuildValue("s", "GET");
 					if (PyDict_SetItemString(WriteMessage->m_Object, "Verb", pObj) == -1)
 						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, "Verb", "GET");
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 				}
 
 				// Required headers specified?
@@ -2092,7 +2089,7 @@ namespace Plugins {
 					pHeaders = (PyObject*)PyDict_New();
 					if (PyDict_SetItemString(WriteMessage->m_Object, "Headers", (PyObject*)pHeaders) == -1)
 						_log.Log(LOG_ERROR, "(%s) failed to add key '%s' to dictionary.", "WS", "Headers");
-					Py_DECREF(pHeaders);
+					Py_XDECREF(pHeaders);
 				}
 				PyObject *pConnection = PyDict_GetItemString(pHeaders, "Connection");
 				if (!pConnection)
@@ -2100,7 +2097,7 @@ namespace Plugins {
 					PyObject*	pObj = Py_BuildValue("s", "keep-alive, Upgrade");
 					if (PyDict_SetItemString(pHeaders, "Connection", pObj) == -1)
 						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, "Connection", "Upgrade");
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 				}
 				PyObject *pUpgrade = PyDict_GetItemString(pHeaders, "Upgrade");
 				if (!pUpgrade)
@@ -2108,7 +2105,7 @@ namespace Plugins {
 					PyObject*	pObj = Py_BuildValue("s", "websocket");
 					if (PyDict_SetItemString(pHeaders, "Upgrade", pObj) == -1)
 						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, "Upgrade", "websocket");
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 				}
 				PyObject *pUserAgent = PyDict_GetItemString(pHeaders, "User-Agent");
 				if (!pUserAgent)
@@ -2116,7 +2113,7 @@ namespace Plugins {
 					PyObject*	pObj = Py_BuildValue("s", "Domoticz/1.0");
 					if (PyDict_SetItemString(pHeaders, "User-Agent", pObj) == -1)
 						_log.Log(LOG_ERROR, "(%s) failed to add key '%s', value '%s' to dictionary.", __func__, "User-Agent", "Domoticz/1.0");
-					Py_DECREF(pObj);
+					Py_XDECREF(pObj);
 				}
 
 				// Use parent HTTP protocol object to do the actual formatting

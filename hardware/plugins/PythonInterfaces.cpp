@@ -300,10 +300,10 @@ namespace Plugins {
 
 		pRetVal->InterfaceID = InterfaceID;
 		Py_INCREF(Name);
-		Py_DECREF(pRetVal->Name);
+		Py_XDECREF(pRetVal->Name);
 		pRetVal->Name = Name;
 		Py_INCREF(Configuration);
-		Py_DECREF(pRetVal->Configuration);
+		Py_XDECREF(pRetVal->Configuration);
 		pRetVal->Configuration = Configuration;
 		pRetVal->Debug = Debug;
 		pRetVal->Active = Active;
@@ -496,12 +496,12 @@ namespace Plugins {
 				self->InterfaceID = -1;
 				self->Name = PyUnicode_FromString("");
 				if (self->Name == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 				self->Configuration = PyDict_New();
 				if (self->Configuration == NULL) {
-					Py_DECREF(self);
+					Py_XDECREF(self);
 					return NULL;
 				}
 				self->Debug = false;
