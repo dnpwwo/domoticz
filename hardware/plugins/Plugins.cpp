@@ -272,7 +272,7 @@ namespace Plugins {
 			if (!PyArg_ParseTuple(args, "i", &type))
 			{
 				_log.Log(LOG_ERROR, "(%s) failed to parse parameters, integer expected.", pModState->pPlugin->m_Name.c_str());
-				LogPythonException(pModState->pPlugin, std::string(__func__));
+				pModState->pPlugin->LogPythonException((PyObject*)pModState->pPlugin->m_Interface, std::string(__func__));
 			}
 			else
 			{
@@ -315,7 +315,7 @@ namespace Plugins {
 			if (!PyArg_ParseTuple(args, "p", &bTrace))
 			{
 				_log.Log(LOG_ERROR, "(%s) failed to parse parameter, True/False expected.", pModState->pPlugin->m_Name.c_str());
-				LogPythonException(pModState->pPlugin, std::string(__func__));
+				pModState->pPlugin->LogPythonException((PyObject*)pModState->pPlugin->m_Interface, std::string(__func__));
 			}
 			else
 			{
@@ -468,7 +468,7 @@ namespace Plugins {
 			if (PyErr_Occurred())
 			{
 				_log.Log(LOG_NORM, "(%s) Python error was set during unlock for '%s'", m_pPlugin->m_Name.c_str(), m_Text);
-				LogPythonException(m_pPlugin, m_Text);
+				m_pPlugin->LogPythonException((PyObject*)m_pPlugin->m_Interface, m_Text);
 				PyErr_Clear();
 			}
 
@@ -509,6 +509,9 @@ namespace Plugins {
 		m_bIsStarted = false;
 	}
 
+	/*
+	//	sLevel is the name of the objects log routine so should be "Error", "Log" or "Debug"
+	*/
 	void CPlugin::WriteToTargetLog(PyObject* pTarget, const char* sLevel, const char* Message, ...)
 	{
 		va_list argList;
@@ -578,6 +581,9 @@ namespace Plugins {
 		}
 	}
 
+	/*
+	// Exception logging for import errors and where there is no object hierarchy
+	*/
 	void CPlugin::LogPythonException(PyObject* pTarget)
 	{
 		PyTracebackObject	*pTraceback;
@@ -724,6 +730,9 @@ namespace Plugins {
 		if (pTraceback) Py_XDECREF(pTraceback);
 	}
 
+	/*
+	//	General exception handling, tries to log to the target objects local log, otherwise the interface's log
+	*/
 	void CPlugin::LogPythonException(PyObject* pTarget, const std::string &sHandler)
 	{
 		PyTracebackObject	*pTraceback;
@@ -749,19 +758,19 @@ namespace Plugins {
 		}
 		if (sTypeText.length() && sErrorText.length())
 		{
-			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s':'%s'.", m_Name.c_str(), sHandler.c_str(), sTypeText.c_str(), sErrorText.c_str());
+			WriteToTargetLog(pTarget, "Error", "(%s) '%s' failed '%s':'%s'.", m_Name.c_str(), sHandler.c_str(), sTypeText.c_str(), sErrorText.c_str());
 		}
 		if (sTypeText.length() && !sErrorText.length())
 		{
-			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), sTypeText.c_str());
+			WriteToTargetLog(pTarget, "Error", "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), sTypeText.c_str());
 		}
 		if (!sTypeText.length() && sErrorText.length())
 		{
-			InterfaceLog(LOG_ERROR, "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), sErrorText.c_str());
+			WriteToTargetLog(pTarget, "Error", "(%s) '%s' failed '%s'.", m_Name.c_str(), sHandler.c_str(), sErrorText.c_str());
 		}
 		if (!sTypeText.length() && !sErrorText.length())
 		{
-			InterfaceLog(LOG_ERROR, "(%s) '%s' failed, unable to determine error.", m_Name.c_str(), sHandler.c_str());
+			WriteToTargetLog(pTarget, "Error", "(%s) '%s' failed, unable to determine error.", m_Name.c_str(), sHandler.c_str());
 		}
 
 		// Log a stack trace if there is one
@@ -787,16 +796,16 @@ namespace Plugins {
 					FuncName = ((PyBytesObject*)pFuncBytes)->ob_sval;
 				}
 				if (!FileName.empty())
-					InterfaceLog(LOG_ERROR, "(%s) ----> Line %d in '%s', function %s", m_Name.c_str(), lineno, FileName.c_str(), FuncName.c_str());
+					WriteToTargetLog(pTarget, "Error", "(%s) ----> Line %d in '%s', function %s", m_Name.c_str(), lineno, FileName.c_str(), FuncName.c_str());
 				else
-					InterfaceLog(LOG_ERROR, "(%s) ----> Line %d in '%s'", m_Name.c_str(), lineno, FuncName.c_str());
+					WriteToTargetLog(pTarget, "Error", "(%s) ----> Line %d in '%s'", m_Name.c_str(), lineno, FuncName.c_str());
 			}
 			pTraceFrame = pTraceFrame->tb_next;
 		}
 
 		if (!pExcept && !pValue && !pTraceback)
 		{
-			InterfaceLog(LOG_ERROR, "(%s) Call to message handler '%s' failed, unable to decode exception.", m_Name.c_str(), sHandler.c_str());
+			WriteToTargetLog(pTarget, "Error", "(%s) Call to message handler '%s' failed, unable to decode exception.", m_Name.c_str(), sHandler.c_str());
 		}
 
 		if (pTraceback) Py_XDECREF(pTraceback);
@@ -806,7 +815,7 @@ namespace Plugins {
 	{
 		if (Interval > 0)
 			m_iPollInterval = Interval;
-		if (m_bDebug & PDM_PLUGIN) _log.Log(LOG_NORM, "(%s) Heartbeat interval set to: %d.", m_Name.c_str(), m_iPollInterval);
+		if (m_bDebug & PDM_PLUGIN) InterfaceLog(LOG_NORM, "(%s) Heartbeat interval set to: %d.", m_Name.c_str(), m_iPollInterval);
 		return m_iPollInterval;
 	}
 
@@ -977,27 +986,29 @@ namespace Plugins {
 										InterfaceLog(LOG_NORM, "(%s) Processing '%s' message", m_Name.c_str(), Message->m_Name.c_str());
 									}
 									Message->Process();
+
+									// Free the memory for the message special cases for Initialise and Stop messages
+									if (!pStop && (m_PyInterpreter || !m_bIsStarting))
+									{
+										// Lock Python if Plugin is known
+										{
+											AccessPython	Guard(this, "CPlugin::Do_Work");
+											delete Message;
+										}
+									}
+									else
+									{
+										// Stop messages can't lock because interpreter is destroyed
+										delete Message;
+									}
 								}
 								else
 								{
 									InterfaceLog(LOG_ERROR, "(%s) Python interpreter has been destroyed. Processing '%s' message", m_Name.c_str(), Message->m_Name.c_str());
-								}
-							}
-
-							// Free the memory for the message special cases for Initialise and Stop messages
-							if (!pStop && (m_PyInterpreter || !m_bIsStarting))
-							{
-								// Lock Python if Plugin is known
-								{
-									AccessPython	Guard(this, "CPlugin::Do_Work");
 									delete Message;
 								}
 							}
-							else
-							{
-								// Stop messages can't lock because interpreter is destroyed
-								delete Message;
-							}
+
 						}
 						catch (...)
 						{

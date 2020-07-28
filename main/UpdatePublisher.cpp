@@ -142,7 +142,7 @@ void CUpdateManager::callback(int iAction, char const* pDB, char const* pTable, 
 			pEntry = new CUpdateEntry("Delete", pTable, iRowIdx);
 			break;
 		default:
-			_log.Log(LOG_ERROR, "[%s]: Unknown Action, ignored. Table: %s, Action: %d, Row Index: %d.", __func__, pTable, iAction, iRowIdx);
+			_log.Log(LOG_ERROR, "[%s]: Unknown Action, ignored. Table: %s, Action: %d, Row Index: %ld.", __func__, pTable, iAction, iRowIdx);
 			return;
 		}
 

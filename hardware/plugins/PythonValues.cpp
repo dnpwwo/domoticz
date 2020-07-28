@@ -595,14 +595,32 @@ namespace Plugins {
 					{
 						if (PyUnicode_Check(self->Value))
 						{
-							vValues.push_back(std::string(PyUnicode_AsUTF8(self->Value)));
+							const char* pChars = PyUnicode_AsUTF8(self->Value);
+							if (!pChars)
+							{
+								ValueLog(self, LOG_ERROR, "Conversion to UTF8 failed on checked object for ID %ld", self->ValueID);
+								goto Error;
+							}
+							else
+							{
+								vValues.push_back(std::string(pChars));
+							}
 						}
 						else
 						{
 							PyObjPtr pStringObj = PyObject_Str(self->Value);
 							if (pStringObj)
 							{
-								vValues.push_back(std::string(PyUnicode_AsUTF8(pStringObj)));
+								const char* pChars = PyUnicode_AsUTF8(pStringObj);
+								if (!pChars)
+								{
+									ValueLog(self, LOG_ERROR, "Conversion to UTF8 failed on stringed object for ID %ld", self->ValueID);
+									goto Error;
+								}
+								else
+								{
+									vValues.push_back(std::string(PyUnicode_AsUTF8(pStringObj)));
+								}
 							}
 							else
 							{
@@ -645,6 +663,12 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Value update failed, NULL Value object passed.");
 		}
 
+	Error:
+//		Should be within a callback so erro should be logged automatically (plus the error shouldn't be cleared)
+//		if (PyErr_Occurred())
+//		{
+//			self->pPlugin->LogPythonException((PyObject*)self, __func__);
+//		}
 		Py_INCREF(Py_None);
 		return Py_None;
 	}

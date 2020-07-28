@@ -193,8 +193,8 @@ namespace Plugins {
 			{
 				CPlugin* pPlugin = NULL;
 				if (pModState) pPlugin = pModState->pPlugin;
-				_log.Log(LOG_ERROR, "Expected: myVar = domoticz.Connection(Name=\"<Name>\", Transport=\"<Transport>\", Protocol=\"<Protocol>\", Address=\"<IP-Address>\", Port=\"<Port>\", Baud=0)");
-				LogPythonException(pPlugin, __func__);
+				self->pPlugin->WriteToTargetLog((PyObject*)self->pPlugin->m_Interface, "Error", "Expected: myVar = domoticz.Connection(Name=\"<Name>\", Transport=\"<Transport>\", Protocol=\"<Protocol>\", Address=\"<IP-Address>\", Port=\"<Port>\", Baud=0)");
+				pPlugin->LogPythonException((PyObject*)pPlugin->m_Interface, __func__);
 			}
 		}
 		catch (std::exception *e)
@@ -222,19 +222,19 @@ namespace Plugins {
 		//	Add connect command to message queue unless already connected
 		if (self->pPlugin->IsStopRequested(0))
 		{
-			_log.Log(LOG_NORM, "%s, connect request from '%s' ignored. Plugin is stopping.", __func__, self->pPlugin->m_Name.c_str());
+			self->pPlugin->WriteToTargetLog((PyObject*)self->pPlugin->m_Interface, "Log", "%s, connect request from '%s' ignored. Plugin is stopping.", __func__, self->pPlugin->m_Name.c_str());
 			return Py_None;
 		}
 
 		if (self->pTransport && self->pTransport->IsConnecting())
 		{
-			_log.Log(LOG_ERROR, "%s, connect request from '%s' ignored. Transport is connecting.", __func__, self->pPlugin->m_Name.c_str());
+			self->pPlugin->WriteToTargetLog((PyObject*)self->pPlugin->m_Interface, "Error", "%s, connect request from '%s' ignored. Transport is connecting.", __func__, self->pPlugin->m_Name.c_str());
 			return Py_None;
 		}
 
 		if (self->pTransport && self->pTransport->IsConnected())
 		{
-			_log.Log(LOG_ERROR, "%s, connect request from '%s' ignored. Transport is connected.", __func__, self->pPlugin->m_Name.c_str());
+			self->pPlugin->WriteToTargetLog((PyObject*)self->pPlugin->m_Interface, "Error", "%s, connect request from '%s' ignored. Transport is connected.", __func__, self->pPlugin->m_Name.c_str());
 			return Py_None;
 		}
 
@@ -250,8 +250,8 @@ namespace Plugins {
 			}
 			else
 			{
-				_log.Log(LOG_ERROR, "Connect request not completed, no Event Target specified.");
-				LogPythonException(self->pPlugin, __func__);
+				self->pPlugin->WriteToTargetLog((PyObject*)self->pPlugin->m_Interface, "Error", "Connect request not completed, no Event Target specified.");
+				self->pPlugin->LogPythonException((PyObject*)self->pPlugin->m_Interface, __func__);
 			}
 		}
 		else
@@ -325,7 +325,7 @@ namespace Plugins {
 		}
 		else if (self->pPlugin->IsStopRequested(0))
 		{
-			_log.Log(LOG_NORM, "%s, send request from '%s' ignored. Plugin is stopping.", __func__, self->pPlugin->m_Name.c_str());
+			self->pPlugin->WriteToTargetLog(self->Target, "Log", "%s, send request from '%s' ignored. Plugin is stopping.", __func__, self->pPlugin->m_Name.c_str());
 		}
 		else
 		{
@@ -334,8 +334,8 @@ namespace Plugins {
 			static char *kwlist[] = { "Message", "Delay", NULL };
 			if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|i", kwlist, &pData, &iDelay))
 			{
-				_log.Log(LOG_ERROR, "(%s) failed to parse parameters, Message or Message, Delay expected.", self->pPlugin->m_Name.c_str());
-				LogPythonException(self->pPlugin, std::string(__func__));
+				self->pPlugin->WriteToTargetLog(self->Target, "Error", "(%s) failed to parse parameters, Message or Message, Delay expected.", self->pPlugin->m_Name.c_str());
+				self->pPlugin->LogPythonException(self->Target, std::string(__func__));
 			}
 			else
 			{
