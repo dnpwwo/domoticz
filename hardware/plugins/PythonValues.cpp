@@ -589,63 +589,74 @@ namespace Plugins {
 			{
 				if (self->ValueID != -1)
 				{
-					std::string		sSQL = "UPDATE Value SET Value=?, Timestamp=CURRENT_TIMESTAMP WHERE ValueID=" + std::to_string(self->ValueID) + ";";
-					std::vector<std::string> vValues;
-					if (self->Value)
+					try
 					{
-						if (PyUnicode_Check(self->Value))
+						std::string		sSQL = "UPDATE Value SET Value=?, Timestamp=CURRENT_TIMESTAMP WHERE ValueID=" + std::to_string(self->ValueID) + ";";
+						std::vector<std::string> vValues;
+						if (self->Value)
 						{
-							const char* pChars = PyUnicode_AsUTF8(self->Value);
-							if (!pChars)
+							if (PyUnicode_Check(self->Value))
 							{
-								ValueLog(self, LOG_ERROR, "Conversion to UTF8 failed on checked object for ID %ld", self->ValueID);
-								goto Error;
-							}
-							else
-							{
-								vValues.push_back(std::string(pChars));
-							}
-						}
-						else
-						{
-							PyObjPtr pStringObj = PyObject_Str(self->Value);
-							if (pStringObj)
-							{
-								const char* pChars = PyUnicode_AsUTF8(pStringObj);
+								const char* pChars = PyUnicode_AsUTF8(self->Value);
 								if (!pChars)
 								{
-									ValueLog(self, LOG_ERROR, "Conversion to UTF8 failed on stringed object for ID %ld", self->ValueID);
+									ValueLog(self, LOG_ERROR, "Conversion to UTF8 failed on checked object for ID %ld", self->ValueID);
 									goto Error;
 								}
 								else
 								{
-									vValues.push_back(std::string(PyUnicode_AsUTF8(pStringObj)));
+									vValues.push_back(std::string(pChars));
 								}
 							}
 							else
 							{
-								ValueLog(self, LOG_ERROR, "(%s) Unable to derive string for Value", self->pPlugin->m_Name.c_str());
-								vValues.push_back(std::string(""));
+								PyObjPtr pStringObj = PyObject_Str(self->Value);
+								if (pStringObj)
+								{
+									const char* pChars = PyUnicode_AsUTF8(pStringObj);
+									if (!pChars)
+									{
+										ValueLog(self, LOG_ERROR, "Conversion to UTF8 failed on stringed object for ID %ld", self->ValueID);
+										goto Error;
+									}
+									else
+									{
+										vValues.push_back(std::string(PyUnicode_AsUTF8(pStringObj)));
+									}
+								}
+								else
+								{
+									ValueLog(self, LOG_ERROR, "(%s) Unable to derive string for Value", self->pPlugin->m_Name.c_str());
+									vValues.push_back(std::string(""));
+								}
 							}
-						}
 
-						int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
+							int		iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
 
-						// Handle any data we get back
-						if (!iRowCount)
-						{
-							ValueLog(self, LOG_ERROR, "Update to 'Value' failed to update any records for ID %ld", self->ValueID);
+							// Handle any data we get back
+							if (!iRowCount)
+							{
+								ValueLog(self, LOG_ERROR, "Update to 'Value' failed to update any records for ID %ld", self->ValueID);
+							}
+							else
+							{
+								std::string	sName = PyUnicode_AsUTF8(self->Name);
+								if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
+									ValueLog(self, LOG_NORM, "Update to Value '%s' succeeded, %d records updated.", sName.c_str(), iRowCount);
+							}
 						}
 						else
 						{
-							std::string	sName = PyUnicode_AsUTF8(self->Name);
-							if (self->pPlugin->m_bDebug && PDM_PUB_SUB)
-								ValueLog(self, LOG_NORM, "Update to Value '%s' succeeded, %d records updated.", sName.c_str(), iRowCount);
+							ValueLog(self, LOG_ERROR, "Value update failed, Value object is NULL.");
 						}
 					}
-					else
+					catch (std::exception* e)
 					{
-						_log.Log(LOG_ERROR, "Value update failed, Value object is not NULL.");
+						ValueLog(self, LOG_ERROR, "%s: Execption thrown: %s", __func__, e->what());
+					}
+					catch (...)
+					{
+						ValueLog(self, LOG_ERROR, "%s: Unknown execption thrown", __func__);
 					}
 				}
 				else
