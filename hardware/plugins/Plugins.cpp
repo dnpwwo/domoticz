@@ -1173,6 +1173,7 @@ namespace Plugins {
 			try
 			{
 				// Just importing something seems to set the intpreter up properly
+				PyErr_Clear();
 				m_PyModule = PyImport_ImportModule("api");
 				if (!m_PyModule)
 				{

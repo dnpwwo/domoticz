@@ -280,32 +280,40 @@ namespace Plugins {
 			CPlugin* pPlugin = (CPlugin*)it->second;
 			//AccessPython	Guard(pPlugin, "PluginFromValueID");
 
-			PyObjPtr pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
-			if (!pDevicesDict || !PyDict_Check(pDevicesDict))
+			PyErr_Clear();
+			if (PyObject_HasAttrString((PyObject*)pPlugin->m_Interface, "Devices"))
 			{
-				continue; // Should never happen
-			}
-
-			PyObject* key, * pDevice;
-			Py_ssize_t pos = 0;
-			// we don't know the 'owning' DeviceID so search all
-			while (PyDict_Next(pDevicesDict, &pos, &key, &pDevice))
-			{
-				// And locate it into the Device's Values dictionary
-				PyObjPtr pValuesDict = PyObject_GetAttrString(pDevice, "Values");
-				if (!pValuesDict || !PyDict_Check(pValuesDict))
+				PyObjPtr pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
+				if (!pDevicesDict || !PyDict_Check(pDevicesDict))
 				{
 					continue; // Should never happen
 				}
 
-				PyObject* key, * pValue;
+				PyObject* key, * pDevice;
 				Py_ssize_t pos = 0;
-				// For delete we don't know the 'owning' DeviceID so search all
-				while (PyDict_Next(pValuesDict, &pos, &key, &pValue))
+				// we don't know the 'owning' DeviceID so search all
+				while (PyDict_Next(pDevicesDict, &pos, &key, &pDevice))
 				{
-					if (((CValue*)pValue)->ValueID == ValueID)
+					// And locate it into the Device's Values dictionary
+					PyErr_Clear();
+					if (PyObject_HasAttrString(pDevice, "Values"))
 					{
-						return pPlugin;
+						PyObjPtr pValuesDict = PyObject_GetAttrString(pDevice, "Values");
+						if (!pValuesDict || !PyDict_Check(pValuesDict))
+						{
+							continue; // Should never happen
+						}
+
+						PyObject* key, * pValue;
+						Py_ssize_t pos = 0;
+						// For delete we don't know the 'owning' DeviceID so search all
+						while (PyDict_Next(pValuesDict, &pos, &key, &pValue))
+						{
+							if (((CValue*)pValue)->ValueID == ValueID)
+							{
+								return pPlugin;
+							}
+						}
 					}
 				}
 			}

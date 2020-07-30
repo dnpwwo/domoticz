@@ -595,7 +595,11 @@ namespace Plugins {
 						std::vector<std::string> vValues;
 						if (self->Value)
 						{
-							if (PyUnicode_Check(self->Value))
+							if (self->Value == Py_None)
+							{
+								vValues.push_back(std::string("None"));
+							}
+							else if (PyUnicode_Check(self->Value))
 							{
 								const char* pChars = PyUnicode_AsUTF8(self->Value);
 								if (!pChars)
