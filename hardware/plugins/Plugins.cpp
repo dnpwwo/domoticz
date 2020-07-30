@@ -432,7 +432,10 @@ namespace Plugins {
 		{
 			if (m_pPlugin)
 			{
-				_log.Log(LOG_NORM, "(%s) Requesting lock for '%s', waiting...", m_pPlugin->m_Name.c_str(), m_Text);
+				if (m_pPlugin->m_bDebug & PDM_LOCKING)
+				{
+					_log.Log(LOG_NORM, "(%s) Requesting lock for '%s', waiting...", m_pPlugin->m_Name.c_str(), m_Text);
+				}
 			}
 			else _log.Log(LOG_NORM, "Python lock requested for '%s' in use, will wait.", m_Text);
 			m_Lock->lock();
@@ -523,18 +526,22 @@ namespace Plugins {
 		// Mutex lock should be held prior to calling this function
 		// Targets should be Interfaces, Devices or Values
 		// Python method on the object will do the actual writing to make the messages to the correct place
-		PyObjPtr pLevelLog = PyObject_GetAttrString(pTarget, sLevel);
-		if (pLevelLog && PyCallable_Check(pLevelLog))
+		PyErr_Clear();
+		if (PyObject_HasAttrString(pTarget, sLevel))
 		{
-			PyObjPtr argList = Py_BuildValue("(s)", cbuffer);
-			if (!argList)
+			PyObjPtr pLevelLog = PyObject_GetAttrString(pTarget, sLevel);
+			if (pLevelLog && PyCallable_Check(pLevelLog))
 			{
-				_log.Log(LOG_ERROR, "Failed while building argument list for '%s' logging call.", sLevel);
-				PyErr_Clear();
-			}
-			else
-			{
-				PyObjPtr pLogReturn = PyObject_CallObject(pLevelLog, argList);
+				PyObjPtr argList = Py_BuildValue("(s)", cbuffer);
+				if (!argList)
+				{
+					_log.Log(LOG_ERROR, "Failed while building argument list for '%s' logging call.", sLevel);
+					PyErr_Clear();
+				}
+				else
+				{
+					PyObjPtr pLogReturn = PyObject_CallObject(pLevelLog, argList);
+				}
 			}
 		}
 		else
@@ -592,6 +599,7 @@ namespace Plugins {
 
 		PyErr_Fetch(&pExcept, &pValue, (PyObject**)&pTraceback);
 		PyErr_NormalizeException(&pExcept, &pValue, (PyObject**)&pTraceback);
+		PyErr_Clear();
 
 		if (pExcept)
 		{
@@ -743,6 +751,7 @@ namespace Plugins {
 
 		PyErr_Fetch(&pExcept, &pValue, (PyObject**)&pTraceback);
 		PyErr_NormalizeException(&pExcept, &pValue, (PyObject * *)& pTraceback);
+		PyErr_Clear();
 
 		if (pExcept)
 		{
@@ -946,18 +955,21 @@ namespace Plugins {
 						{
 							CPluginMessageBase* FrontMessage = m_MessageQueue.front();
 							m_MessageQueue.pop_front();
-							if (!FrontMessage->m_Delay || FrontMessage->m_When <= Now)
+							if (FrontMessage->m_Delay && FrontMessage->m_When > Now)
+							{
+								// Message is for sometime in the future so requeue it (this happens when the 'Delay' parameter is used on a Send & Stop)
+								if (m_bDebug & PDM_QUEUE)
+								{
+									InterfaceLog(LOG_NORM, "(%s) Requeuing '%s' message, queue has %d entries", m_Name.c_str(), FrontMessage->m_Name.c_str(), m_MessageQueue.size());
+								}
+								m_MessageQueue.push_back(FrontMessage);
+							}
+							else
 							{
 								// Message is ready now or was already ready (this is the case for almost all messages)
 								Message = FrontMessage;
 								break;
 							}
-							// Message is for sometime in the future so requeue it (this happens when the 'Delay' parameter is used on a Send & Stop)
-							if (m_bDebug & PDM_QUEUE)
-							{
-								InterfaceLog(LOG_NORM, "(%s) Requeuing '%s' message, queue has %d entries", m_Name.c_str(), FrontMessage->m_Name.c_str(), m_MessageQueue.size());
-							}
-							m_MessageQueue.push_back(FrontMessage);
 						}
 					}
 
@@ -967,14 +979,13 @@ namespace Plugins {
 
 						try
 						{
-							const CPlugin* pPlugin = Message->Plugin();
 							// for stop messages make sure the queue is empty and transports are all gone before processing
 							onStopCallback* pStop = dynamic_cast<onStopCallback*>(Message);
 							if (pStop && (!m_MessageQueue.empty() || m_Transports.size()))
 							{
-								InterfaceLog(LOG_NORM, "(%s) Requeuing Stop message, queue has %d entries, %d connections.", pPlugin->m_Name.c_str(), m_MessageQueue.size(), m_Transports.size());
-								Message->m_Delay = Now + 1;
-								m_MessageQueue.push_back(Message);
+								InterfaceLog(LOG_NORM, "(%s) Requeuing '%s' message, queue has %d entries, %d connections.", m_Name.c_str(), Message->m_Name.c_str(), m_MessageQueue.size(), m_Transports.size());
+								Message->m_When = time(0) + 1;
+								MessagePlugin(Message);
 								continue;
 							}
 							else
@@ -987,18 +998,15 @@ namespace Plugins {
 									}
 									Message->Process();
 
-									// Free the memory for the message special cases for Initialise and Stop messages
-									if (!pStop && (m_PyInterpreter || !m_bIsStarting))
+									// Free the memory for the message
+									if (pStop || (m_bIsStarting && !m_PyInterpreter))
 									{
-										// Lock Python if Plugin is known
-										{
-											AccessPython	Guard(this, "CPlugin::Do_Work");
-											delete Message;
-										}
+										// Stop messages can't lock because interpreter is destroyed, for Initialise there is no interpreter to lock
+										delete Message;
 									}
 									else
 									{
-										// Stop messages can't lock because interpreter is destroyed
+										AccessPython	Guard(this, "CPlugin::Do_Work");
 										delete Message;
 									}
 								}
