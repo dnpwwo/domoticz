@@ -278,9 +278,14 @@ namespace Plugins {
 		for (std::map<int, CDomoticzHardwareBase*>::iterator it = GetHardware()->begin(); it != GetHardware()->end(); it++)
 		{
 			CPlugin* pPlugin = (CPlugin*)it->second;
-			//AccessPython	Guard(pPlugin, "PluginFromValueID");
 
-			PyErr_Clear();
+			// May not be required but when an error is set an interpreter needs to be 'current' to clear it
+			AccessPython	Guard(pPlugin, "PluginFromValueID");
+
+			if (PyErr_Occurred())
+			{
+				PyErr_Clear();
+			}
 			if (PyObject_HasAttrString((PyObject*)pPlugin->m_Interface, "Devices"))
 			{
 				PyObjPtr pDevicesDict = PyObject_GetAttrString((PyObject*)pPlugin->m_Interface, "Devices");
@@ -295,7 +300,10 @@ namespace Plugins {
 				while (PyDict_Next(pDevicesDict, &pos, &key, &pDevice))
 				{
 					// And locate it into the Device's Values dictionary
-					PyErr_Clear();
+					if (PyErr_Occurred())
+					{
+						PyErr_Clear();
+					}
 					if (PyObject_HasAttrString(pDevice, "Values"))
 					{
 						PyObjPtr pValuesDict = PyObject_GetAttrString(pDevice, "Values");
