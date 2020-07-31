@@ -15,6 +15,10 @@ public:
 	{
 		return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
 	}
+	bool is_ready()
+	{
+		return m_futureObj.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+	}
 	StoppableTask() :
 		m_futureObj(m_exitSignal.get_future())
 	{

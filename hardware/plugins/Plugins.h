@@ -43,6 +43,7 @@ namespace Plugins {
 
 		std::mutex	m_TransportsMutex;
 		std::vector<CPluginTransport*>	m_Transports;
+		std::mutex	m_QueueMutex;	// controls access to the message queue
 		std::deque<CPluginMessageBase*>	m_MessageQueue;
 
 		std::shared_ptr<std::thread> m_thread;

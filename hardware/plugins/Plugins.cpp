@@ -33,7 +33,7 @@ extern MainWorker m_mainworker;
 
 namespace Plugins {
 
-	extern std::mutex PluginMutex;	// controls access to the message queue
+	extern std::mutex PluginMutex;	// controls access to cross thread non-Python stuff
 
 	void LogPythonException(CPlugin* pPlugin, const std::string &sHandler)
 	{
@@ -857,7 +857,7 @@ namespace Plugins {
 
 		// Flush the message queue (should already be empty)
 		{
-			std::lock_guard<std::mutex> l(PluginMutex);
+			std::lock_guard<std::mutex> l(m_QueueMutex);
 			while (!m_MessageQueue.empty())
 			{
 				m_MessageQueue.pop_front();
@@ -950,7 +950,7 @@ namespace Plugins {
 
 					// Cycle once through the queue looking for the 1st message that is ready to process
 					{
-						std::lock_guard<std::mutex> l(PluginMutex);
+						std::lock_guard<std::mutex> l(m_QueueMutex);
 						for (size_t i = 0; i < m_MessageQueue.size(); i++)
 						{
 							CPluginMessageBase* FrontMessage = m_MessageQueue.front();
@@ -1622,7 +1622,7 @@ Error:
 			}
 
 			// Add message to queue
-			std::lock_guard<std::mutex> l(PluginMutex);
+			std::lock_guard<std::mutex> l(m_QueueMutex);
 			m_MessageQueue.push_back(pMessage);
 		}
 		else

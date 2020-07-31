@@ -599,7 +599,7 @@ namespace Plugins {
 							{
 								vValues.push_back(std::string("None"));
 							}
-							else if (PyUnicode_Check(self->Value))
+/*							else if (PyUnicode_Check(self->Value))
 							{
 								const char* pChars = PyUnicode_AsUTF8(self->Value);
 								if (!pChars)
@@ -612,7 +612,7 @@ namespace Plugins {
 									vValues.push_back(std::string(pChars));
 								}
 							}
-							else
+*/							else
 							{
 								PyObjPtr pStringObj = PyObject_Str(self->Value);
 								if (pStringObj)
@@ -625,13 +625,13 @@ namespace Plugins {
 									}
 									else
 									{
-										vValues.push_back(std::string(PyUnicode_AsUTF8(pStringObj)));
+										vValues.push_back(pChars);
 									}
 								}
 								else
 								{
 									ValueLog(self, LOG_ERROR, "(%s) Unable to derive string for Value", self->pPlugin->m_Name.c_str());
-									vValues.push_back(std::string(""));
+									goto Error;
 								}
 							}
 
@@ -727,7 +727,7 @@ namespace Plugins {
 
 	PyObject* CValue_str(CValue* self)
 	{
-		PyObject* pRetVal = PyUnicode_FromFormat("ID: %d, Name: %U, InternalID: %U, DeviceID: %d, UnitID: %d, Value: '%U', Timestamp: %U", 
+		PyObject* pRetVal = PyUnicode_FromFormat("ID: %d, Name: %U, InternalID: %U, DeviceID: %d, UnitID: %d, Value: '%S', Timestamp: %U", 
 									self->ValueID, self->Name, self->InternalID, self->DeviceID, self->UnitID, self->Value, self->Timestamp);
 		return pRetVal;
 	}
