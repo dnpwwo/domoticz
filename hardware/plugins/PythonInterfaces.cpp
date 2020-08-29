@@ -58,14 +58,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
@@ -111,14 +111,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
@@ -164,14 +164,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
@@ -217,14 +217,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
@@ -275,14 +275,14 @@ namespace Plugins {
 		module_state* pModState;
 		Py_ssize_t pos = 0;
 
-		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-		if (!pModule)
+		PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+		if (!brModule)
 		{
 			InterfaceLog(this, LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
 			goto Error;
 		}
 
-		pModState = ((struct module_state*)PyModule_GetState(pModule));
+		pModState = ((struct module_state*)PyModule_GetState(brModule));
 		if (!pModState)
 		{
 			InterfaceLog(this, LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
@@ -336,14 +336,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				InterfaceLog(this, LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				InterfaceLog(this, LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
@@ -352,8 +352,8 @@ namespace Plugins {
 
 			// Pass values in, needs to be a tuple and signal CDevice_init to load from the database
 			pModState->lObjectID = lDeviceID;
-			PyObjPtr argList = Py_BuildValue("(sssN)", "", "", "", PyBool_FromLong(0));
-			if (!argList)
+			PyObjPtr nrArgList = Py_BuildValue("(sssN)", "", "", "", PyBool_FromLong(0));
+			if (!nrArgList)
 			{
 				InterfaceLog(this, LOG_ERROR, "Building Device argument list failed for Device %d.", lDeviceID);
 				goto Error;
@@ -361,7 +361,7 @@ namespace Plugins {
 
 			// Call the class object, this will call new followed by init
 			PyType_Ready(&CDeviceType);
-			pDevice = (CDevice*)PyObject_CallObject((PyObject*)pModState->pDeviceClass, argList);
+			pDevice = (CDevice*)PyObject_CallObject((PyObject*)pModState->pDeviceClass, nrArgList);
 			if (!pDevice)
 			{
 				InterfaceLog(this, LOG_ERROR, "Device object creation failed for Device %d.", lDeviceID);
@@ -429,14 +429,14 @@ namespace Plugins {
 
 	void CInterface_dealloc(CInterface* self)
 	{
-		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-		if (!pModule)
+		PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+		if (!brModule)
 		{
 			_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
 			return;
 		}
 
-		module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+		module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 		if (!pModState)
 		{
 			_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
@@ -532,14 +532,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				InterfaceLog(self, LOG_ERROR, "CInterface:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				InterfaceLog(self, LOG_ERROR, "CInterface:%s, unable to obtain module state.", __func__);
@@ -696,8 +696,8 @@ namespace Plugins {
 
 	PyObject* CInterface_str(CInterface* self)
 	{
-		PyObject* pRetVal = PyUnicode_FromFormat("ID: %d, Name: %U, InterfaceID: %d, Configuration: %S, Active: '%s'",
+		PyObject* nrRetVal = PyUnicode_FromFormat("ID: %d, Name: %U, InterfaceID: %d, Configuration: %S, Active: '%s'",
 			self->InterfaceID, self->Name, self->InterfaceID, self->Configuration, (self->Active?"True":"False"));
-		return pRetVal;
+		return nrRetVal;
 	}
 }

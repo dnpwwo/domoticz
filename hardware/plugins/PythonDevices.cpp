@@ -59,14 +59,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
@@ -112,14 +112,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
@@ -165,14 +165,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
@@ -217,14 +217,14 @@ namespace Plugins {
 		module_state* pModState;
 		Py_ssize_t pos = 0;
 
-		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-		if (!pModule)
+		PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+		if (!brModule)
 		{
 			_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
 			goto Error;
 		}
 
-		pModState = ((struct module_state*)PyModule_GetState(pModule));
+		pModState = ((struct module_state*)PyModule_GetState(brModule));
 		if (!pModState)
 		{
 			_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
@@ -287,22 +287,22 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
 				return 0;
 			}
 
-			PyObjPtr argList = Py_BuildValue("(ssiiO)", "", "", -1, -1, PyUnicode_FromString(""));
-			if (!argList)
+			PyObjPtr nrArgList = Py_BuildValue("(ssiiO)", "", "", -1, -1, PyUnicode_FromString(""));
+			if (!nrArgList)
 			{
 				DeviceLog(this, LOG_ERROR, "Building Value argument list failed for Value %d.", lValueID);
 				goto Error;
@@ -310,7 +310,7 @@ namespace Plugins {
 
 			// Pass values in, needs to be a tuple and signal CValue_init to load from the database
 			pModState->lObjectID = lValueID;
-			pValue = (CValue*)PyObject_CallObject((PyObject*)pModState->pValueClass, argList);
+			pValue = (CValue*)PyObject_CallObject((PyObject*)pModState->pValueClass, nrArgList);
 			if (!pValue)
 			{
 				DeviceLog(this, LOG_ERROR, "Value object creation failed for Value %d.", lValueID);
@@ -378,14 +378,14 @@ namespace Plugins {
 
 	void CDevice_dealloc(CDevice* self)
 	{
-		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-		if (!pModule)
+		PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+		if (!brModule)
 		{
 			_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
 			return;
 		}
 
-		module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+		module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 		if (!pModState)
 		{
 			_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
@@ -498,14 +498,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CDevice:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CDevice:%s, unable to obtain module state.", __func__);
@@ -786,8 +786,8 @@ namespace Plugins {
 
 	PyObject* CDevice_str(CDevice* self)
 	{
-		PyObject* pRetVal = PyUnicode_FromFormat("DeviceID: %d, Name: %U, InterfaceID: %d, InternalID: %U, Address: %U, Debug: '%s', Enabled: '%s', Active: '%s', Timestamp: %U",
+		PyObject* nrRetVal = PyUnicode_FromFormat("DeviceID: %d, Name: %U, InterfaceID: %d, InternalID: %U, Address: %U, Debug: '%s', Enabled: '%s', Active: '%s', Timestamp: %U",
 			self->DeviceID, self->Name, self->InterfaceID, self->InternalID, self->Address, (self->Debug ? "True" : "False"), (self->Enabled ? "True" : "False"), (self->Active ? "True" : "False"), self->Timestamp);
-		return pRetVal;
+		return nrRetVal;
 	}
 }

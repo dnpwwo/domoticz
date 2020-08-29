@@ -1024,6 +1024,15 @@ namespace Plugins {
 			if (isOpen())
 			{
 				terminate();
+				CPlugin* pPlugin = m_pConnection->pPlugin;
+				if (pPlugin)
+				{
+					pPlugin->MessagePlugin(new onDisconnectCallback(pPlugin, m_pConnection));
+				}
+				else
+				{
+					_log.Log(LOG_ERROR, "CPluginTransportSerial: %s, onDisconnect not queued. Plugin was NULL.", __func__);
+				}
 			}
 			m_bConnected = false;
 		}

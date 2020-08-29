@@ -19,14 +19,14 @@ namespace Plugins {
 		CValue* pRetVal = NULL;
 		module_state* pModState;
 
-		PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-		if (!pModule)
+		PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+		if (!brModule)
 		{
 			_log.Log(LOG_ERROR, "CValue:%s, unable to find module for current interpreter.", __func__);
 			goto Error;
 		}
 
-		pModState = ((struct module_state*)PyModule_GetState(pModule));
+		pModState = ((struct module_state*)PyModule_GetState(brModule));
 		if (!pModState)
 		{
 			_log.Log(LOG_ERROR, "CValue:%s, unable to obtain module state.", __func__);
@@ -113,14 +113,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CValue:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CValue:%s, unable to obtain module state.", __func__);
@@ -166,14 +166,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CValue:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CValue:%s, unable to obtain module state.", __func__);
@@ -219,14 +219,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CValue:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CValue:%s, unable to obtain module state.", __func__);
@@ -336,14 +336,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject* pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject* brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CValue:%s, unable to find module for current interpreter.", __func__);
 				goto Error;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CValue:%s, unable to obtain module state.", __func__);
@@ -405,10 +405,10 @@ namespace Plugins {
 					if (pValue)
 					{
 						pSafeAssign = self->Value;
-						PyObject* pStringObj = PyObject_Str(pValue);
-						if (pStringObj)
+						PyObject* nrStringObj = PyObject_Str(pValue);
+						if (nrStringObj)
 						{
-							self->Value = pStringObj;
+							self->Value = nrStringObj;
 							Py_XDECREF(pSafeAssign);
 						}
 						else
@@ -525,11 +525,10 @@ namespace Plugins {
 				}
 				else
 				{
-					PyObject* pStringObj = PyObject_Str(self->Value);
-					if (pStringObj)
+					PyObjPtr nrStringObj = PyObject_Str(self->Value);
+					if (nrStringObj)
 					{
-						vValues.push_back(PyUnicode_AsUTF8(pStringObj));
-						Py_XDECREF(pStringObj);
+						vValues.push_back(PyUnicode_AsUTF8(nrStringObj));
 					}
 					else
 					{
@@ -614,10 +613,10 @@ namespace Plugins {
 							}
 */							else
 							{
-								PyObjPtr pStringObj = PyObject_Str(self->Value);
-								if (pStringObj)
+								PyObjPtr nrStringObj = PyObject_Str(self->Value);
+								if (nrStringObj)
 								{
-									const char* pChars = PyUnicode_AsUTF8(pStringObj);
+									const char* pChars = PyUnicode_AsUTF8(nrStringObj);
 									if (!pChars)
 									{
 										ValueLog(self, LOG_ERROR, "Conversion to UTF8 failed on stringed object for ID %ld", self->ValueID);
@@ -727,8 +726,8 @@ namespace Plugins {
 
 	PyObject* CValue_str(CValue* self)
 	{
-		PyObject* pRetVal = PyUnicode_FromFormat("ID: %d, Name: %U, InternalID: %U, DeviceID: %d, UnitID: %d, Value: '%S', Timestamp: %U", 
+		PyObject* nrRetVal = PyUnicode_FromFormat("ID: %d, Name: %U, InternalID: %U, DeviceID: %d, UnitID: %d, Value: '%S', Timestamp: %U", 
 									self->ValueID, self->Name, self->InternalID, self->DeviceID, self->UnitID, self->Value, self->Timestamp);
-		return pRetVal;
+		return nrRetVal;
 	}
 }

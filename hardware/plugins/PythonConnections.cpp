@@ -141,14 +141,14 @@ namespace Plugins {
 
 		try
 		{
-			PyObject*	pModule = PyState_FindModule(&DomoticzModuleDef);
-			if (!pModule)
+			PyObject*	brModule = PyState_FindModule(&DomoticzModuleDef);
+			if (!brModule)
 			{
 				_log.Log(LOG_ERROR, "CPlugin:%s, unable to find module for current interpreter.", __func__);
 				return 0;
 			}
 
-			module_state*	pModState = ((struct module_state*)PyModule_GetState(pModule));
+			module_state*	pModState = ((struct module_state*)PyModule_GetState(brModule));
 			if (!pModState)
 			{
 				_log.Log(LOG_ERROR, "CPlugin:%s, unable to obtain module state.", __func__);
@@ -428,17 +428,17 @@ namespace Plugins {
 			localtime_r(&tLastSeen, &ltime);
 			char date[32];
 			strftime(date, sizeof(date), "%Y-%m-%d %H:%M:%S", &ltime);
-			PyObject*	pRetVal = PyUnicode_FromFormat("Name: '%U', Transport: '%U', Protocol: '%U', Address: '%U', Port: '%U', Baud: %d, Bytes: %d, Connected: %s, Last Seen: %s, Parent: '%s'",
+			PyObject*	nrRetVal = PyUnicode_FromFormat("Name: '%U', Transport: '%U', Protocol: '%U', Address: '%U', Port: '%U', Baud: %d, Bytes: %d, Connected: %s, Last Seen: %s, Parent: '%s'",
 				self->Name, self->Transport, self->Protocol, self->Address, self->Port, self->Baud,
 				(self->pTransport ? self->pTransport->TotalBytes() : -1),
 				(self->pTransport ? (self->pTransport->IsConnected() ? "True" : "False") : "False"), date, sParent.c_str());
-			return pRetVal;
+			return nrRetVal;
 		}
 		else
 		{
-			PyObject*	pRetVal = PyUnicode_FromFormat("Name: '%U', Transport: '%U', Protocol: '%U', Address: '%U', Port: '%U', Baud: %d, Connected: False, Parent: '%s'",
+			PyObject*	nrRetVal = PyUnicode_FromFormat("Name: '%U', Transport: '%U', Protocol: '%U', Address: '%U', Port: '%U', Baud: %d, Connected: False, Parent: '%s'",
 				self->Name, self->Transport, self->Protocol, self->Address, self->Port, self->Baud, sParent.c_str());
-			return pRetVal;
+			return nrRetVal;
 		}
 	}
 

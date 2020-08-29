@@ -186,12 +186,12 @@ protected:
 		if (m_Target)
 		{
 			CInterface* pCurrent = ((CInterface*)m_Target)->Copy();
-			PyObjPtr	pParam = Py_BuildValue("(O)", pCurrent);
+			PyObjPtr	nrParam = Py_BuildValue("(O)", pCurrent);
 			Py_XDECREF(pCurrent);
 
 			CInterface_refresh((CInterface*)m_Target);
 
-			Callback(pParam);
+			Callback(nrParam);
 		}
 	};
 };
@@ -239,9 +239,9 @@ protected:
 			{
 				CDevice* pCurrent = ((CDevice*)m_Target)->Copy();
 				CDevice_refresh((CDevice*)m_Target);
-				PyObjPtr	pParam = Py_BuildValue("(O)", pCurrent);
+				PyObjPtr	nrParam = Py_BuildValue("(O)", pCurrent);
 				Py_XDECREF(pCurrent);
-				Callback(pParam);
+				Callback(nrParam);
 				Py_XDECREF(m_Target);
 			}
 		};
@@ -316,12 +316,12 @@ protected:
 				if (m_Target)
 				{
 					CValue*		pCurrent = ((CValue*)m_Target)->Copy();
-					PyObjPtr	pParam = Py_BuildValue("(O)", pCurrent);
+					PyObjPtr	nrParam = Py_BuildValue("(O)", pCurrent);
 					Py_XDECREF(pCurrent);
 
 					CValue_refresh((CValue*)m_Target);
 
-					Callback(pParam);
+					Callback(nrParam);
 					Py_XDECREF(m_Target);
 				}
 			}
@@ -400,8 +400,8 @@ protected:
 	#endif
 				if (m_Target)
 				{
-					PyObjPtr pParams = Py_BuildValue("Ois", m_pConnection, m_Status, textUTF8.c_str());
-					Callback(m_Target, pParams);  // 0 is success else socket failure code
+					PyObjPtr	nrParams = Py_BuildValue("Ois", m_pConnection, m_Status, textUTF8.c_str());
+					Callback(m_Target, nrParams);  // 0 is success else socket failure code
 					if (!((CConnection*)m_pConnection)->pTransport->IsConnected())
 					{
 						// Non-connection based transports only call this on error and connection based protocol will be connected if it wasn't an error so
@@ -438,23 +438,23 @@ protected:
 	protected:
 		virtual void ProcessLocked()
 		{
-			PyObjPtr pParams = NULL;
+			PyObjPtr nrParams = NULL;
 
 			// Data is stored in a single vector of bytes
 			if (m_Buffer.size())
 			{
-				pParams = Py_BuildValue("Oy#", m_pConnection, &m_Buffer[0], m_Buffer.size());
+				nrParams = Py_BuildValue("Oy#", m_pConnection, &m_Buffer[0], m_Buffer.size());
 			}
 
 			// Data is in a dictionary
 			if (m_Data)
 			{
-				pParams = Py_BuildValue("OO", m_pConnection, m_Data);
+				nrParams = Py_BuildValue("OO", m_pConnection, m_Data);
 				Py_XDECREF(m_Data);
 			}
 
 			// Callback will decrement the parameter reference count
-			Callback(m_Target, pParams);
+			Callback(m_Target, nrParams);
 		}
 	};
 
@@ -470,9 +470,9 @@ protected:
 		{
 			if (m_Target)
 			{
-				PyObjPtr pParams = Py_BuildValue("(O)", m_pConnection);
+				PyObjPtr nrParams = Py_BuildValue("(O)", m_pConnection);
 
-				Callback(m_Target, pParams);  // 0 is success else socket failure code
+				Callback(m_Target, nrParams);  // 0 is success else socket failure code
 				Py_XDECREF(m_Target);
 				// This is the last event for the connection before another 'Connect' so release reference to the target
 				m_pConnection->Target = NULL;
@@ -507,16 +507,16 @@ protected:
 	protected:
 		virtual void Process()
 		{
-			PyObject*	pParams;
+			PyObject*	nrParams;
 			if (m_fLevel != -273.15f)
 			{
-				pParams = Py_BuildValue("sfs",  m_Command.c_str(), m_fLevel, "");
+				nrParams = Py_BuildValue("sfs",  m_Command.c_str(), m_fLevel, "");
 			}
 			else
 			{
-				pParams = Py_BuildValue("sis", m_Command.c_str(), m_iLevel, m_iColor.c_str());
+				nrParams = Py_BuildValue("sis", m_Command.c_str(), m_iLevel, m_iColor.c_str());
 			}
-			Callback(pParams);
+			Callback(nrParams);
 		};
 	};
 
@@ -535,8 +535,8 @@ protected:
 	protected:
 		virtual void Process()
 		{
-			PyObject*	pParams = Py_BuildValue("is", m_iLevel, m_Description.c_str());
-			Callback(pParams);
+			PyObjPtr	nrParams = Py_BuildValue("is", m_iLevel, m_Description.c_str());
+			Callback(nrParams);
 		};
 	};
 
@@ -573,8 +573,8 @@ protected:
 	protected:
 		virtual void Process()
 		{
-			PyObject*	pParams = Py_BuildValue("ssssiss", m_SuppliedName.c_str(), m_Subject.c_str(), m_Text.c_str(), m_Status.c_str(), m_Priority, m_Sound.c_str(), m_ImageFile.c_str());
-			Callback(pParams);
+			PyObjPtr	nrParams = Py_BuildValue("ssssiss", m_SuppliedName.c_str(), m_Subject.c_str(), m_Text.c_str(), m_Status.c_str(), m_Priority, m_Sound.c_str(), m_ImageFile.c_str());
+			Callback(nrParams);
 		};
 	};
 

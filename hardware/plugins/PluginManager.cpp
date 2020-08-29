@@ -262,10 +262,13 @@ namespace Plugins {
 			CPlugin*	pPlugin = (CPlugin*)it->second;
 			//AccessPython	Guard(pPlugin, "PluginFromDeviceID");
 
-			PyObjPtr	pDevice = (PyObject*)pPlugin->m_Interface->FindDevice(DeviceID);
-			if (pDevice)
+			if (pPlugin->m_Interface)
 			{
-				return pPlugin;
+				PyObjPtr	pDevice = (PyObject*)pPlugin->m_Interface->FindDevice(DeviceID);
+				if (pDevice)
+				{
+					return pPlugin;
+				}
 			}
 		}
 	

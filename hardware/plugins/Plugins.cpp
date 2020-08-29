@@ -526,21 +526,34 @@ namespace Plugins {
 		// Mutex lock should be held prior to calling this function
 		// Targets should be Interfaces, Devices or Values
 		// Python method on the object will do the actual writing to make the messages to the correct place
+		if (!pTarget)
+		{
+			if (m_Interface)
+			{
+				pTarget = (PyObject*)m_Interface;
+			}
+			else
+			{
+				InterfaceLog(LOG_ERROR, cbuffer);
+				return;
+			}
+		}
+
 		PyErr_Clear();
 		if (PyObject_HasAttrString(pTarget, sLevel))
 		{
 			PyObjPtr pLevelLog = PyObject_GetAttrString(pTarget, sLevel);
 			if (pLevelLog && PyCallable_Check(pLevelLog))
 			{
-				PyObjPtr argList = Py_BuildValue("(s)", cbuffer);
-				if (!argList)
+				PyObjPtr nrArgList = Py_BuildValue("(s)", cbuffer);
+				if (!nrArgList)
 				{
-					_log.Log(LOG_ERROR, "Failed while building argument list for '%s' logging call.", sLevel);
+					InterfaceLog(LOG_ERROR, "Failed while building argument list for '%s' logging call.", sLevel);
 					PyErr_Clear();
 				}
 				else
 				{
-					PyObjPtr pLogReturn = PyObject_CallObject(pLevelLog, argList);
+					PyObjPtr pLogReturn = PyObject_CallObject(pLevelLog, nrArgList);
 				}
 			}
 		}
@@ -603,7 +616,7 @@ namespace Plugins {
 
 		if (pExcept)
 		{
-			_log.Log(LOG_ERROR, "(%s) Module Import failed, exception: '%s'", m_Name.c_str(), ((PyTypeObject*)pExcept)->tp_name);
+			InterfaceLog(LOG_ERROR, "(%s) Module Import failed, exception: '%s'", m_Name.c_str(), ((PyTypeObject*)pExcept)->tp_name);
 		}
 		if (pValue)
 		{
@@ -638,7 +651,7 @@ namespace Plugins {
 				}
 				if (!sError.empty())
 				{
-					_log.Log(LOG_ERROR, "(%s) Module Import failed: '%s'", m_Name.c_str(), sError.c_str());
+					InterfaceLog(LOG_ERROR, "(%s) Module Import failed: '%s'", m_Name.c_str(), sError.c_str());
 					sError = "";
 				}
 
@@ -671,11 +684,11 @@ namespace Plugins {
 				{
 					if ((lineno > 0) && (lineno < 1000))
 					{
-						_log.Log(LOG_ERROR, "(%s) Import detail: %s, Line: %lld, offset: %lld", m_Name.c_str(), sError.c_str(), lineno, offset);
+						InterfaceLog(LOG_ERROR, "(%s) Import detail: %s, Line: %lld, offset: %lld", m_Name.c_str(), sError.c_str(), lineno, offset);
 					}
 					else
 					{
-						_log.Log(LOG_ERROR, "(%s) Import detail: %s, Line: %lld", m_Name.c_str(), sError.c_str(), offset);
+						InterfaceLog(LOG_ERROR, "(%s) Import detail: %s, Line: %lld", m_Name.c_str(), sError.c_str(), offset);
 					}
 					sError = "";
 				}
@@ -686,19 +699,19 @@ namespace Plugins {
 					PyObjPtr		pString = PyObject_GetAttrString(pValue, "text");
 					std::string		sUTF = PyUnicode_AsUTF8(pString);
 					sUTF.erase(std::remove(sUTF.begin(), sUTF.end(), '\n'), sUTF.end());
-					_log.Log(LOG_ERROR, "(%s) Error Line '%s'", m_Name.c_str(), sUTF.c_str());
+					InterfaceLog(LOG_ERROR, "(%s) Error Line '%s'", m_Name.c_str(), sUTF.c_str());
 				}
 				else
 				{
-					_log.Log(LOG_ERROR, "(%s) Error Line details not available.", m_Name.c_str());
+					InterfaceLog(LOG_ERROR, "(%s) Error Line details not available.", m_Name.c_str());
 				}
 
 				if (!sError.empty())
 				{
-					_log.Log(LOG_ERROR, "(%s) Import detail: %s", m_Name.c_str(), sError.c_str());
+					InterfaceLog(LOG_ERROR, "(%s) Import detail: %s", m_Name.c_str(), sError.c_str());
 				}
 			}
-			else _log.Log(LOG_ERROR, "(%s) Module Import failed '%s'", m_Name.c_str(), ((PyBytesObject*)pErrBytes)->ob_sval);
+			else InterfaceLog(LOG_ERROR, "(%s) Module Import failed '%s'", m_Name.c_str(), ((PyBytesObject*)pErrBytes)->ob_sval);
 		}
 
 		// Log a stack trace if there is one
@@ -723,16 +736,16 @@ namespace Plugins {
 					FuncName = ((PyBytesObject*)pFuncBytes)->ob_sval;
 				}
 				if (!FileName.empty())
-					_log.Log(LOG_ERROR, "(%s) ----> Line %d in '%s', function %s", m_Name.c_str(), lineno, FileName.c_str(), FuncName.c_str());
+					InterfaceLog(LOG_ERROR, "(%s) ----> Line %d in '%s', function %s", m_Name.c_str(), lineno, FileName.c_str(), FuncName.c_str());
 				else
-					_log.Log(LOG_ERROR, "(%s) ----> Line %d in '%s'", m_Name.c_str(), lineno, FuncName.c_str());
+					InterfaceLog(LOG_ERROR, "(%s) ----> Line %d in '%s'", m_Name.c_str(), lineno, FuncName.c_str());
 			}
 			pTraceFrame = pTraceFrame->tb_next;
 		}
 
 		if (!pExcept && !pValue && !pTraceback)
 		{
-			_log.Log(LOG_ERROR, "(%s) Call to import module failed, unable to decode exception.", m_Name.c_str());
+			InterfaceLog(LOG_ERROR, "(%s) Call to import module failed, unable to decode exception.", m_Name.c_str());
 		}
 
 		if (pTraceback) Py_XDECREF(pTraceback);
@@ -1203,8 +1216,8 @@ namespace Plugins {
 					goto Error;
 				}
 
-				PyObject* localDict = PyModule_GetDict((PyObject*)m_PyModule);   // Returns a borrowed reference: no need to Py_XDECREF() it once we are done
-				if (!localDict)
+				PyObject* brLocalDict = PyModule_GetDict((PyObject*)m_PyModule);   // Returns a borrowed reference: no need to Py_XDECREF() it once we are done
+				if (!brLocalDict)
 				{
 					InterfaceLog(LOG_ERROR, "Local dictionary not returned, module intialisation failed.");
 					goto Error;
@@ -1217,24 +1230,24 @@ namespace Plugins {
 					goto Error;
 				}
 
-				if (PyDict_SetItemString(localDict, "__builtins__", builtins))
+				if (PyDict_SetItemString(brLocalDict, "__builtins__", builtins))
 				{
 					InterfaceLog(LOG_ERROR, "Failed to add builtins to local dictionary for plugin module.");
 					goto Error;
 				}
 
 				// Domoticz callbacks need state so they know which plugin to act on
-				PyObject* pMod = PyState_FindModule(&DomoticzModuleDef);
-				if (!pMod)
+				PyObject* brMod = PyState_FindModule(&DomoticzModuleDef);
+				if (!brMod)
 				{
 					InterfaceLog(LOG_ERROR, "Start up failed, module not found in interpreter.");
 					goto Error;
 				}
-				module_state* pModState = ((struct module_state*)PyModule_GetState(pMod));
+				module_state* pModState = ((struct module_state*)PyModule_GetState(brMod));
 				pModState->pPlugin = this;
 
 				// Define code in the newly created module
-				PyObjPtr pyValue = PyRun_String(result[0][0].c_str(), Py_file_input, localDict, localDict);
+				PyObjPtr pyValue = PyRun_String(result[0][0].c_str(), Py_file_input, brLocalDict, brLocalDict);
 				if (!pyValue)
 				{
 					InterfaceLog(LOG_ERROR, "Module load failed.");
@@ -1273,8 +1286,9 @@ namespace Plugins {
 			LogPythonException(m_PyModule);
 		}
 		PyEval_SaveThread();
+		Stop();
 		m_bIsStarting = false;
-		return false;
+		return true;
 	}
 
 	bool CPlugin::Finalise()
@@ -1299,17 +1313,17 @@ namespace Plugins {
 				goto Error;
 			}
 
-			PyObject* pMod = PyState_FindModule(&DomoticzModuleDef);
-			if (!pMod)
+			PyObject* brMod = PyState_FindModule(&DomoticzModuleDef);
+			if (!brMod)
 			{
 				_log.Log(LOG_ERROR, "CPlugin:%s, unable to find module for current interpreter.", __func__);
 				goto Error;
 			}
 
-			module_state* pModState = ((struct module_state*)PyModule_GetState(pMod));
+			module_state* pModState = ((struct module_state*)PyModule_GetState(brMod));
 
-			PyObject* pModuleDict = PyModule_GetDict((PyObject*)m_PyModule);  // returns a borrowed referece to the __dict__ object for the module
-			if (!pModuleDict)
+			PyObject* brModuleDict = PyModule_GetDict((PyObject*)m_PyModule);  // returns a borrowed referece to the __dict__ object for the module
+			if (!brModuleDict)
 			{
 				_log.Log(LOG_ERROR, "Module dictionary not returned.");
 				goto Error;
@@ -1354,6 +1368,10 @@ Error:
 			LogPythonException((PyObject*)m_Interface, "Start");
 		}
 		m_bIsStarting = false;
+
+		// Theres no coming back from this...
+		MessagePlugin(new InitializeMessage(this));
+
 		return false;
 	}
 
@@ -1733,10 +1751,10 @@ Error:
 										PyObjPtr	pValue = PyObject_GetAttrString(pTarget, sAttrName.c_str());
 										if (!PyCallable_Check(pValue))	// Filter out methods
 										{
-											PyObjPtr	pString = PyObject_Str(pValue);
-											if (pString)
+											PyObjPtr	nrString = PyObject_Str(pValue);
+											if (nrString)
 											{
-												std::string	sUTF = PyUnicode_AsUTF8(pString);
+												std::string	sUTF = PyUnicode_AsUTF8(nrString);
 												std::string	sBlank((sAttrName.length() < 20) ? 20 - sAttrName.length() : 0, ' ');
 												WriteToTargetLog(pTarget, "Error", "(%s) ----> '%s'%s '%s'", m_Name.c_str(), sAttrName.c_str(), sBlank.c_str(), sUTF.c_str());
 											}
@@ -1786,7 +1804,6 @@ Error:
 			for (std::vector<CPluginTransport*>::iterator itt = m_Transports.begin(); itt != m_Transports.end(); itt++)
 			{
 				CPluginTransport* pPluginTransport = *itt;
-				// Tell transport to disconnect if required
 				if (pPluginTransport)
 				{
 					Py_XDECREF(pPluginTransport);
@@ -1834,12 +1851,12 @@ Error:
 
 	bool CPlugin::LoadSettings()
 	{
-		PyObject* pModuleDict = PyModule_GetDict(m_PyModule);  // returns a borrowed referece to the __dict__ object for the module
+		PyObject* brModuleDict = PyModule_GetDict(m_PyModule);  // returns a borrowed referece to the __dict__ object for the module
 		if (m_SettingsDict) Py_XDECREF(m_SettingsDict);
 		m_SettingsDict = PyDict_New();
-		if (PyDict_SetItemString(pModuleDict, "Settings", m_SettingsDict) == -1)
+		if (PyDict_SetItemString(brModuleDict, "Settings", m_SettingsDict) == -1)
 		{
-			InterfaceLog(LOG_ERROR, "Failed to add Settings dictionary.");
+			InterfaceLog(LOG_ERROR, "Failed to add Settings dictionary to module.");
 			return false;
 		}
 		Py_XDECREF(m_SettingsDict);
@@ -1854,15 +1871,13 @@ Error:
 			{
 				std::vector<std::string> sd = *itt;
 
-				PyObject*	pKey = PyUnicode_FromString(sd[0].c_str());
-				PyObject*	pValue = PyUnicode_FromString(sd[1].c_str());
-				if (PyDict_SetItem(m_SettingsDict, pKey, pValue))
+				PyObjPtr	nrKey = PyUnicode_FromString(sd[0].c_str());
+				PyObjPtr	nrValue = PyUnicode_FromString(sd[1].c_str());
+				if (PyDict_SetItem(m_SettingsDict, nrKey, nrValue))
 				{
 					InterfaceLog(LOG_ERROR, "Failed to add setting '%s' to settings dictionary.", sd[0].c_str());
 					return false;
 				}
-				Py_XDECREF(pValue);
-				Py_XDECREF(pKey);
 			}
 		}
 

@@ -44,6 +44,7 @@ namespace Plugins {
 		{ "Port", T_OBJECT,	offsetof(CConnection, Port), READONLY, "Port" },
 		{ "Baud", T_INT, offsetof(CConnection, Baud), READONLY, "Baud" },
 		{ "Parent", T_OBJECT, offsetof(CConnection, Parent), READONLY, "Parent connection" },
+		{ "Target", T_OBJECT, offsetof(CConnection, Target), 0, "Event Target" },
 		{ NULL }  /* Sentinel */
 	};
 
