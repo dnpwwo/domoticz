@@ -94,8 +94,6 @@ void MainWorker::AddAllDomoticzHardware()
 				pHardware->m_ShortName = "Python Plugin";
 				pHardware->m_DataTimeout = 3600; 
 				AddDomoticzHardware(pHardware);
-
-				pHardware->Start();
 			}
 		}
 		m_hardwareStartCounter = 0;
