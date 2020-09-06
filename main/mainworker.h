@@ -9,6 +9,33 @@
 #endif
 #include "../main/UpdatePublisher.h"
 
+enum redEntryType
+{
+	RED_INTERFACE_LOG = 0,
+	RED_DEVICE_LOG,
+	RED_VALUE_LOG,
+	RED_VALUE_HISTORY
+};
+
+struct redEntry
+{
+	redEntryType	type;
+	std::string		ID;
+	std::string		Name;
+	std::string		Extra;
+	redEntry(redEntryType redType, std::string& redID, std::string& redName) {
+		type = redType;
+		ID = redID;
+		Name = redName;
+	};
+	redEntry(redEntryType redType, std::string& redID, std::string& redName, std::string& redExtra) {
+		type = redType;
+		ID = redID;
+		Name = redName;
+		Extra = redExtra;
+	};
+};
+
 class MainWorker : public StoppableTask
 {
 public:
@@ -71,6 +98,12 @@ private:
 	std::mutex m_heartbeatmutex;
 
 	std::vector<int> m_devicestorestart;
+
+	std::queue<redEntry*> m_redList;
+	std::string		m_sInterfaceRowsToKeep;
+	std::string		m_sDeviceRowsToKeep;
+	std::string		m_sValueRowsToKeep;
+	void RemoveExpiredData();
 
 	bool m_bForceLogNotificationCheck;
 

@@ -27,17 +27,26 @@ namespace Plugins {
 			_log.Log(LOG_NORM, "(%s) Deallocating connection object '%s' (%s:%s).", self->pPlugin->m_Name.c_str(), PyUnicode_AsUTF8(self->Name), PyUnicode_AsUTF8(self->Address), PyUnicode_AsUTF8(self->Port));
 		}
 
-		Py_XDECREF(self->Name);
-		Py_XDECREF(self->Target);
-		Py_XDECREF(self->Address);
-		Py_XDECREF(self->Port);
-		Py_XDECREF(self->LastSeen);
-		Py_XDECREF(self->Transport);
-		Py_XDECREF(self->Protocol);
-		Py_XDECREF(self->Parent);
-
 		if (self->pTransport)
 		{
+			// if the transport is connected then disconnect it
+			if (self->pTransport->IsConnected() || self->pTransport->IsConnecting())
+			{
+				self->pTransport->Clear();	// Suppress disconnect event being queued
+				if (self->pPlugin)
+				{
+					self->pPlugin->InterfaceLog(LOG_ERROR, "%s:, Connection being deallocated while still connected.", __func__);
+					std::string		sName = "";
+					PyObjPtr		pStr = CConnection_str(self);
+					sName = PyUnicode_AsUTF8(pStr);
+					self->pPlugin->InterfaceLog(LOG_ERROR, "Connection details: %s", sName.c_str());
+				}
+				else
+				{
+					_log.Log(LOG_ERROR, "%s:, Connection being deallocated while still connected.", __func__);
+				}
+				self->pTransport->handleDisconnect();
+			}
 			delete self->pTransport;
 			self->pTransport = NULL;
 		}
@@ -46,6 +55,15 @@ namespace Plugins {
 			delete self->pProtocol;
 			self->pProtocol = NULL;
 		}
+
+		Py_XDECREF(self->Name);
+		Py_XDECREF(self->Target);
+		Py_XDECREF(self->Address);
+		Py_XDECREF(self->Port);
+		Py_XDECREF(self->LastSeen);
+		Py_XDECREF(self->Transport);
+		Py_XDECREF(self->Protocol);
+		Py_XDECREF(self->Parent);
 
 		Py_TYPE(self)->tp_free((PyObject*)self);
 	}

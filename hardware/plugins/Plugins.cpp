@@ -505,6 +505,7 @@ namespace Plugins {
 		m_bIsStarted = false;
 		m_bIsStarting = false;
 		m_bTracing = false;
+		m_bRestart = false;
 	}
 
 	CPlugin::~CPlugin(void)
@@ -866,6 +867,8 @@ namespace Plugins {
 		if (m_bIsStarted) StopHardware();
 
 		m_bIsStarting = true;
+		m_DataTimeout = 0;
+
 		RequestStart();
 
 		// Flush the message queue (should already be empty)
@@ -1847,6 +1850,13 @@ Error:
 		}
 
 		m_bIsStarted = false;
+
+		// Check to see if a restart was requested
+		if (m_bRestart)
+		{
+			StartHardware();
+			m_bRestart = false;
+		}
 	}
 
 	bool CPlugin::LoadSettings()

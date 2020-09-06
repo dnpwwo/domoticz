@@ -47,6 +47,11 @@ namespace Plugins {
 		}
 	}
 
+	void CPluginTransport::Clear()
+	{
+		m_pConnection = NULL;
+	}
+
 	bool CPluginTransportTCP::handleConnect()
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
@@ -173,11 +178,8 @@ namespace Plugins {
 			std::string sAddress = remote_ep.address().to_string();
 			std::string sPort = std::to_string(remote_ep.port());
 
-			AccessPython	Guard(m_pConnection->pPlugin, "CPluginTransportTCP::handleAsyncAccept");
-
 			CConnection* pConnection = (CConnection*)CConnection_new(&CConnectionType, (PyObject*)NULL, (PyObject*)NULL);
 			CPluginTransportTCP* pTcpTransport = new CPluginTransportTCP(m_HwdID, pConnection, sAddress, sPort);
-			Py_XDECREF(pConnection);
 
 			// Configure transport object
 			pTcpTransport->m_pConnection = pConnection;
@@ -185,25 +187,30 @@ namespace Plugins {
 			pTcpTransport->m_bConnected = true;
 			pTcpTransport->m_tLastSeen = time(0);
 
-			// Configure Python Connection object
-			pConnection->pTransport = pTcpTransport;
-			Py_XDECREF(pConnection->Name);
-			pConnection->Name = PyUnicode_FromString(std::string(sAddress+":"+sPort).c_str());
-			Py_XDECREF(pConnection->Address);
-			pConnection->Address = PyUnicode_FromString(sAddress.c_str());
-			Py_XDECREF(pConnection->Port);
-			pConnection->Port = PyUnicode_FromString(sPort.c_str());
+			{
+				AccessPython	Guard(m_pConnection->pPlugin, "CPluginTransportTCP::handleAsyncAccept");
+				Py_XDECREF(pConnection);
 
-			Py_XDECREF(pConnection->Parent);
-			pConnection->Parent = m_pConnection;
-			Py_INCREF(m_pConnection);
-			pConnection->Transport = m_pConnection->Transport;
-			Py_INCREF(pConnection->Transport);
-			pConnection->Protocol = m_pConnection->Protocol;
-			Py_INCREF(pConnection->Protocol);
-			pConnection->Target = m_pConnection->Target;
-			Py_INCREF(pConnection->Target);
-			pConnection->pPlugin = m_pConnection->pPlugin;
+				// Configure Python Connection object
+				pConnection->pTransport = pTcpTransport;
+				Py_XDECREF(pConnection->Name);
+				pConnection->Name = PyUnicode_FromString(std::string(sAddress + ":" + sPort).c_str());
+				Py_XDECREF(pConnection->Address);
+				pConnection->Address = PyUnicode_FromString(sAddress.c_str());
+				Py_XDECREF(pConnection->Port);
+				pConnection->Port = PyUnicode_FromString(sPort.c_str());
+
+				Py_XDECREF(pConnection->Parent);
+				pConnection->Parent = m_pConnection;
+				Py_INCREF(m_pConnection);
+				pConnection->Transport = m_pConnection->Transport;
+				Py_INCREF(pConnection->Transport);
+				pConnection->Protocol = m_pConnection->Protocol;
+				Py_INCREF(pConnection->Protocol);
+				pConnection->Target = m_pConnection->Target;
+				Py_INCREF(pConnection->Target);
+				pConnection->pPlugin = m_pConnection->pPlugin;
+			}
 
 			// Add it to the plugins list of connections
 			pConnection->pPlugin->AddConnection(pTcpTransport);
@@ -271,8 +278,11 @@ namespace Plugins {
 					_log.Log(LOG_ERROR, "(%s): Async Read Exception (%s:%s): %d, %s", pPlugin->m_Name.c_str(), m_IP.c_str(), m_Port.c_str(), e.value(), e.message().c_str());
 			}
 
-			pPlugin->MessagePlugin(new DisconnectedEvent(pPlugin, m_pConnection));
-			m_bDisconnectQueued = true;
+			if (m_pConnection)
+			{
+				pPlugin->MessagePlugin(new DisconnectedEvent(pPlugin, m_pConnection));
+				m_bDisconnectQueued = true;
+			}
 		}
 	}
 
@@ -489,9 +499,11 @@ namespace Plugins {
 					_log.Log(LOG_ERROR, "(%s): Async Secure Read Exception: %d, %s", pPlugin->m_Name.c_str(), e.value(), e.message().c_str());
 			}
 
-			pPlugin->MessagePlugin(new DisconnectedEvent(pPlugin, m_pConnection));
-
-			m_bDisconnectQueued = true;
+			if (m_pConnection)
+			{
+				pPlugin->MessagePlugin(new DisconnectedEvent(pPlugin, m_pConnection));
+				m_bDisconnectQueued = true;
+			}
 		}
 	}
 
@@ -554,7 +566,6 @@ namespace Plugins {
 	void CPluginTransportUDP::handleRead(const boost::system::error_code& ec, std::size_t bytes_transferred)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		//AccessPython	Guard(pPlugin, "CPluginTransportUDP::handleRead");
 		if (!ec)
 		{
 			std::string sAddress = m_remote_endpoint.address().to_string();
@@ -562,21 +573,24 @@ namespace Plugins {
 
 			CConnection* pConnection = (CConnection*)CConnection_new(&CConnectionType, (PyObject*)NULL, (PyObject*)NULL);
 
-			// Configure temporary Python Connection object
-			Py_XDECREF(pConnection->Name);
-			pConnection->Name = m_pConnection->Name;
-			Py_INCREF(pConnection->Name);
-			Py_XDECREF(pConnection->Address);
-			pConnection->Address = PyUnicode_FromString(sAddress.c_str());
-			Py_XDECREF(pConnection->Port);
-			pConnection->Port = PyUnicode_FromString(sPort.c_str());
-			pConnection->Transport = m_pConnection->Transport;
-			Py_INCREF(pConnection->Transport);
-			pConnection->Protocol = m_pConnection->Protocol;
-			Py_INCREF(pConnection->Protocol);
-			pConnection->Target = m_pConnection->Target;
-			Py_INCREF(pConnection->Target);
-			pConnection->pPlugin = m_pConnection->pPlugin;
+			{
+				AccessPython	Guard(pPlugin, "CPluginTransportUDP::handleRead");
+				// Configure temporary Python Connection object
+				Py_XDECREF(pConnection->Name);
+				pConnection->Name = m_pConnection->Name;
+				Py_INCREF(pConnection->Name);
+				Py_XDECREF(pConnection->Address);
+				pConnection->Address = PyUnicode_FromString(sAddress.c_str());
+				Py_XDECREF(pConnection->Port);
+				pConnection->Port = PyUnicode_FromString(sPort.c_str());
+				pConnection->Transport = m_pConnection->Transport;
+				Py_INCREF(pConnection->Transport);
+				pConnection->Protocol = m_pConnection->Protocol;
+				Py_INCREF(pConnection->Protocol);
+				pConnection->Target = m_pConnection->Target;
+				Py_INCREF(pConnection->Target);
+				pConnection->pPlugin = m_pConnection->pPlugin;
+			}
 
 			// Create Protocol object to handle connection's traffic
 			pConnection->pPlugin->MessagePlugin(new ProtocolDirective(pConnection->pPlugin, pConnection));
@@ -612,8 +626,11 @@ namespace Plugins {
 					_log.Log(LOG_ERROR, "(%s): Async UDP Read Exception: %d, %s", pPlugin->m_Name.c_str(), ec.value(), ec.message().c_str());
 			}
 
-			pPlugin->MessagePlugin(new DisconnectedEvent(pPlugin, m_pConnection, false));
-			m_bDisconnectQueued = true;
+			if (m_pConnection)
+			{
+				pPlugin->MessagePlugin(new DisconnectedEvent(pPlugin, m_pConnection, false));
+				m_bDisconnectQueued = true;
+			}
 		}
 	}
 
@@ -846,8 +863,11 @@ namespace Plugins {
 						_log.Log(LOG_ERROR, "(%s): Async Receive From Exception: %d, %s", pPlugin->m_Name.c_str(), ec.value(), ec.message().c_str());
 			}
 
-			pPlugin->MessagePlugin(new DisconnectedEvent(pPlugin, m_pConnection, false));
-			m_bDisconnectQueued = true;
+			if (m_pConnection)
+			{
+				pPlugin->MessagePlugin(new DisconnectedEvent(pPlugin, m_pConnection, false));
+				m_bDisconnectQueued = true;
+			}
 		}
 	}
 

@@ -48,9 +48,7 @@ namespace Plugins {
 
 		std::shared_ptr<std::thread> m_thread;
 
-		bool StartHardware() override;
 		void Do_Work();
-		bool StopHardware() override;
 		void ClearMessageQueue();
 
 		void LogPythonException();
@@ -58,6 +56,9 @@ namespace Plugins {
 	public:
 		CPlugin(const int InterfaceID, const std::string &Name);
 		~CPlugin(void);
+
+		bool StartHardware() override;
+		bool StopHardware() override;
 
 		int		PollInterval(int Interval = -1);
 
@@ -79,6 +80,8 @@ namespace Plugins {
 		void	ConnectionDisconnect(CDirectiveBase*);
 		void	DisconnectEvent(CEventBase*);
 		void	Callback(PyObject*, std::string, void*);
+		void	RequestRestart() { m_bRestart = true; };
+		bool	IsRunning() { return IsStarted() && !m_bRestart; };
 		void	Stop();
 
 		void	WriteToTargetLog(PyObject* pTarget, const char* sLevel, const char* Message, ...);
@@ -101,6 +104,9 @@ namespace Plugins {
 		PluginDebugMask		m_bDebug;
 		bool				m_bIsStarting;
 		bool				m_bTracing;
+
+		// Used during stop to understand if plugin should start again
+		bool				m_bRestart;
 	};
 
 	//

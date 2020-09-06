@@ -86,7 +86,7 @@ namespace Plugins {
 		}
 
 		m_thread = std::make_shared<std::thread>(&CPluginSystem::Do_Work, this);
-		SetThreadName(m_thread->native_handle(), "PluginMgr");
+		SetThreadName(m_thread->native_handle(), "Plugin Manager");
 
 		szPyVersion = Py_GetVersion();
 
@@ -186,15 +186,18 @@ namespace Plugins {
 		// Stop it if it is running
 		if (m_pPlugins.count(InterfaceID))
 		{
-			m_pPlugins.find(InterfaceID)->second->Stop();
+			CPlugin* pPlugin = (CPlugin*) m_pPlugins.find(InterfaceID)->second;
+			if (pPlugin->IsRunning())
+			{
+				pPlugin->RequestRestart();
+				pPlugin->StopHardware();
+			}
 		}
 		else
 		{
 			_log.Log(LOG_ERROR, "PluginSystem:%s Failed because Interface %d was not active.", __func__, InterfaceID);
 			return false;
 		}
-		// Now start it again
-		m_pPlugins.find(InterfaceID)->second->Start();
 		return true;
 	}
 

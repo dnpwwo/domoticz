@@ -65,6 +65,11 @@ MainWorker::MainWorker()
 	m_iRevision = 0;
 
 	m_bForceLogNotificationCheck = false;
+
+	// default values for log entry retention
+	m_sInterfaceRowsToKeep = "1000";
+	m_sDeviceRowsToKeep = "500";
+	m_sValueRowsToKeep = "100";
 }
 
 MainWorker::~MainWorker()
@@ -672,6 +677,138 @@ void MainWorker::HandleAutomaticBackups()
 	_log.Log(LOG_STATUS, "Ending automatic database backup procedure...");
 }
 
+void MainWorker::RemoveExpiredData()
+{
+	std::vector<std::vector<std::string> > result;
+
+	// if the remove expired data queue is empty refill it
+	if (!m_redList.size()) {
+		// Interfaces
+		result = m_sql.safe_query("SELECT InterfaceID,Name FROM Interface");
+		if (!result.empty())
+		{
+			for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+			{
+				std::vector<std::string> sd = *itt;
+				m_redList.push(new redEntry(RED_INTERFACE_LOG, sd[0], sd[1]));
+			}
+		}
+
+		result = m_sql.safe_query("SELECT Value FROM Preference WHERE Name = 'InterfaceLogRows'");
+		if (!result.empty())
+		{
+			for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+			{
+				std::vector<std::string> sd = *itt;
+				m_sInterfaceRowsToKeep = sd[0];
+			}
+		}
+		else
+		{
+			std::string sSQL = "INSERT INTO Preference (Name, Value) VALUES ('InterfaceLogRows', '" + m_sInterfaceRowsToKeep + "')";
+			result = m_sql.safe_query(sSQL.c_str());
+		}
+
+		// Devices
+		result = m_sql.safe_query("SELECT DeviceID,Name FROM Device");
+		if (!result.empty())
+		{
+			for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+			{
+				std::vector<std::string> sd = *itt;
+				m_redList.push(new redEntry(RED_DEVICE_LOG, sd[0], sd[1]));
+			}
+		}
+
+		result = m_sql.safe_query("SELECT Value FROM Preference WHERE Name = 'DeviceLogRows'");
+		if (!result.empty())
+		{
+			for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+			{
+				std::vector<std::string> sd = *itt;
+				m_sDeviceRowsToKeep = sd[0];
+			}
+		}
+		else
+		{
+			std::string sSQL = "INSERT INTO Preference (Name, Value) VALUES ('DeviceLogRows', '" + m_sDeviceRowsToKeep + "')";
+			result = m_sql.safe_query(sSQL.c_str());
+		}
+
+		// Values
+		result = m_sql.safe_query("SELECT ValueID, Name, RetentionDays FROM Value");
+		if (!result.empty())
+		{
+			for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+			{
+				std::vector<std::string> sd = *itt;
+				m_redList.push(new redEntry(RED_VALUE_LOG, sd[0], sd[1]));
+				m_redList.push(new redEntry(RED_VALUE_HISTORY, sd[0], sd[1], sd[2]));
+			}
+		}
+
+		result = m_sql.safe_query("SELECT Value FROM Preference WHERE Name = 'ValueLogRows'");
+		if (!result.empty())
+		{
+			for (std::vector<std::vector<std::string> >::const_iterator itt = result.begin(); itt != result.end(); ++itt)
+			{
+				std::vector<std::string> sd = *itt;
+				m_sValueRowsToKeep = sd[0];
+			}
+		}
+		else
+		{
+			std::string sSQL = "INSERT INTO Preference (Name, Value) VALUES ('ValueLogRows', '" + m_sValueRowsToKeep + "')";
+			result = m_sql.safe_query(sSQL.c_str());
+		}
+	}
+	else {
+		std::vector<std::string> vValues;
+		int		iRowCount = 0;
+		std::string	sSQL;
+		std::string	sTable;
+
+		redEntry* pEntry = m_redList.front();
+		m_redList.pop();
+
+		switch (pEntry->type) {
+		case RED_INTERFACE_LOG:
+			sSQL = "DELETE FROM InterfaceLog WHERE InterfaceLogID IN (SELECT InterfaceLogID FROM InterfaceLog WHERE InterfaceID = ? ORDER BY InterfaceLogID DESC LIMIT -1 OFFSET ?)";
+			vValues.push_back(pEntry->ID);
+			vValues.push_back(m_sInterfaceRowsToKeep);
+			iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
+			sTable =  "Interface Log";
+			break;
+		case RED_DEVICE_LOG:
+			sSQL = "DELETE FROM DeviceLog WHERE DeviceID IN (SELECT DeviceLogID FROM DeviceLog WHERE DeviceID = ? ORDER BY DeviceLogID DESC LIMIT -1 OFFSET ?)";
+			vValues.push_back(pEntry->ID);
+			vValues.push_back(m_sDeviceRowsToKeep);
+			iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
+			sTable = "Device Log";
+			break;
+		case RED_VALUE_LOG:
+			sSQL = "DELETE FROM ValueLog WHERE ValueLogID IN (SELECT ValueLogID FROM ValueLog WHERE ValueID = ? ORDER BY ValueLogID DESC LIMIT -1 OFFSET ?)";
+			vValues.push_back(pEntry->ID);
+			vValues.push_back(m_sValueRowsToKeep);
+			iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
+			sTable = "Value Log";
+			break;
+		case RED_VALUE_HISTORY:
+			sSQL = "DELETE FROM ValueHistory WHERE ValueID = ? AND Timestamp < datetime('now', '-" + pEntry->Extra + " days')";
+			vValues.push_back(pEntry->ID);
+			iRowCount = m_sql.execute_sql(sSQL, &vValues, true);
+			sTable = "Value History";
+			break;
+		}
+
+		// Log outcome
+		if (iRowCount)
+			_log.Log(LOG_NORM, "%s '%s' purged, %d records removed.", sTable.c_str(), pEntry->Name.c_str(), iRowCount);
+
+		delete pEntry;
+	}
+}
+
 void MainWorker::Do_Work()
 {
 	int second_counter = 0;
@@ -728,6 +865,11 @@ void MainWorker::Do_Work()
 
 				tzset(); //this because localtime_r/localtime_s does not update for DST
 
+				//check for 5 minute schedule
+				if (ltime.tm_min % 3 == 0)
+				{
+					RemoveExpiredData();
+				}
 				//check for 5 minute schedule
 				if (ltime.tm_min % 10 == 0)
 				{

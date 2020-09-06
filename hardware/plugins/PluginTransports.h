@@ -51,6 +51,7 @@ namespace Plugins {
 		long				TotalBytes() { return m_iTotalBytes; };
 		virtual void		VerifyConnection();
 		CConnection*		Connection() { return m_pConnection; };
+		virtual void		Clear();
 	};
 
 	class CPluginTransportIP : public CPluginTransport
