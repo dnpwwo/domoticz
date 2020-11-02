@@ -575,7 +575,7 @@ bool CSQLHelper::OpenDatabase()
 
 		// Units that Values can be associated with
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('On/Off', 0, 1, 'Push48_Off.png,Push48_On.png', 'Off,On')");
-		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Yes/No', 0, 1, 'Shield_Tick.png,Shield_Cross.png', 'Yes,No')");
+		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Yes/No', 0, 1, 'Shield_Cross.png,Shield_Tick.png', 'No,Yes')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Light On/Off', 0, 1, 'Light48_Off.png,Light48_On.png', 'Off,On')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Fan On/Off', 0, 1, 'Fan48_Off.png,Fan48_On.png', 'Off,On')");
 		query("INSERT INTO Unit (Name, Minimum, Maximum, IconList, TextLabels) VALUES ('Laptop On/Off', 0, 1, 'Computer48_Off.png,Computer48_On.png', 'Off,On')");

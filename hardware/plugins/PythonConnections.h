@@ -16,6 +16,7 @@ namespace Plugins {
 			PyObject*			Address;		// Python object to callback to (Interface or Device normally)
 			PyObject*			Port;
 			int					Baud;
+			int					Timeout;
 			PyObject*			LastSeen;
 			CPlugin*			pPlugin;
 			PyObject*			Transport;

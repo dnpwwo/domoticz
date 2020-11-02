@@ -256,10 +256,12 @@ namespace Plugins {
 			return Py_None;
 		}
 
-		PyObject* pTarget = NULL;
-		static char* kwlist[] = { "Target", NULL };
-		if (PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &pTarget))
+		PyObject*	pTarget = NULL;
+		int			iTimeout = 0;
+		static char* kwlist[] = { "Target", "Timeout", NULL };
+		if (PyArg_ParseTupleAndKeywords(args, kwds, "O|I", kwlist, &pTarget, &iTimeout))
 		{
+			self->Timeout = iTimeout;
 			if (pTarget) {
 				Py_INCREF(pTarget);
 				Py_XDECREF(self->Target);

@@ -82,6 +82,7 @@ namespace Plugins {
 		void	Callback(PyObject*, std::string, void*);
 		void	RequestRestart() { m_bRestart = true; };
 		bool	IsRunning() { return IsStarted() && !m_bRestart; };
+		void	SetStopping() { m_bIsStopping = true; };
 		void	Stop();
 
 		void	WriteToTargetLog(PyObject* pTarget, const char* sLevel, const char* Message, ...);
@@ -103,6 +104,7 @@ namespace Plugins {
 		PyObject*			m_SettingsDict;
 		PluginDebugMask		m_bDebug;
 		bool				m_bIsStarting;
+		bool				m_bIsStopping;
 		bool				m_bTracing;
 
 		// Used during stop to understand if plugin should start again

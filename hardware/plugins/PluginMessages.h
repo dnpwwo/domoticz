@@ -137,13 +137,8 @@ namespace Plugins {
 			{
 				AccessPython	Guard(m_pPlugin, m_Name.c_str());
 				Callback(NULL);
+				m_pPlugin->SetStopping();
 			}
-			// Interface will be released in Stop so don't do it here
-			m_pPlugin->Stop();
-			CPluginSystem	PluginSystem;
-			PluginSystem.DeregisterPlugin(m_pPlugin->m_InterfaceID);
-			m_pPlugin->Finalise();
-			m_pPlugin = NULL;
 		};
 	};
 
