@@ -435,22 +435,47 @@ protected:
 		{
 			PyObjPtr nrParams = NULL;
 
-			// Data is stored in a single vector of bytes
-			if (m_Buffer.size())
+			if (m_Target)
 			{
-				nrParams = Py_BuildValue("Oy#", m_pConnection, &m_Buffer[0], m_Buffer.size());
-			}
+				// Data is stored in a single vector of bytes
+				if (m_Buffer.size())
+				{
+					nrParams = Py_BuildValue("Oy#", m_pConnection, &m_Buffer[0], m_Buffer.size());
+				}
+				// Data is in a dictionary
+				else if (m_Data)
+				{
+					nrParams = Py_BuildValue("OO", m_pConnection, m_Data);
+					Py_XDECREF(m_Data);
+				}
+				else
+				{
+					nrParams = Py_BuildValue("Os", m_pConnection, "");
+				}
 
-			// Data is in a dictionary
-			if (m_Data)
-			{
-				nrParams = Py_BuildValue("OO", m_pConnection, m_Data);
-				Py_XDECREF(m_Data);
+				// Callback will decrement the parameter reference count
+				Callback(m_Target, nrParams);
 			}
-
-			// Callback will decrement the parameter reference count
-			Callback(m_Target, nrParams);
 		}
+	};
+
+	class onTimeoutCallback : public CCallbackBase, public CHasConnection
+	{
+	public:
+		onTimeoutCallback(CPlugin* pPlugin, CConnection* Connection) : CCallbackBase(pPlugin, Connection->Target, "onTimeout"), CHasConnection(Connection)
+		{
+			m_Name = __func__;
+		};
+	protected:
+		virtual void ProcessLocked()
+		{
+			if (m_Target)
+			{
+				PyObjPtr nrParams = Py_BuildValue("(O)", m_pConnection);
+
+				Callback(m_Target, nrParams);
+			}
+		};
 	};
 
 	class onDisconnectCallback : public CCallbackBase, public CHasConnection

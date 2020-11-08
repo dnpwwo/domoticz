@@ -27,8 +27,10 @@ namespace Plugins {
 
 		CConnection*	m_pConnection;
 
+	protected:
+		boost::asio::deadline_timer* m_Timer;
 	public:
-		CPluginTransport(int HwdID, CConnection* pConnection) : m_HwdID(HwdID), m_pConnection(pConnection), m_bConnecting(false), m_bConnected(false), m_bDisconnectQueued(false), m_iTotalBytes(0), m_tLastSeen(0)
+		CPluginTransport(int HwdID, CConnection* pConnection) : m_HwdID(HwdID), m_pConnection(pConnection), m_bConnecting(false), m_bConnected(false), m_bDisconnectQueued(false), m_iTotalBytes(0), m_tLastSeen(0), m_Timer(NULL)
 		{
 			Py_INCREF(m_pConnection);
 		};
@@ -120,7 +122,7 @@ namespace Plugins {
 	class CPluginTransportICMP : CPluginTransportIP
 	{
 	public:
-		CPluginTransportICMP(int HwdID, CConnection* pConnection, const std::string& Address, const std::string& Port) : CPluginTransportIP(HwdID, pConnection, Address, Port), m_Socket(NULL), m_Resolver(ios), m_Timer(NULL), m_SequenceNo(-1) { };
+		CPluginTransportICMP(int HwdID, CConnection* pConnection, const std::string& Address, const std::string& Port) : CPluginTransportIP(HwdID, pConnection, Address, Port), m_Socket(NULL), m_Resolver(ios), m_SequenceNo(-1) { };
 		virtual	void		handleAsyncResolve(const boost::system::error_code& err, boost::asio::ip::icmp::resolver::iterator endpoint_iterator);
 		virtual	bool		handleListen();
 		virtual void		handleTimeout(const boost::system::error_code&);
@@ -132,7 +134,6 @@ namespace Plugins {
 		boost::asio::ip::icmp::resolver		m_Resolver;
 		boost::asio::ip::icmp::socket*		m_Socket;
 		boost::asio::ip::icmp::endpoint		m_Endpoint;
-		boost::asio::deadline_timer*		m_Timer;
 
 		clock_t								m_Clock;
 		int									m_SequenceNo;
@@ -146,6 +147,7 @@ namespace Plugins {
 		CPluginTransportSerial(int HwdID, CConnection* pConnection, const std::string& Port, int Baud);
 		~CPluginTransportSerial(void);
 		virtual	bool		handleConnect();
+		virtual void		handleTimeout(const boost::system::error_code&);
 		virtual void		handleRead(const char *data, std::size_t bytes_transferred);
 		virtual void		handleWrite(const std::vector<byte>&);
 		virtual	bool		handleDisconnect();

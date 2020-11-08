@@ -261,7 +261,14 @@ namespace Plugins {
 		static char* kwlist[] = { "Target", "Timeout", NULL };
 		if (PyArg_ParseTupleAndKeywords(args, kwds, "O|I", kwlist, &pTarget, &iTimeout))
 		{
-			self->Timeout = iTimeout;
+			if (!iTimeout || (iTimeout > 250))
+			{
+				self->Timeout = iTimeout;
+			}
+			else
+			{
+				self->pPlugin->WriteToTargetLog((PyObject*)self->pPlugin->m_Interface, "Error", "Timeout parameter ignored, must be zero or greater than 250 milliseconds.");
+			}
 			if (pTarget) {
 				Py_INCREF(pTarget);
 				Py_XDECREF(self->Target);
@@ -276,7 +283,7 @@ namespace Plugins {
 		}
 		else
 		{
-			_log.Log(LOG_ERROR, "Expected: myVar = Connection.Connect(Target=\"<Object>\")");
+			_log.Log(LOG_ERROR, "Expected: myVar = Connection.Connect(Target=<Object>, Timout=<ms>)");
 			LogPythonException(self->pPlugin, __func__);
 		}
 

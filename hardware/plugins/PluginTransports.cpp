@@ -971,6 +971,12 @@ namespace Plugins {
 
 	CPluginTransportSerial::~CPluginTransportSerial(void)
 	{
+		if (m_Timer)
+		{
+			m_Timer->cancel();
+			delete m_Timer;
+			m_Timer = NULL;
+		}
 	}
 
 	bool CPluginTransportSerial::handleConnect()
@@ -994,6 +1000,16 @@ namespace Plugins {
 				{
 					pPlugin->MessagePlugin(new onConnectCallback(pPlugin, m_pConnection, 0, "SerialPort " + m_Port + " opened successfully."));
 					setReadCallback(boost::bind(&CPluginTransportSerial::handleRead, this, _1, _2));
+					// Set up timeout if one was requested
+					if (m_pConnection->Timeout)
+					{
+						if (!m_Timer)
+						{
+							m_Timer = new boost::asio::deadline_timer(ios);
+						}
+						m_Timer->expires_from_now(boost::posix_time::milliseconds(m_pConnection->Timeout));
+						m_Timer->async_wait(boost::bind(&CPluginTransportSerial::handleTimeout, this, boost::asio::placeholders::error));
+					}
 				}
 				else
 				{
@@ -1011,13 +1027,45 @@ namespace Plugins {
 		return m_bConnected;
 	}
 
+	void CPluginTransportSerial::handleTimeout(const boost::system::error_code& ec)
+	{
+		CPlugin* pPlugin = m_pConnection->pPlugin;
+
+		if (!ec)  // Timeout, no response
+		{
+			if (pPlugin->m_bDebug & PDM_CONNECTION)
+			{
+				_log.Log(LOG_NORM, "(%s) Serial timeout for port '%s'", pPlugin->m_Name.c_str(), m_Port.c_str());
+			}
+
+			CPlugin* pPlugin = m_pConnection->pPlugin;
+			pPlugin->MessagePlugin(new onTimeoutCallback(pPlugin, m_pConnection));
+			m_Timer->expires_from_now(boost::posix_time::milliseconds(m_pConnection->Timeout));
+			m_Timer->async_wait(boost::bind(&CPluginTransportSerial::handleTimeout, this, boost::asio::placeholders::error));
+		}
+		else if (ec != boost::asio::error::operation_aborted)  // Timer canceled by message arriving
+		{
+			_log.Log(LOG_ERROR, "(%s) Serial timer error for port '%s': %d, %s", pPlugin->m_Name.c_str(), m_Port.c_str(), ec.value(), ec.message().c_str());
+		}
+		else if (pPlugin && (pPlugin->m_bDebug & PDM_CONNECTION) && (ec == boost::asio::error::operation_aborted))
+		{
+			_log.Log(LOG_NORM, "(%s) Serial timer aborted (%s).", pPlugin->m_Name.c_str(), m_Port.c_str());
+		}
+	}
+
 	void CPluginTransportSerial::handleRead(const char *data, std::size_t bytes_transferred)
 	{
 		if (bytes_transferred)
 		{
 			CPlugin*	pPlugin = m_pConnection->pPlugin;
-			//AccessPython	Guard(pPlugin, "CPluginTransportSerial::handleRead");
 			pPlugin->MessagePlugin(new ReadEvent(pPlugin, m_pConnection, bytes_transferred, (const unsigned char*)data));
+
+			// Reset timeout
+			if (m_Timer)
+			{
+				m_Timer->expires_from_now(boost::posix_time::milliseconds(m_pConnection->Timeout));
+				m_Timer->async_wait(boost::bind(&CPluginTransportSerial::handleTimeout, this, boost::asio::placeholders::error));
+			}
 
 			m_tLastSeen = time(0);
 			m_iTotalBytes += bytes_transferred;
@@ -1041,8 +1089,14 @@ namespace Plugins {
 		m_tLastSeen = time(0);
 		if (m_bConnected)
 		{
+			m_bConnected = false;
 			if (isOpen())
 			{
+				// Cancel timeout
+				if (m_Timer)
+				{
+					m_Timer->cancel();
+				}
 				terminate();
 				CPlugin* pPlugin = m_pConnection->pPlugin;
 				if (pPlugin)
@@ -1054,7 +1108,6 @@ namespace Plugins {
 					_log.Log(LOG_ERROR, "CPluginTransportSerial: %s, onDisconnect not queued. Plugin was NULL.", __func__);
 				}
 			}
-			m_bConnected = false;
 		}
 		return true;
 	}

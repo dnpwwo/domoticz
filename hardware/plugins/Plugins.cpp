@@ -1178,11 +1178,11 @@ namespace Plugins {
 						else
 							for (Py_ssize_t i = 0; i < PyList_Size(pSites); i++)
 							{
-								PyObject* pSite = PyList_GetItem(pSites, i);
-								if (pSite && PyUnicode_Check(pSite))
+								PyObject* brSite = PyList_GetItem(pSites, i);
+								if (brSite && PyUnicode_Check(brSite))
 								{
 									std::wstringstream ssPath;
-									ssPath << PyUnicode_AsUTF8(pSite);
+									ssPath << PyUnicode_AsUTF8(brSite);
 									sPath += sSeparator + ssPath.str();
 								}
 							}
