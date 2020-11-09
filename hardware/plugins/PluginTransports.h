@@ -29,6 +29,7 @@ namespace Plugins {
 
 	protected:
 		boost::asio::deadline_timer* m_Timer;
+		virtual void		configureTimeout();
 	public:
 		CPluginTransport(int HwdID, CConnection* pConnection) : m_HwdID(HwdID), m_pConnection(pConnection), m_bConnecting(false), m_bConnected(false), m_bDisconnectQueued(false), m_iTotalBytes(0), m_tLastSeen(0), m_Timer(NULL)
 		{
@@ -36,6 +37,7 @@ namespace Plugins {
 		};
 		virtual	bool		handleConnect() { return false; };
 		virtual	bool		handleListen() { return false; };
+		virtual void		handleTimeout(const boost::system::error_code&);
 		virtual void		handleRead(const boost::system::error_code& e, std::size_t bytes_transferred);
 		virtual void		handleRead(const char *data, std::size_t bytes_transferred);
 		virtual void		handleWrite(const std::vector<byte>&) = 0;
@@ -43,6 +45,14 @@ namespace Plugins {
 		virtual ~CPluginTransport()
 		{
 			Py_XDECREF(m_pConnection);
+
+			// Destroy the timer if transport is using one
+			if (m_Timer)
+			{
+				m_Timer->cancel();
+				delete m_Timer;
+				m_Timer = NULL;
+			}
 		}
 
 		bool				IsConnecting() { return m_bConnecting; };
@@ -104,7 +114,7 @@ namespace Plugins {
 		boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>*	m_TLSSock;
 	};
 
-	class CPluginTransportUDP : CPluginTransportIP
+	class CPluginTransportUDP : public CPluginTransportIP
 	{
 	public:
 		CPluginTransportUDP(int HwdID, CConnection* pConnection, const std::string& Address, const std::string& Port) : CPluginTransportIP(HwdID, pConnection, Address, Port), m_Socket(NULL), m_Resolver(ios) { };
@@ -139,7 +149,7 @@ namespace Plugins {
 		int									m_SequenceNo;
 	};
 
-	class CPluginTransportSerial : CPluginTransport, AsyncSerial
+	class CPluginTransportSerial : public CPluginTransport, AsyncSerial
 	{
 	private:
 		int					m_Baud;
@@ -147,7 +157,6 @@ namespace Plugins {
 		CPluginTransportSerial(int HwdID, CConnection* pConnection, const std::string& Port, int Baud);
 		~CPluginTransportSerial(void);
 		virtual	bool		handleConnect();
-		virtual void		handleTimeout(const boost::system::error_code&);
 		virtual void		handleRead(const char *data, std::size_t bytes_transferred);
 		virtual void		handleWrite(const std::vector<byte>&);
 		virtual	bool		handleDisconnect();
