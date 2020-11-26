@@ -83,7 +83,7 @@ namespace Plugins {
 		virtual	bool		handleConnect();
 		virtual	bool		handleListen();
 		virtual	void		handleAsyncResolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
-		virtual	void		handleAsyncConnect(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
+		virtual	void		handleAsyncConnect(const boost::system::error_code& err);
 		virtual void		handleAsyncAccept(boost::asio::ip::tcp::socket* pSocket, const boost::system::error_code & error);
 		virtual void		handleRead(const boost::system::error_code& e, std::size_t bytes_transferred);
 		virtual void		handleWrite(const std::vector<byte>& pMessage);
@@ -102,7 +102,7 @@ namespace Plugins {
 	{
 	public:
 		CPluginTransportTCPSecure(int HwdID, CConnection* pConnection, const std::string& Address, const std::string& Port) : CPluginTransportTCP(HwdID, pConnection, Address, Port), m_Context(NULL), m_TLSSock(NULL) { };
-		virtual	void		handleAsyncConnect(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
+		virtual	void		handleAsyncConnect(const boost::system::error_code& err);
 		virtual void		handleRead(const boost::system::error_code& e, std::size_t bytes_transferred);
 		void handleWrite(const std::vector<byte>& pMessage);
 		~CPluginTransportTCPSecure();

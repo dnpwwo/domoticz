@@ -100,8 +100,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CInterface_log(CInterface* self, PyObject* args, PyObject* kwds)
@@ -153,8 +152,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CInterface_error(CInterface* self, PyObject* args, PyObject* kwds)
@@ -206,8 +204,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CInterface_timeout(CInterface* self, PyObject* args, PyObject* kwds)
@@ -265,8 +262,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	CInterface* CInterface::Copy()
@@ -647,8 +643,7 @@ namespace Plugins {
 			InterfaceLog(self, LOG_ERROR, "Interface refresh failed, Interface object is not associated with a plugin.");
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CInterface_update(CInterface* self)
@@ -690,8 +685,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Interface creation failed, Interface object is not associated with a plugin.");
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CInterface_str(CInterface* self)

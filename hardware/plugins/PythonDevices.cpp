@@ -101,8 +101,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CDevice_log(CDevice* self, PyObject* args, PyObject* kwds)
@@ -154,8 +153,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CDevice_error(CDevice* self, PyObject* args, PyObject* kwds)
@@ -207,8 +205,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	CDevice* CDevice::Copy()
@@ -650,8 +647,7 @@ namespace Plugins {
 			DeviceLog(self, LOG_ERROR, "Device refresh failed, Device object is not associated with a plugin.");
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CDevice_insert(CDevice* self)
@@ -704,8 +700,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Device creation failed, Device object is not associated with a plugin.");
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CDevice_update(CDevice* self)
@@ -743,8 +738,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Device creation failed, Device object is not associated with an interface.");
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CDevice_delete(CDevice* self)
@@ -780,8 +774,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Device deletion failed, Device object is not associated with a plugin.");
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CDevice_str(CDevice* self)

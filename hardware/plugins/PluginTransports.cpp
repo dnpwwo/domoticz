@@ -26,7 +26,7 @@ namespace Plugins {
 				m_Timer = new boost::asio::deadline_timer(ios);
 			}
 			m_Timer->expires_from_now(boost::posix_time::milliseconds(m_pConnection->Timeout));
-			m_Timer->async_wait(boost::bind(&CPluginTransport::handleTimeout, this, boost::asio::placeholders::error));
+			m_Timer->async_wait([this](const boost::system::error_code& ec) { handleTimeout(ec); });
 		}
 		else
 		{
@@ -121,7 +121,7 @@ namespace Plugins {
 				//
 				//	Async resolve/connect based on http://www.boost.org/doc/libs/1_45_0/doc/html/boost_asio/example/http/client/async_client.cpp
 				//
-				m_Resolver.async_resolve(query, boost::bind(&CPluginTransportTCP::handleAsyncResolve, this, boost::asio::placeholders::error, boost::asio::placeholders::iterator));
+				m_Resolver.async_resolve(query, [this](const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator) { handleAsyncResolve(err, endpoint_iterator); });
 			}
 		}
 		catch (std::exception& e)
@@ -139,12 +139,12 @@ namespace Plugins {
 	void CPluginTransportTCP::handleAsyncResolve(const boost::system::error_code & err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		//AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleAsyncResolve");
 
 		if (!err)
 		{
 			boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
-			m_Socket->async_connect(endpoint, boost::bind(&CPluginTransportTCP::handleAsyncConnect, this, boost::asio::placeholders::error, ++endpoint_iterator));
+			++endpoint_iterator;
+			m_Socket->async_connect(endpoint, [this](const boost::system::error_code& err) { handleAsyncConnect(err); });
 		}
 		else
 		{
@@ -159,10 +159,9 @@ namespace Plugins {
 		}
 	}
 
-	void CPluginTransportTCP::handleAsyncConnect(const boost::system::error_code & err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
+	void CPluginTransportTCP::handleAsyncConnect(const boost::system::error_code& err)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		//AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleAsyncConnect");
 
 		pPlugin->MessagePlugin(new onConnectCallback(pPlugin, m_pConnection, err.value(), err.message()));
 
@@ -171,7 +170,7 @@ namespace Plugins {
 			m_bConnected = true;
 			m_tLastSeen = time(0);
 			m_Socket->async_read_some(boost::asio::buffer(m_Buffer, sizeof m_Buffer),
-				boost::bind(&CPluginTransportTCP::handleRead, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+				[this](const boost::system::error_code err, const size_t bytes) { handleRead(err, bytes); });
 			configureTimeout();
 		}
 		else
@@ -203,7 +202,7 @@ namespace Plugins {
 				//	Acceptor based on http://www.boost.org/doc/libs/1_62_0/doc/html/boost_asio/tutorial/tutdaytime3/src.html
 				//
 				boost::asio::ip::tcp::socket*	pSocket = new boost::asio::ip::tcp::socket(ios);
-				m_Acceptor->async_accept((boost::asio::ip::tcp::socket&)*pSocket, boost::bind(&CPluginTransportTCP::handleAsyncAccept, this, pSocket, boost::asio::placeholders::error));
+				m_Acceptor->async_accept((boost::asio::ip::tcp::socket&) * pSocket, [this, pSocket](const boost::system::error_code& err) { handleAsyncAccept(pSocket, err); });
 				m_bConnecting = true;
 			}
 		}
@@ -273,7 +272,7 @@ namespace Plugins {
 			}
 
 			pTcpTransport->m_Socket->async_read_some(boost::asio::buffer(pTcpTransport->m_Buffer, sizeof pTcpTransport->m_Buffer),
-				boost::bind(&CPluginTransportTCP::handleRead, pTcpTransport, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+				[pTcpTransport](const boost::system::error_code err, const size_t bytes) { pTcpTransport->handleRead(err, bytes); });
 
 			// Requeue listener
 			if (m_Acceptor)
@@ -295,7 +294,6 @@ namespace Plugins {
 	void CPluginTransportTCP::handleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		//AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleRead");
 		if (!e)
 		{
 			pPlugin->MessagePlugin(new ReadEvent(pPlugin, m_pConnection, bytes_transferred, m_Buffer));
@@ -307,10 +305,7 @@ namespace Plugins {
 			if (m_Socket)
 			{
 				m_Socket->async_read_some(boost::asio::buffer(m_Buffer, sizeof m_Buffer),
-					boost::bind(&CPluginTransportTCP::handleRead,
-						this,
-						boost::asio::placeholders::error,
-						boost::asio::placeholders::bytes_transferred));
+					[this](const boost::system::error_code err, const size_t bytes) { handleRead(err, bytes); });
 				configureTimeout();
 			}
 		}
@@ -449,10 +444,9 @@ namespace Plugins {
 		}
 	};
 
-	void CPluginTransportTCPSecure::handleAsyncConnect(const boost::system::error_code & err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
+	void CPluginTransportTCPSecure::handleAsyncConnect(const boost::system::error_code & err)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		//AccessPython	Guard(pPlugin, "CPluginTransportTCP::handleRead");
 
 		if (!err)
 		{
@@ -476,7 +470,7 @@ namespace Plugins {
 
 				m_tLastSeen = time(0);
 				m_TLSSock->async_read_some(boost::asio::buffer(m_Buffer, sizeof m_Buffer),
-					boost::bind(&CPluginTransportTCP::handleRead, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+					[this](const boost::system::error_code err, const size_t bytes) { handleRead(err, bytes); });
 				configureTimeout();
 			}
 			catch (boost::system::system_error se)
@@ -522,7 +516,6 @@ namespace Plugins {
 	void CPluginTransportTCPSecure::handleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		//AccessPython	Guard(pPlugin, "CPluginTransportTCPSecure::handleRead");
 		if (!pPlugin)
 			return;
 		if (!e)
@@ -536,10 +529,7 @@ namespace Plugins {
 			if (m_TLSSock)
 			{
 				m_TLSSock->async_read_some(boost::asio::buffer(m_Buffer, sizeof m_Buffer),
-					boost::bind(&CPluginTransportTCPSecure::handleRead,
-						this,
-						boost::asio::placeholders::error,
-						boost::asio::placeholders::bytes_transferred));
+					[this](const boost::system::error_code err, const size_t bytes) { handleRead(err, bytes); });
 				configureTimeout();
 			}
 		}
@@ -611,9 +601,7 @@ namespace Plugins {
 			}
 
 			m_Socket->async_receive_from(boost::asio::buffer(m_Buffer, sizeof m_Buffer), m_remote_endpoint,
-											boost::bind(&CPluginTransportUDP::handleRead, this,
-												boost::asio::placeholders::error,
-												boost::asio::placeholders::bytes_transferred));
+											[this](const boost::system::error_code& ec, std::size_t bytes_transferred) { handleRead(ec, bytes_transferred); });
 
 			m_bConnected = true;
 		}
@@ -794,14 +782,12 @@ namespace Plugins {
 			handleWrite(vBody);
 
 			m_Socket->async_receive_from(boost::asio::buffer(m_Buffer, sizeof m_Buffer), m_Endpoint,
-				boost::bind(&CPluginTransportICMP::handleRead, this,
-					boost::asio::placeholders::error,
-					boost::asio::placeholders::bytes_transferred));
+				[this](const boost::system::error_code& ec, std::size_t bytes_transferred) { handleRead(ec, bytes_transferred); });
+			configureTimeout();
 		}
 		else
 		{
 			CPlugin*	pPlugin = ((CConnection*)m_pConnection)->pPlugin;
-			//AccessPython	Guard(pPlugin, "CPluginTransportICMP::handleAsyncResolve");
 			pPlugin->MessagePlugin(new DisconnectedEvent(pPlugin, m_pConnection));
 		}
 		m_bConnecting = false;
@@ -824,14 +810,12 @@ namespace Plugins {
 				//
 				//	Async resolve/connect based on http://www.boost.org/doc/libs/1_51_0/doc/html/boost_asio/example/icmp/ping.cpp
 				//
-				m_Resolver.async_resolve(query, boost::bind(&CPluginTransportICMP::handleAsyncResolve, this, boost::asio::placeholders::error, boost::asio::placeholders::iterator));
+				m_Resolver.async_resolve(query, [this](const boost::system::error_code& ec, boost::asio::ip::icmp::resolver::iterator endpoint_iterator) { handleAsyncResolve(ec, endpoint_iterator); });
 			}
 			else
 			{
 				m_Socket->async_receive_from(boost::asio::buffer(m_Buffer, sizeof m_Buffer), m_Endpoint,
-					boost::bind(&CPluginTransportICMP::handleRead, this,
-						boost::asio::placeholders::error,
-						boost::asio::placeholders::bytes_transferred));
+					[this](const boost::system::error_code& ec, std::size_t bytes_transferred) { handleRead(ec, bytes_transferred); });
 			}
 		}
 		catch (std::exception& e)
@@ -848,7 +832,6 @@ namespace Plugins {
 	void CPluginTransportICMP::handleTimeout(const boost::system::error_code& ec)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		//AccessPython	Guard(pPlugin, "CPluginTransportICMP::handleTimeout");
 
 		if (!ec)  // Timeout, no response
 		{
@@ -874,7 +857,6 @@ namespace Plugins {
 	void CPluginTransportICMP::handleRead(const boost::system::error_code & ec, std::size_t bytes_transferred)
 	{
 		CPlugin*	pPlugin = m_pConnection->pPlugin;
-		//AccessPython	Guard(pPlugin, "CPluginTransportICMP::handleRead");
 		if (!pPlugin)
 			return;
 
@@ -952,8 +934,8 @@ namespace Plugins {
 		{
 			m_Timer = new boost::asio::deadline_timer(ios);
 		}
-		m_Timer->expires_from_now(boost::posix_time::seconds(5));
-		m_Timer->async_wait(boost::bind(&CPluginTransportICMP::handleTimeout, this, boost::asio::placeholders::error));
+		m_Timer->expires_from_now(boost::posix_time::milliseconds(m_pConnection->Timeout ? m_pConnection->Timeout : 5000));
+		m_Timer->async_wait([this](const boost::system::error_code& ec) { handleTimeout(ec); });
 
 		// Create an ICMP header for an echo request.
 		icmp_header echo_request;
@@ -1060,7 +1042,7 @@ namespace Plugins {
 				if (m_bConnected)
 				{
 					pPlugin->MessagePlugin(new onConnectCallback(pPlugin, m_pConnection, 0, "SerialPort " + m_Port + " opened successfully."));
-					setReadCallback(boost::bind(&CPluginTransportSerial::handleRead, this, _1, _2));
+					setReadCallback([this](const char* data, std::size_t bytes_transferred) { handleRead(data, bytes_transferred); });
 					configureTimeout();
 				}
 				else

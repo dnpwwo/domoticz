@@ -229,31 +229,29 @@ namespace Plugins {
 
 	PyObject * CConnection_connect(CConnection* self, PyObject* args, PyObject* kwds)
 	{
-		Py_INCREF(Py_None);
-
 		if (!self->pPlugin)
 		{
 			_log.Log(LOG_ERROR, "%s:, illegal operation, Plugin has not started yet.", __func__);
-			return Py_None;
+			Py_RETURN_NONE;
 		}
 
 		//	Add connect command to message queue unless already connected
 		if (self->pPlugin->IsStopRequested(0))
 		{
 			self->pPlugin->WriteToTargetLog((PyObject*)self->pPlugin->m_Interface, "Log", "%s, connect request from '%s' ignored. Plugin is stopping.", __func__, self->pPlugin->m_Name.c_str());
-			return Py_None;
+			Py_RETURN_NONE;
 		}
 
 		if (self->pTransport && self->pTransport->IsConnecting())
 		{
 			self->pPlugin->WriteToTargetLog((PyObject*)self->pPlugin->m_Interface, "Error", "%s, connect request from '%s' ignored. Transport is connecting.", __func__, self->pPlugin->m_Name.c_str());
-			return Py_None;
+			Py_RETURN_NONE;
 		}
 
 		if (self->pTransport && self->pTransport->IsConnected())
 		{
 			self->pPlugin->WriteToTargetLog((PyObject*)self->pPlugin->m_Interface, "Error", "%s, connect request from '%s' ignored. Transport is connected.", __func__, self->pPlugin->m_Name.c_str());
-			return Py_None;
+			Py_RETURN_NONE;
 		}
 
 		PyObject*	pTarget = NULL;
@@ -261,7 +259,7 @@ namespace Plugins {
 		static char* kwlist[] = { "Target", "Timeout", NULL };
 		if (PyArg_ParseTupleAndKeywords(args, kwds, "O|I", kwlist, &pTarget, &iTimeout))
 		{
-			if (!iTimeout || (iTimeout > 250))
+			if (!iTimeout || (iTimeout > 199))
 			{
 				self->Timeout = iTimeout;
 			}
@@ -287,7 +285,7 @@ namespace Plugins {
 			LogPythonException(self->pPlugin, __func__);
 		}
 
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject * CConnection_listen(CConnection * self, PyObject* args, PyObject* kwds)
@@ -371,8 +369,7 @@ namespace Plugins {
 			}
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject * CConnection_disconnect(CConnection * self)
@@ -389,8 +386,7 @@ namespace Plugins {
 		else
 			_log.Log(LOG_ERROR, "%s, disconnection request from '%s' ignored. Transport does not exist.", __func__, self->pPlugin->m_Name.c_str());
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject * CConnection_bytes(CConnection * self)
@@ -436,8 +432,7 @@ namespace Plugins {
 			return pLastSeen;
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject * CConnection_str(CConnection * self)

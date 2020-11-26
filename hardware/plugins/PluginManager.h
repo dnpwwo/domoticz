@@ -21,7 +21,7 @@ namespace Plugins {
 		bool	m_bAllPluginsStarted;
 		int		m_iPollInterval;
 
-		void*	m_InitialPythonThread;
+		static	void*	m_InitialPythonThread;
 
 		static	std::map<int, CDomoticzHardwareBase*>	m_pPlugins;
 

@@ -8,6 +8,7 @@
 #include <tinyxml.h>
 
 #include "Plugins.h"
+#include "PluginManager.h"
 #include "PluginMessages.h"
 #include "PluginProtocols.h"
 #include "PluginTransports.h"
@@ -1754,11 +1755,21 @@ Error:
 			// Callbacks MUST already have taken the PythonMutex lock otherwise bad things will happen
 			if (m_PyModule && !sHandler.empty())
 			{
+				if (PyErr_Occurred())
+				{
+					PyErr_Clear();
+					WriteToTargetLog(pTarget, "Error", "Python exception set prior to callback '%s'", sHandler.c_str());
+				}
+
 				PyObjPtr	pFunc = PyObject_GetAttrString(pTarget, sHandler.c_str());
 				if (pFunc && PyCallable_Check(pFunc))
 				{
 					// if object has debugging set then log this callback
 					PyObjPtr pDebugging = PyObject_GetAttrString(pTarget, "Debugging");
+					if (PyErr_Occurred())
+					{
+						PyErr_Clear();  // Handle event target not having a "Debugging" method
+					}
 					if (pDebugging)
 					{
 						if (PyObject_IsTrue(pDebugging))
@@ -1767,11 +1778,6 @@ Error:
 						}
 					}
 
-					if (PyErr_Occurred())
-					{
-						PyErr_Clear();
-						WriteToTargetLog(pTarget, "Error", "Python exception set prior to callback '%s'", sHandler.c_str());
-					}
 					PyObjPtr	pReturnValue = PyObject_CallObject(pFunc, (PyObject*)pParams);
 					if (!pReturnValue || PyErr_Occurred())
 					{
@@ -1836,13 +1842,12 @@ Error:
 	{
 		try
 		{
+			PyEval_AcquireThread(m_PyInterpreter);
 
 			if (PyErr_Occurred())
 			{
 				PyErr_Clear();
 			}
-
-			PyEval_RestoreThread(m_PyInterpreter);
 
 			// Stop Python
 			if (m_SettingsDict && PyDict_Size(m_SettingsDict))
@@ -1866,9 +1871,13 @@ Error:
 			}
 			if (m_PyInterpreter)
 			{
-				Py_EndInterpreter((PyThreadState*)m_PyInterpreter);
+				Py_EndInterpreter(m_PyInterpreter);
 				m_PyInterpreter = NULL;
 			}
+
+			// To release the GIL there must be a valid thread state so use the one created during start up of the plugin system because it will always exist
+			CPluginSystem	pManager;
+			PyThreadState_Swap((PyThreadState*)pManager.PythonThread());
 			PyEval_ReleaseLock();
 		}
 		catch (std::exception *e)

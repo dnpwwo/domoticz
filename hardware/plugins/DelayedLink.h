@@ -9,6 +9,7 @@
 #ifdef WITH_THREAD
 #    undefine WITH_THREAD
 #endif
+
 #include <Python.h>
 #include <structmember.h>
 #include <frameobject.h>
@@ -101,9 +102,11 @@ namespace Plugins {
 		DECLARE_PYTHON_SYMBOL(int, PyEval_ThreadsInitialized, );
 		DECLARE_PYTHON_SYMBOL(PyThreadState*, PyThreadState_Get, );
 		DECLARE_PYTHON_SYMBOL(PyThreadState*, PyEval_SaveThread, void);
+		DECLARE_PYTHON_SYMBOL(void, PyEval_AcquireThread, PyThreadState*);
 		DECLARE_PYTHON_SYMBOL(void, PyEval_RestoreThread, PyThreadState*);
 		DECLARE_PYTHON_SYMBOL(void, PyEval_ReleaseLock, );
 		DECLARE_PYTHON_SYMBOL(PyThreadState*, PyThreadState_Swap, PyThreadState*);
+		DECLARE_PYTHON_SYMBOL(PyThreadState*, PyInterpreterState_Main, );
 		DECLARE_PYTHON_SYMBOL(int, PyGILState_Check, );
 		DECLARE_PYTHON_SYMBOL(void, _Py_NegativeRefcount, const char* COMMA int COMMA PyObject*);
 		DECLARE_PYTHON_SYMBOL(PyObject*, _PyObject_New, PyTypeObject*);
@@ -154,32 +157,16 @@ namespace Plugins {
 #	ifdef _DEBUG
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python39_d.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python38_d.dll");
-				if (!shared_lib_) shared_lib_ = LoadLibrary("python37_d.dll");
-				if (!shared_lib_) shared_lib_ = LoadLibrary("python36_d.dll");
-				if (!shared_lib_) shared_lib_ = LoadLibrary("python35_d.dll");
-				if (!shared_lib_) shared_lib_ = LoadLibrary("python34_d.dll");
 #	else
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python39.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python38.dll");
-				if (!shared_lib_) shared_lib_ = LoadLibrary("python37.dll");
-				if (!shared_lib_) shared_lib_ = LoadLibrary("python36.dll");
-				if (!shared_lib_) shared_lib_ = LoadLibrary("python35.dll");
-				if (!shared_lib_) shared_lib_ = LoadLibrary("python34.dll");
 #	endif
 #else
 				if (!shared_lib_) FindLibrary("python3.9", true);
 				if (!shared_lib_) FindLibrary("python3.8", true);
-				if (!shared_lib_) FindLibrary("python3.7", true);
-				if (!shared_lib_) FindLibrary("python3.6", true);
-				if (!shared_lib_) FindLibrary("python3.5", true);
-				if (!shared_lib_) FindLibrary("python3.4", true);
 #ifdef __FreeBSD__
 				if (!shared_lib_) FindLibrary("python3.9m", true);
 				if (!shared_lib_) FindLibrary("python3.8m", true);
-				if (!shared_lib_) FindLibrary("python3.7m", true);
-				if (!shared_lib_) FindLibrary("python3.6m", true);
-				if (!shared_lib_) FindLibrary("python3.5m", true);
-				if (!shared_lib_) FindLibrary("python3.4m", true);
 #endif /* FreeBSD */
 #endif
 				if (shared_lib_)
@@ -247,9 +234,11 @@ namespace Plugins {
 					RESOLVE_PYTHON_SYMBOL(PyEval_ThreadsInitialized);
 					RESOLVE_PYTHON_SYMBOL(PyThreadState_Get);
 					RESOLVE_PYTHON_SYMBOL(PyEval_SaveThread);
+					RESOLVE_PYTHON_SYMBOL(PyEval_AcquireThread);
 					RESOLVE_PYTHON_SYMBOL(PyEval_RestoreThread);
 					RESOLVE_PYTHON_SYMBOL(PyEval_ReleaseLock);
 					RESOLVE_PYTHON_SYMBOL(PyThreadState_Swap);
+					RESOLVE_PYTHON_SYMBOL(PyInterpreterState_Main);
 					RESOLVE_PYTHON_SYMBOL(PyGILState_Check);
 					RESOLVE_PYTHON_SYMBOL(_Py_NegativeRefcount);
 					RESOLVE_PYTHON_SYMBOL(_PyObject_New);
@@ -458,9 +447,11 @@ extern	SharedLibraryProxy* pythonLib;
 #define	PyEval_ThreadsInitialized	pythonLib->PyEval_ThreadsInitialized
 #define	PyThreadState_Get		pythonLib->PyThreadState_Get
 #define PyEval_SaveThread		pythonLib->PyEval_SaveThread
+#define PyEval_AcquireThread	pythonLib->PyEval_AcquireThread
 #define PyEval_RestoreThread	pythonLib->PyEval_RestoreThread
 #define PyEval_ReleaseLock		pythonLib->PyEval_ReleaseLock
 #define PyThreadState_Swap		pythonLib->PyThreadState_Swap
+#define PyInterpreterState_Main	pythonLib->PyInterpreterState_Main
 #define PyGILState_Check		pythonLib->PyGILState_Check
 #define _Py_NegativeRefcount	pythonLib->_Py_NegativeRefcount
 #define _PyObject_New			pythonLib->_PyObject_New
@@ -501,4 +492,73 @@ extern	SharedLibraryProxy* pythonLib;
 #define PyFloat_AsDouble		pythonLib->PyFloat_AsDouble
 #define	PyObject_GetIter		pythonLib->PyObject_GetIter
 #define	PyIter_Next				pythonLib->PyIter_Next
+
+
+#ifndef _Py_DEC_REFTOTAL
+/* _Py_DEC_REFTOTAL macro has been removed from Python 3.9 by: https://github.com/python/cpython/commit/49932fec62c616ec88da52642339d83ae719e924 */
+#  ifdef Py_REF_DEBUG
+#    define _Py_DEC_REFTOTAL _Py_RefTotal--
+#  else
+#    define _Py_DEC_REFTOTAL
+//#    define _Py_Dealloc
+#  endif
+#endif
+
+#if PY_VERSION_HEX >= 0x030800f0
+static inline void py3__Py_INCREF(PyObject* op)
+{
+#ifdef Py_REF_DEBUG
+	_Py_RefTotal++;
+#endif
+	op->ob_refcnt++;
+}
+
+#undef Py_INCREF
+#define Py_INCREF(op) py3__Py_INCREF(_PyObject_CAST(op))
+
+static inline void py3__Py_XINCREF(PyObject* op)
+{
+	if (op != NULL) {
+		Py_INCREF(op);
+	}
+}
+
+#undef Py_XINCREF
+#define Py_XINCREF(op) py3__Py_XINCREF(_PyObject_CAST(op))
+
+static inline void py3__Py_DECREF(const char* filename, int lineno, PyObject* op)
+{
+	(void)filename; /* may be unused, shut up -Wunused-parameter */
+	(void)lineno; /* may be unused, shut up -Wunused-parameter */
+	_Py_DEC_REFTOTAL;
+	if (--op->ob_refcnt != 0)
+	{
+#ifdef Py_REF_DEBUG
+		if (op->ob_refcnt < 0)
+		{
+			_Py_NegativeRefcount(filename, lineno, op);
+		}
+#endif
+	}
+	else
+	{
+		_Py_Dealloc(op);
+	}
+}
+
+#undef Py_DECREF
+#define Py_DECREF(op) py3__Py_DECREF(__FILE__, __LINE__, _PyObject_CAST(op))
+
+static inline void
+py3__Py_XDECREF(PyObject* op)
+{
+	if (op != nullptr)
+	{
+		Py_DECREF(op);
+	}
+}
+
+#undef Py_XDECREF
+#define Py_XDECREF(op) py3__Py_XDECREF(_PyObject_CAST(op))
+#endif
 }

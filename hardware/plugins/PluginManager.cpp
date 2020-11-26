@@ -62,13 +62,14 @@ namespace Plugins {
 	boost::asio::io_service ios;
 
 	std::map<int, CDomoticzHardwareBase*>	CPluginSystem::m_pPlugins;
+	void* CPluginSystem::m_InitialPythonThread;
 
 	CPluginSystem::CPluginSystem()
 	{
 		m_bEnabled = false;
 		m_bAllPluginsStarted = false;
 		m_iPollInterval = 10;
-		m_InitialPythonThread = NULL;
+		//m_InitialPythonThread = NULL;
 	}
 
 	CPluginSystem::~CPluginSystem(void)

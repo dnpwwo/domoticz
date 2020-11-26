@@ -155,8 +155,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CValue_log(CValue* self, PyObject* args, PyObject* kwds)
@@ -208,8 +207,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CValue_error(CValue* self, PyObject* args, PyObject* kwds)
@@ -261,8 +259,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "%s: Unknown execption thrown", __func__);
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	void CValue_dealloc(CValue* self)
@@ -496,7 +493,7 @@ namespace Plugins {
 			ValueLog(self, LOG_ERROR, "Value refresh failed, Value object is not associated with a plugin.");
 		}
 
-		Py_INCREF(Py_None);
+		//Py_INCREF(Py_None);
 		return Py_None;
 	}
 
@@ -576,8 +573,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Value creation failed, Value object is not associated with a plugin.");
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CValue_update(CValue* self)
@@ -683,8 +679,7 @@ namespace Plugins {
 //		{
 //			self->pPlugin->LogPythonException((PyObject*)self, __func__);
 //		}
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CValue_delete(CValue* self)
@@ -720,8 +715,7 @@ namespace Plugins {
 			_log.Log(LOG_ERROR, "Value deletion failed, Value object is not associated with a plugin.");
 		}
 
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 
 	PyObject* CValue_str(CValue* self)
