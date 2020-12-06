@@ -361,18 +361,6 @@ else(USE_BUILTIN_ZLIB)
 endif(USE_BUILTIN_ZLIB)
 
 #
-# CURL
-#
-FIND_PACKAGE(CURL)
-IF(CURL_FOUND)
-  MESSAGE(STATUS "Curl libraries found at: ${CURL_LIBRARIES}")
-  MESSAGE(STATUS "Curl includes found at: ${CURL_INCLUDE_DIRS}")
-  INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIRS})
-else()
-  MESSAGE(FATAL_ERROR "cURL not found on your system, see install.txt how to get them installed. (for example 'sudo apt-get install curl libcurl4-gnutls-dev')")
-ENDIF(CURL_FOUND)
-
-#
 # USB
 #
 option(WITH_LIBUSB "Enable libusb support" YES)
@@ -393,7 +381,7 @@ if(WITH_LIBUSB)
   ENDIF(LIBUSB_FOUND)
 endif(WITH_LIBUSB)
 
-target_link_libraries(domoticz ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${CURL_LIBRARIES} pthread ${SQLite_LIBRARIES} ${CMAKE_DL_LIBS})
+target_link_libraries(domoticz ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} pthread ${SQLite_LIBRARIES} ${CMAKE_DL_LIBS})
 
 IF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   target_link_libraries(domoticz -lresolv)
