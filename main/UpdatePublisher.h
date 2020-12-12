@@ -7,7 +7,7 @@
 #include "../sqlite/sqlite3.h"
 #endif
 #include <boost/signals2.hpp>
-#include <boost/bind.hpp>
+//#include <boost/bind.hpp>
 
 //
 //	Dnpwwo, 2019
