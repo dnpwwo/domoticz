@@ -270,7 +270,7 @@ namespace http {
 		void CWebsocket::Start()
 		{
 			//handler.Start();
-			m_Subscriber = m_mainworker.m_UpdateManager.Publisher.connect(boost::bind(&CWebsocket::DatabaseUpdate, this, _1));
+			m_Subscriber = m_mainworker.m_UpdateManager.Publisher.connect([this](CUpdateEntry* pEntry) { DatabaseUpdate(pEntry); });
 		}
 
 		void CWebsocket::Stop()

@@ -125,10 +125,7 @@ namespace Plugins {
 			m_InitialPythonThread = PyEval_SaveThread();
 
 			// Start listening for changes in Interface/Device/Value records
-			m_Subscriber = m_mainworker.m_UpdateManager.Publisher.connect(
-				//boost::bind(&CPluginSystem::DatabaseUpdate, this, _1)
-				[this](CUpdateEntry* pEntry) { DatabaseUpdate(pEntry); }
-			);
+			m_Subscriber = m_mainworker.m_UpdateManager.Publisher.connect([this](CUpdateEntry* pEntry) { DatabaseUpdate(pEntry); });
 
 
 			m_bEnabled = true;
