@@ -158,19 +158,23 @@ namespace Plugins {
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python39_d.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python38_d.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python37_d.dll");
+				if (!shared_lib_) shared_lib_ = LoadLibrary("python36_d.dll");
 #	else
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python39.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python38.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python37.dll");
+				if (!shared_lib_) shared_lib_ = LoadLibrary("python36.dll");
 #	endif
 #else
 				if (!shared_lib_) FindLibrary("python3.9", true);
 				if (!shared_lib_) FindLibrary("python3.8", true);
 				if (!shared_lib_) FindLibrary("python3.7", true);
+				if (!shared_lib_) FindLibrary("python3.6", true);
 #ifdef __FreeBSD__
 				if (!shared_lib_) FindLibrary("python3.9m", true);
 				if (!shared_lib_) FindLibrary("python3.8m", true);
 				if (!shared_lib_) FindLibrary("python3.7m", true);
+				if (!shared_lib_) FindLibrary("python3.6m", true);
 #endif /* FreeBSD */
 #endif
 				if (shared_lib_)
