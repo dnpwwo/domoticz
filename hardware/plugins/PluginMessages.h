@@ -702,7 +702,6 @@ protected:
 		int						m_ElapsedMs;
 		virtual void ProcessLocked()
 		{
-			m_pPlugin->WriteDebugBuffer(m_Buffer, true);
 			m_pPlugin->ConnectionRead(this);
 		};
 	};

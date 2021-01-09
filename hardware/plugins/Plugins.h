@@ -91,7 +91,7 @@ namespace Plugins {
 		void	LogPythonException(PyObject*);
 		void	InterfaceLog(const _eLogLevel level, const char* Message, ...);
 
-		void	WriteDebugBuffer(const std::vector<byte>& Buffer, bool Incoming);
+		void	WriteDebugBuffer(PyObject* pTarget, const std::vector<byte>& Buffer, bool Incoming);
 
 		bool	WriteToHardware(const char *pdata, const unsigned char length) override;
 		//void	SendCommand(const int Unit, const std::string &command, const int level, const _tColor color);

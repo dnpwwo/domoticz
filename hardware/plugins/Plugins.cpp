@@ -1478,7 +1478,7 @@ Error:
 		}
 		else
 		{
-			_log.Log(LOG_ERROR, "(%s) Invalid transport type for connecting specified: '%s', valid types are TCP/IP and Serial.", m_Name.c_str(), sTransport.c_str());
+			_log.Log(LOG_ERROR, "(%s) Invalid transport type for connecting specified: '%s', valid types are TCP/IP, TLS/IP and Serial.", m_Name.c_str(), sTransport.c_str());
 			return;
 		}
 		if (pConnection->pTransport)
@@ -1565,10 +1565,24 @@ Error:
 	void CPlugin::ConnectionRead(CPluginMessageBase * pMess)
 	{
 		ReadEvent*	pMessage = (ReadEvent*)pMess;
+		CConnection* pConnection = pMessage->m_pConnection;
 		m_LastHeartbeatReceive = mytime(NULL);
-		if (pMessage->m_pConnection->pProtocol)
+		if (pConnection->pProtocol)
 		{
-			pMessage->m_pConnection->pProtocol->ProcessInbound(pMessage);
+			// if Target has debugging set then log this write
+			PyObjPtr pDebugging = PyObject_GetAttrString(pConnection->Target, "Debugging");
+			if (PyErr_Occurred())
+			{
+				PyErr_Clear();  // Handle event target not having a "Debugging" method
+			}
+			if (pDebugging)
+			{
+				if (PyObject_IsTrue(pDebugging))
+				{
+					WriteDebugBuffer(pConnection->Target, pMessage->m_Buffer, true);
+				}
+			}
+			pConnection->pProtocol->ProcessInbound(pMessage);
 		}
 		else
 		{
@@ -1627,6 +1641,19 @@ Error:
 		}
 
 		std::vector<byte>	vWriteData = pConnection->pProtocol->ProcessOutbound(pMessage);
+		// if Target has debugging set then log this write
+		PyObjPtr pDebugging = PyObject_GetAttrString(pConnection->Target, "Debugging");
+		if (PyErr_Occurred())
+		{
+			PyErr_Clear();  // Handle event target not having a "Debugging" method
+		}
+		if (pDebugging)
+		{
+			if (PyObject_IsTrue(pDebugging))
+			{
+				WriteDebugBuffer(pConnection->Target, vWriteData, false);
+			}
+		}
 		pConnection->pTransport->handleWrite(vWriteData);
 
 		// UDP is connectionless so remove the transport after write
@@ -1935,37 +1962,31 @@ Error:
 	}
 
 #define DZ_BYTES_PER_LINE 20
-	void CPlugin::WriteDebugBuffer(const std::vector<byte>& Buffer, bool Incoming)
+	void CPlugin::WriteDebugBuffer(PyObject* pTarget, const std::vector<byte>& Buffer, bool Incoming)
 	{
-		if (m_bDebug & (PDM_CONNECTION | PDM_MESSAGE))
-		{
-			if (Incoming)
-				_log.Log(LOG_NORM, "(%s) Received %d bytes of data", m_Name.c_str(), (int)Buffer.size());
-			else
-				_log.Log(LOG_NORM, "(%s) Sending %d bytes of data", m_Name.c_str(), (int)Buffer.size());
-		}
+		if (Incoming)
+			WriteToTargetLog(pTarget, "Log", "(%s) Received %d bytes of data", m_Name.c_str(), (int)Buffer.size());
+		else
+			WriteToTargetLog(pTarget, "Log", "(%s) Sending %d bytes of data", m_Name.c_str(), (int)Buffer.size());
 
-		if (m_bDebug & PDM_MESSAGE)
+		for (int i = 0; i < (int)Buffer.size(); i = i + DZ_BYTES_PER_LINE)
 		{
-			for (int i = 0; i < (int)Buffer.size(); i = i + DZ_BYTES_PER_LINE)
+			std::stringstream ssHex;
+			std::string sChars;
+			for (int j = 0; j < DZ_BYTES_PER_LINE; j++)
 			{
-				std::stringstream ssHex;
-				std::string sChars;
-				for (int j = 0; j < DZ_BYTES_PER_LINE; j++)
+				if (i + j < (int)Buffer.size())
 				{
-					if (i + j < (int)Buffer.size())
-					{
-						if (Buffer[i + j] < 16)
-							ssHex << '0' << std::hex << (int)Buffer[i + j] << " ";
-						else
-							ssHex << std::hex << (int)Buffer[i + j] << " ";
-						if ((int)Buffer[i + j] > 32) sChars += Buffer[i + j];
-						else sChars += ".";
-					}
-					else ssHex << ".. ";
+					if (Buffer[i + j] < 16)
+						ssHex << '0' << std::hex << (int)Buffer[i + j] << " ";
+					else
+						ssHex << std::hex << (int)Buffer[i + j] << " ";
+					if ((int)Buffer[i + j] > 32) sChars += Buffer[i + j];
+					else sChars += ".";
 				}
-				_log.Log(LOG_NORM, "(%s)     %s    %s", m_Name.c_str(), ssHex.str().c_str(), sChars.c_str());
+				else ssHex << ".. ";
 			}
+			WriteToTargetLog(pTarget, "Log", "(%s)     %s    %s", m_Name.c_str(), ssHex.str().c_str(), sChars.c_str());
 		}
 	}
 
