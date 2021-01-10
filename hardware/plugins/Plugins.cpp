@@ -522,6 +522,7 @@ namespace Plugins {
 	{
 		va_list argList;
 		char cbuffer[1024];
+		byte* pByte = (byte*)&cbuffer;
 		va_start(argList, Message);
 		vsnprintf(cbuffer, sizeof(cbuffer), Message, argList);
 		va_end(argList);
@@ -551,7 +552,8 @@ namespace Plugins {
 				PyObjPtr nrArgList = Py_BuildValue("(s)", cbuffer);
 				if (!nrArgList)
 				{
-					InterfaceLog(LOG_ERROR, "Failed while building argument list for '%s' logging call.", sLevel);
+					WriteToTargetLog(pTarget, "Error", "Failed while building argument list for '%s' logging call.", sLevel);
+					LogPythonException(pTarget, "Debugging");
 					PyErr_Clear();
 				}
 				else
@@ -1981,7 +1983,7 @@ Error:
 						ssHex << '0' << std::hex << (int)Buffer[i + j] << " ";
 					else
 						ssHex << std::hex << (int)Buffer[i + j] << " ";
-					if ((int)Buffer[i + j] > 32) sChars += Buffer[i + j];
+					if (((int)Buffer[i + j] > 32) && ((int)Buffer[i + j] < 128)) sChars += Buffer[i + j];
 					else sChars += ".";
 				}
 				else ssHex << ".. ";
